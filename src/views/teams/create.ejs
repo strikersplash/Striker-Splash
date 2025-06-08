@@ -1,0 +1,30 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Create a Team</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-4">Create your own team and invite other players to join. Teams can have up to 5 members.</p>
+          
+          <form action="/teams/create" method="POST">
+            <div class="mb-3">
+              <label for="name" class="form-label">Team Name</label>
+              <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            
+            <div class="alert alert-info">
+              <p class="mb-0"><strong>Note:</strong> You will automatically become the team captain.</p>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Create Team</button>
+              <a href="/player/dashboard" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

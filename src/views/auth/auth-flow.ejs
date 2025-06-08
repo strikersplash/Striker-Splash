@@ -1,0 +1,52 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="form-container">
+        <% if (step === 'forgot') { %>
+          <!-- Forgot Password Form -->
+          <h2 class="text-center mb-4">Forgot Password</h2>
+          
+          <form action="/auth/forgot-password" method="POST">
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Send Reset Link</button>
+            </div>
+          </form>
+          
+          <div class="text-center mt-3">
+            <a href="/auth/login">Back to Login</a>
+          </div>
+        <% } else if (step === 'reset') { %>
+          <!-- Reset Password Form -->
+          <h2 class="text-center mb-4">Reset Password</h2>
+          
+          <form action="/auth/reset-password" method="POST">
+            <input type="hidden" name="token" value="<%= token %>">
+            
+            <div class="mb-3">
+              <label for="password" class="form-label">New Password</label>
+              <input type="password" class="form-control" id="password" name="password" required minlength="6">
+            </div>
+            
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label">Confirm Password</label>
+              <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required minlength="6">
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Reset Password</button>
+            </div>
+          </form>
+          
+          <div class="text-center mt-3">
+            <a href="/auth/login">Back to Login</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

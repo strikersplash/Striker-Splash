@@ -1,0 +1,778 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Referee Interface</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <!-- QR Scanner -->
+              <div class="scan-container">
+                <h4>Scan Player QR Code</h4>
+                <p>Scan a player's QR code to log their goals.</p>
+                
+                <div id="qr-reader-container" class="mb-3" style="width: 100%; height: 300px; border: 1px solid #ddd; position: relative;">
+                  <!-- Scanner will be inserted here -->
+                </div>
+                
+                <div class="d-grid gap-2">
+                  <button id="start-scan" class="btn btn-primary">Start Scanner</button>
+                  <div id="scanner-controls" class="d-none">
+                    <button id="stop-scan" class="btn btn-danger">Stop Scanner</button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Player Search -->
+              <div class="mt-4">
+                <h5>Search Player by Name</h5>
+                <div class="input-group mb-3">
+                  <input type="text" id="name-search" class="form-control" placeholder="Enter player name">
+                  <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
+                </div>
+                <div id="search-results" class="list-group mt-2"></div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <!-- Player Info and Actions -->
+              <div id="player-info" class="player-info">
+                <!-- Content will be populated by JavaScript when QR is scanned -->
+                <div class="text-center">
+                  <p>Scan a player's QR code or search to get started</p>
+                  <i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Queue Status -->
+      <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Queue Status</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="alert alert-info">
+                <h5>Now Serving</h5>
+                <h2 id="current-queue-number"><%= currentQueuePosition || 'No active tickets' %></h2>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-warning" id="skip-queue-btn">
+                  <i class="bi bi-skip-forward"></i> Skip Current Queue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">Today's Activity</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Player</th>
+                  <th>Goals</th>
+                </tr>
+              </thead>
+              <tbody id="activity-table">
+                <!-- This will be populated dynamically -->
+                <tr id="no-activity-row">
+                  <td colspan="3" class="text-center">No activity recorded today</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Goal Logging Modal -->
+<div class="modal fade" id="goalModal" tabindex="-1" aria-labelledby="goalModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="goalModalLabel">Log Goals</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="goal-form">
+          <input type="hidden" id="player-id" name="playerId">
+          <input type="hidden" id="ticket-id" name="ticketId">
+          
+          <div class="mb-3">
+            <label for="player-name" class="form-label">Player Name</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="player-name" readonly>
+              <button type="button" class="btn btn-outline-secondary" id="edit-name-btn">Edit</button>
+            </div>
+            <div class="form-text">Name can be changed up to 2 times by a referee.</div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="goals" class="form-label">Goals Scored</label>
+            <input type="number" class="form-control" id="goals" name="goals" value="0" min="0" max="5" required>
+            <div class="form-text">Maximum 5 goals per turn.</div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="location" name="location" required>
+          </div>
+          
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="team-play" name="teamPlay">
+              <label class="form-check-label" for="team-play">
+                Team Play
+              </label>
+            </div>
+            <div class="form-text">Check this if the player is playing as part of their team.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-goals">Log Goals</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Name Modal -->
+<div class="modal fade" id="editNameModal" tabindex="-1" aria-labelledby="editNameModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editNameModalLabel">Edit Player Name</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-name-form">
+          <input type="hidden" id="edit-player-id" name="playerId">
+          
+          <div class="mb-3">
+            <label for="new-name" class="form-label">New Name</label>
+            <input type="text" class="form-control" id="new-name" name="name" required>
+          </div>
+          
+          <div class="alert alert-warning">
+            <p class="mb-0"><strong>Important:</strong> Player names can be changed up to 2 times. <span id="changes-remaining"></span></p>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-name">Save Name</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include HTML5-QRCode library -->
+<script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load today's activity
+    loadTodaysActivity();
+    
+    // Start polling for queue updates
+    setInterval(updateQueuePosition, 5000);
+    
+    // QR Code Scanner
+    let html5QrCode = null;
+    const qrContainer = document.getElementById('qr-reader-container');
+    let currentPlayerId = null;
+    let currentPlayerData = null;
+    let selectedTicket = null;
+    
+    // Start scanning button
+    document.getElementById('start-scan').addEventListener('click', function() {
+      // Clean up any existing scanner
+      if (html5QrCode) {
+        try {
+          html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (e) {
+          console.error("Error stopping scanner:", e);
+        }
+        html5QrCode = null;
+      }
+      
+      // Clear the container
+      qrContainer.innerHTML = '';
+      
+      // Create a new scanner div
+      const scannerDiv = document.createElement('div');
+      scannerDiv.id = 'qr-scanner';
+      scannerDiv.style.width = '100%';
+      scannerDiv.style.height = '100%';
+      qrContainer.appendChild(scannerDiv);
+      
+      // Create new scanner instance
+      html5QrCode = new Html5Qrcode("qr-scanner");
+      
+      // Start scanning
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      )
+      .then(() => {
+        document.getElementById('scanner-controls').classList.remove('d-none');
+        this.classList.add('d-none');
+      })
+      .catch(err => {
+        console.error('Failed to start scanner:', err);
+        alert('Failed to start camera. Please check camera permissions.');
+      });
+    });
+    
+    // Stop scanning button
+    document.getElementById('stop-scan').addEventListener('click', function() {
+      stopScanner();
+    });
+    
+    // QR scan success handler
+    function onScanSuccess(qrCodeMessage) {
+      // Stop scanning
+      stopScanner();
+      
+      // Process QR code data
+      processQRCode(qrCodeMessage);
+    }
+    
+    // QR scan error handler
+    function onScanError(error) {
+      console.warn(`QR scan error: ${error}`);
+    }
+    
+    // Helper function to stop scanner
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop()
+          .then(() => {
+            html5QrCode.clear();
+            html5QrCode = null;
+            qrContainer.innerHTML = '';
+            document.getElementById('scanner-controls').classList.add('d-none');
+            document.getElementById('start-scan').classList.remove('d-none');
+          })
+          .catch(err => {
+            console.error('Failed to stop scanner:', err);
+          });
+      }
+    }
+    
+    // Process QR code data
+    function processQRCode(qrData) {
+      // Show loading indicator
+      document.getElementById('player-info').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+      
+      // Send QR data to server
+      fetch('/staff/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ qrData })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          currentPlayerData = data;
+          displayPlayerInfo(data.player, data.activeTickets, data.todayKicks);
+        } else {
+          // Display error
+          document.getElementById('player-info').innerHTML = `
+            <div class="alert alert-danger">${data.message}</div>
+          `;
+        }
+      })
+      .catch(error => {
+        console.error('Error processing QR code:', error);
+        document.getElementById('player-info').innerHTML = `
+          <div class="alert alert-danger">Error processing QR code. Please try again.</div>
+        `;
+      });
+    }
+    
+    // Player search by name
+    document.getElementById('search-button').addEventListener('click', function() {
+      const name = document.getElementById('name-search').value.trim();
+      
+      if (!name) {
+        alert('Please enter a name');
+        return;
+      }
+      
+      // Show loading indicator
+      document.getElementById('search-results').innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+      
+      // Send search query to server
+      fetch(`/staff/search-by-name?name=${encodeURIComponent(name)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.players.length > 0) {
+            // Display search results
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+            
+            data.players.forEach(player => {
+              const item = document.createElement('button');
+              item.className = 'list-group-item list-group-item-action';
+              item.innerHTML = `
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1">${player.name}</h5>
+                  <small>${player.age_group}</small>
+                </div>
+                <p class="mb-1">${player.phone}${player.email ? ' | ' + player.email : ''}</p>
+                <small>${player.residence}</small>
+              `;
+              
+              item.addEventListener('click', function() {
+                // Get player details
+                fetch(`/staff/scan`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ qrData: JSON.stringify({ playerId: player.id }) })
+                })
+                .then(response => response.json())
+                .then(playerData => {
+                  if (playerData.success) {
+                    currentPlayerData = playerData;
+                    displayPlayerInfo(playerData.player, playerData.activeTickets, playerData.todayKicks);
+                  } else {
+                    document.getElementById('player-info').innerHTML = `
+                      <div class="alert alert-danger">${playerData.message}</div>
+                    `;
+                  }
+                });
+              });
+              
+              resultsContainer.appendChild(item);
+            });
+          } else {
+            // Display error
+            document.getElementById('search-results').innerHTML = `
+              <div class="alert alert-danger">No player found with that name</div>
+            `;
+          }
+        })
+        .catch(error => {
+          console.error('Error searching player:', error);
+          document.getElementById('search-results').innerHTML = `
+            <div class="alert alert-danger">Error searching player. Please try again.</div>
+          `;
+        });
+    });
+    
+    // Display player info
+    function displayPlayerInfo(player, activeTickets = [], todayKicks = 0) {
+      currentPlayerId = player.id;
+      
+      // Update player info
+      const playerInfo = document.getElementById('player-info');
+      playerInfo.innerHTML = `
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+              ${player.photo_path ? 
+                `<img src="${player.photo_path}" alt="Profile Photo" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">` : 
+                `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                  <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
+                </div>`
+              }
+              <div>
+                <h4 class="mb-0">${player.name}</h4>
+                <p class="text-muted mb-0">${player.phone}${player.email ? ' | ' + player.email : ''}</p>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-6">
+                <p><strong>Age Group:</strong> ${player.age_group}</p>
+              </div>
+              <div class="col-6">
+                <p><strong>District:</strong> ${player.residence}</p>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-6">
+                <div class="alert alert-primary mb-0">
+                  <h5 class="mb-0">Kicks Balance: <strong>${player.kicks_balance || 0}</strong></h5>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="alert alert-info mb-0">
+                  <h5 class="mb-0">Today's Kicks: <strong>${todayKicks || 0}</strong></h5>
+                </div>
+              </div>
+            </div>
+            
+            ${activeTickets && activeTickets.length > 0 ? `
+              <div class="alert alert-success">
+                <h5>Active Queue Tickets</h5>
+                <div class="list-group">
+                  ${activeTickets.map(ticket => `
+                    <button type="button" class="list-group-item list-group-item-action ticket-item" data-ticket-id="${ticket.id}" data-ticket-number="${ticket.ticket_number}">
+                      Ticket #${ticket.ticket_number}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="log-goals-btn" disabled>Select a ticket to log goals</button>
+              </div>
+            ` : `
+              <div class="alert alert-warning">
+                <h5>No Active Queue Tickets</h5>
+                <p>Player needs to purchase kicks and get a queue ticket at the cashier.</p>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners for ticket selection
+      if (activeTickets && activeTickets.length > 0) {
+        document.querySelectorAll('.ticket-item').forEach(item => {
+          item.addEventListener('click', function() {
+            // Remove active class from all tickets
+            document.querySelectorAll('.ticket-item').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to selected ticket
+            this.classList.add('active');
+            
+            // Store selected ticket
+            selectedTicket = {
+              id: this.dataset.ticketId,
+              number: this.dataset.ticketNumber
+            };
+            
+            // Enable log goals button
+            document.getElementById('log-goals-btn').disabled = false;
+            document.getElementById('log-goals-btn').textContent = `Log Goals for Ticket #${selectedTicket.number}`;
+          });
+        });
+        
+        // Add event listener for log goals button
+        document.getElementById('log-goals-btn').addEventListener('click', function() {
+          if (!selectedTicket) {
+            alert('Please select a ticket first');
+            return;
+          }
+          
+          // Show goal modal
+          const goalModal = new bootstrap.Modal(document.getElementById('goalModal'));
+          
+          // Set player and ticket info
+          document.getElementById('player-id').value = currentPlayerId;
+          document.getElementById('ticket-id').value = selectedTicket.id;
+          document.getElementById('player-name').value = player.name;
+          
+          // Set max goals to 5
+          document.getElementById('goals').max = 5;
+          
+          // Show modal
+          goalModal.show();
+        });
+      }
+    }
+    
+    // Edit name button
+    document.getElementById('edit-name-btn').addEventListener('click', function() {
+      if (!currentPlayerId) {
+        alert('No player selected');
+        return;
+      }
+      
+      // Set player ID and current name
+      document.getElementById('edit-player-id').value = currentPlayerId;
+      document.getElementById('new-name').value = document.getElementById('player-name').value;
+      
+      // Get name change count
+      const nameChanges = currentPlayerData?.player?.name_change_count || 0;
+      const remainingChanges = 2 - nameChanges;
+      
+      // Update changes remaining text
+      document.getElementById('changes-remaining').textContent = 
+        remainingChanges === 0 ? 'No more name changes allowed.' :
+        remainingChanges === 1 ? 'This is the last name change allowed.' : 
+        'After this change, you will have 1 more change available.';
+      
+      // Disable button if no changes remaining
+      document.getElementById('submit-name').disabled = remainingChanges === 0;
+      
+      // Show edit name modal
+      const editNameModal = new bootstrap.Modal(document.getElementById('editNameModal'));
+      editNameModal.show();
+    });
+    
+    // Submit name change
+    document.getElementById('submit-name').addEventListener('click', function() {
+      const playerId = document.getElementById('edit-player-id').value;
+      const name = document.getElementById('new-name').value;
+      
+      if (!name) {
+        alert('Please enter a name');
+        return;
+      }
+      
+      // Show loading indicator
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+      
+      // Send name update to server
+      fetch('/staff/update-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ playerId, name })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Update player name in goal modal
+          document.getElementById('player-name').value = name;
+          
+          // Close edit name modal
+          bootstrap.Modal.getInstance(document.getElementById('editNameModal')).hide();
+          
+          // Show success message
+          alert(`Player name updated successfully. ${data.remainingChanges > 0 ? data.remainingChanges + ' name changes remaining.' : 'No more name changes allowed.'}`);
+          
+          // Update player data
+          if (currentPlayerData && currentPlayerData.player) {
+            currentPlayerData.player.name = name;
+            currentPlayerData.player.name_change_count = 2 - data.remainingChanges;
+          }
+        } else {
+          // Show error message
+          alert(`Error: ${data.message}`);
+        }
+        
+        // Reset button
+        this.disabled = false;
+        this.innerHTML = 'Save Name';
+      })
+      .catch(error => {
+        console.error('Error updating name:', error);
+        alert('Error updating name. Please try again.');
+        this.disabled = false;
+        this.innerHTML = 'Save Name';
+      });
+    });
+    
+    // Submit goals
+    document.getElementById('submit-goals').addEventListener('click', function() {
+      const playerId = document.getElementById('player-id').value;
+      const ticketId = document.getElementById('ticket-id').value;
+      const goals = document.getElementById('goals').value;
+      const location = document.getElementById('location').value;
+      const teamPlay = document.getElementById('team-play').checked;
+      
+      if (!location) {
+        alert('Please enter a location');
+        return;
+      }
+      
+      // Show loading indicator
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+      
+      // Send goal data to server
+      fetch('/staff/log-goal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ playerId, ticketId, goals, location, teamPlay })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Close goal modal
+          bootstrap.Modal.getInstance(document.getElementById('goalModal')).hide();
+          
+          // Show success message
+          alert(`Successfully logged ${goals} goals!${teamPlay ? ' (Team Play)' : ''}`);
+          
+          // Update activity table
+          updateActivityTable({
+            timestamp: new Date(),
+            playerName: document.getElementById('player-name').value,
+            goals: goals
+          });
+          
+          // Update current queue number
+          if (data.currentQueuePosition) {
+            document.getElementById('current-queue-number').textContent = data.currentQueuePosition;
+          }
+          
+          // Reset player info
+          document.getElementById('player-info').innerHTML = `
+            <div class="text-center">
+              <p>Scan a player's QR code or search to get started</p>
+              <i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i>
+            </div>
+          `;
+          currentPlayerId = null;
+          currentPlayerData = null;
+          selectedTicket = null;
+        } else {
+          // Show error message
+          alert(`Error: ${data.message}`);
+        }
+        
+        // Reset button
+        this.disabled = false;
+        this.innerHTML = 'Log Goals';
+      })
+      .catch(error => {
+        console.error('Error logging goals:', error);
+        alert('Error logging goals. Please try again.');
+        this.disabled = false;
+        this.innerHTML = 'Log Goals';
+      });
+    });
+    
+    // Skip queue button
+    document.getElementById('skip-queue-btn').addEventListener('click', function() {
+      if (!confirm('Are you sure you want to skip the current queue position?')) {
+        return;
+      }
+      
+      // Show loading indicator
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Skipping...';
+      
+      // Send skip request to server
+      fetch('/staff/skip-queue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Update queue number
+          document.getElementById('current-queue-number').textContent = data.currentQueuePosition || 'No active tickets';
+          
+          // Show success message
+          alert(data.message);
+        } else {
+          // Show error message
+          alert(`Error: ${data.message}`);
+        }
+        
+        // Reset button
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-skip-forward"></i> Skip Current Queue';
+      })
+      .catch(error => {
+        console.error('Error skipping queue:', error);
+        alert('Error skipping queue. Please try again.');
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-skip-forward"></i> Skip Current Queue';
+      });
+    });
+    
+    // Load today's activity
+    function loadTodaysActivity() {
+      fetch('/api/activity/today')
+        .then(response => response.json())
+        .then(data => {
+          if (data.length > 0) {
+            updateActivityTableWithData(data);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading today\'s activity:', error);
+        });
+    }
+    
+    // Update queue position
+    function updateQueuePosition() {
+      fetch('/api/queue/current')
+        .then(response => response.json())
+        .then(data => {
+          if (data.currentQueuePosition) {
+            document.getElementById('current-queue-number').textContent = data.currentQueuePosition;
+          } else {
+            document.getElementById('current-queue-number').textContent = 'No active tickets';
+          }
+        })
+        .catch(error => {
+          console.error('Error updating queue position:', error);
+        });
+    }
+    
+    // Update activity table with local data
+    function updateActivityTable(activity) {
+      const table = document.getElementById('activity-table');
+      const noActivityRow = document.getElementById('no-activity-row');
+      
+      if (noActivityRow) {
+        noActivityRow.remove();
+      }
+      
+      const newRow = table.insertRow(0);
+      
+      const timeCell = newRow.insertCell(0);
+      const playerCell = newRow.insertCell(1);
+      const goalsCell = newRow.insertCell(2);
+      
+      timeCell.textContent = activity.timestamp.toLocaleTimeString();
+      playerCell.textContent = activity.playerName;
+      goalsCell.textContent = activity.goals;
+    }
+    
+    // Update activity table with data from API
+    function updateActivityTableWithData(activities) {
+      const table = document.getElementById('activity-table');
+      const noActivityRow = document.getElementById('no-activity-row');
+      
+      if (noActivityRow) {
+        noActivityRow.remove();
+      }
+      
+      activities.forEach(activity => {
+        const newRow = table.insertRow(-1);
+        
+        const timeCell = newRow.insertCell(0);
+        const playerCell = newRow.insertCell(1);
+        const goalsCell = newRow.insertCell(2);
+        
+        const timestamp = new Date(activity.timestamp);
+        timeCell.textContent = timestamp.toLocaleTimeString();
+        playerCell.textContent = activity.playerName;
+        goalsCell.textContent = activity.goals;
+      });
+    }
+  });
+</script>

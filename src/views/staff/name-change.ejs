@@ -1,0 +1,386 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Player Name Change</h3>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <h5>Important</h5>
+            <p>Player names can be changed up to 2 times. After the second change, the name will be locked.</p>
+          </div>
+          
+          <!-- Search Form -->
+          <form id="search-form" class="mb-4">
+            <div class="input-group">
+              <input type="text" class="form-control" id="search-input" name="search" placeholder="Search by name, phone, or email" value="<%= search %>">
+              <button class="btn btn-outline-primary" type="submit">Search</button>
+            </div>
+          </form>
+          
+          <!-- Search Results -->
+          <% if (players && players.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>District</th>
+                    <th>Changes</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% players.forEach(player => { %>
+                    <tr>
+                      <td><%= player.name %></td>
+                      <td><%= player.phone %></td>
+                      <td><%= player.email || '-' %></td>
+                      <td><%= player.residence %></td>
+                      <td><%= player.name_change_count || 0 %> / 2</td>
+                      <td>
+                        <% if ((player.name_change_count || 0) >= 2) { %>
+                          <span class="badge bg-danger">Locked</span>
+                        <% } else { %>
+                          <span class="badge bg-success">Editable</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if ((player.name_change_count || 0) < 2) { %>
+                          <button class="btn btn-sm btn-primary edit-name-btn" 
+                            data-id="<%= player.id %>" 
+                            data-name="<%= player.name %>"
+                            data-changes="<%= player.name_change_count || 0 %>"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#editNameModal">
+                            Edit Name
+                          </button>
+                        <% } else { %>
+                          <button class="btn btn-sm btn-secondary" disabled>Name Locked</button>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else if (search) { %>
+            <div class="alert alert-info">
+              <p class="mb-0">No players found matching your search criteria.</p>
+            </div>
+          <% } else { %>
+            <div class="alert alert-info">
+              <p class="mb-0">Search for a player by name to change their name.</p>
+            </div>
+          <% } %>
+          
+          <!-- QR Scanner -->
+          <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+              <h5 class="mb-0">Scan Player QR Code</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div id="qr-reader-container" class="mb-3" style="width: 100%; height: 300px; border: 1px solid #ddd; position: relative;">
+                    <!-- Scanner will be inserted here -->
+                  </div>
+                  
+                  <div class="d-grid gap-2">
+                    <button id="start-scan" class="btn btn-primary">Start Scanner</button>
+                    <div id="scanner-controls" class="d-none">
+                      <button id="stop-scan" class="btn btn-danger">Stop Scanner</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <div id="scan-result" class="mt-3">
+                    <div class="alert alert-info">
+                      <p class="mb-0">Scan a player's QR code to quickly find their profile.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Name Modal -->
+<div class="modal fade" id="editNameModal" tabindex="-1" aria-labelledby="editNameModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editNameModalLabel">Edit Player Name</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-name-form">
+          <input type="hidden" id="player-id" name="playerId">
+          
+          <div class="mb-3">
+            <label for="current-name" class="form-label">Current Name</label>
+            <input type="text" class="form-control" id="current-name" readonly>
+          </div>
+          
+          <div class="mb-3">
+            <label for="new-name" class="form-label">New Name</label>
+            <input type="text" class="form-control" id="new-name" name="name" required>
+          </div>
+          
+          <div class="alert alert-warning">
+            <p class="mb-0"><strong>Important:</strong> Player names can be changed up to 2 times. <span id="changes-remaining"></span></p>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-name">Save Name</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include HTML5-QRCode library -->
+<script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Edit name button click handler
+    document.querySelectorAll('.edit-name-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const playerId = this.dataset.id;
+        const playerName = this.dataset.name;
+        const nameChanges = parseInt(this.dataset.changes || '0');
+        const remainingChanges = 2 - nameChanges;
+        
+        document.getElementById('player-id').value = playerId;
+        document.getElementById('current-name').value = playerName;
+        document.getElementById('new-name').value = playerName;
+        document.getElementById('changes-remaining').textContent = 
+          remainingChanges === 1 ? 'This is the last name change allowed.' : 'After this change, you will have 1 more change available.';
+      });
+    });
+    
+    // Submit name change
+    document.getElementById('submit-name').addEventListener('click', function() {
+      const playerId = document.getElementById('player-id').value;
+      const name = document.getElementById('new-name').value;
+      
+      if (!name) {
+        alert('Please enter a name');
+        return;
+      }
+      
+      // Show loading indicator
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+      
+      // Send name update to server
+      fetch('/staff/name-change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ playerId, name })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Close modal
+          bootstrap.Modal.getInstance(document.getElementById('editNameModal')).hide();
+          
+          // Show success message
+          alert(`Player name updated successfully. ${data.remainingChanges > 0 ? data.remainingChanges + ' name changes remaining.' : 'No more name changes allowed.'}`);
+          
+          // Reload page to show updated data
+          window.location.reload();
+        } else {
+          // Show error message
+          alert(`Error: ${data.message}`);
+        }
+        
+        // Reset button
+        this.disabled = false;
+        this.innerHTML = 'Save Name';
+      })
+      .catch(error => {
+        console.error('Error updating name:', error);
+        alert('Error updating name. Please try again.');
+        this.disabled = false;
+        this.innerHTML = 'Save Name';
+      });
+    });
+    
+    // QR Code Scanner
+    let html5QrCode = null;
+    const qrContainer = document.getElementById('qr-reader-container');
+    
+    // Start scanning button
+    document.getElementById('start-scan').addEventListener('click', function() {
+      // Clean up any existing scanner
+      if (html5QrCode) {
+        try {
+          html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (e) {
+          console.error("Error stopping scanner:", e);
+        }
+        html5QrCode = null;
+      }
+      
+      // Clear the container
+      qrContainer.innerHTML = '';
+      
+      // Create a new scanner div
+      const scannerDiv = document.createElement('div');
+      scannerDiv.id = 'qr-scanner';
+      scannerDiv.style.width = '100%';
+      scannerDiv.style.height = '100%';
+      qrContainer.appendChild(scannerDiv);
+      
+      // Create new scanner instance
+      html5QrCode = new Html5Qrcode("qr-scanner");
+      
+      // Start scanning
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      )
+      .then(() => {
+        document.getElementById('scanner-controls').classList.remove('d-none');
+        this.classList.add('d-none');
+      })
+      .catch(err => {
+        console.error('Failed to start scanner:', err);
+        alert('Failed to start camera. Please check camera permissions.');
+      });
+    });
+    
+    // Stop scanning button
+    document.getElementById('stop-scan').addEventListener('click', function() {
+      stopScanner();
+    });
+    
+    // QR scan success handler
+    function onScanSuccess(qrCodeMessage) {
+      // Stop scanning
+      stopScanner();
+      
+      // Process QR code data
+      processQRCode(qrCodeMessage);
+    }
+    
+    // QR scan error handler
+    function onScanError(error) {
+      console.warn(`QR scan error: ${error}`);
+    }
+    
+    // Helper function to stop scanner
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop()
+          .then(() => {
+            html5QrCode.clear();
+            html5QrCode = null;
+            qrContainer.innerHTML = '';
+            document.getElementById('scanner-controls').classList.add('d-none');
+            document.getElementById('start-scan').classList.remove('d-none');
+          })
+          .catch(err => {
+            console.error('Failed to stop scanner:', err);
+          });
+      }
+    }
+    
+    // Process QR code data
+    function processQRCode(qrData) {
+      // Show loading indicator
+      document.getElementById('scan-result').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+      
+      // Send QR data to server
+      fetch('/staff/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ qrData })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const player = data.player;
+          const nameChanges = player.name_change_count || 0;
+          const remainingChanges = 2 - nameChanges;
+          
+          // Display player info
+          document.getElementById('scan-result').innerHTML = `
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">${player.name}</h5>
+                <p class="card-text">Phone: ${player.phone}</p>
+                <p class="card-text">Email: ${player.email || '-'}</p>
+                <p class="card-text">District: ${player.residence}</p>
+                <p class="card-text">Name Changes: ${nameChanges} / 2</p>
+                <p class="card-text">Status: ${nameChanges >= 2 ? 
+                  '<span class="badge bg-danger">Locked</span>' : 
+                  '<span class="badge bg-success">Editable</span>'}</p>
+                
+                ${nameChanges < 2 ? `
+                  <button class="btn btn-primary edit-name-btn" 
+                    data-id="${player.id}" 
+                    data-name="${player.name}"
+                    data-changes="${nameChanges}"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#editNameModal">
+                    Edit Name
+                  </button>
+                ` : `
+                  <button class="btn btn-secondary" disabled>Name Locked</button>
+                `}
+              </div>
+            </div>
+          `;
+          
+          // Add event listener to the new button
+          const newButton = document.querySelector('#scan-result .edit-name-btn');
+          if (newButton) {
+            newButton.addEventListener('click', function() {
+              const playerId = this.dataset.id;
+              const playerName = this.dataset.name;
+              const nameChanges = parseInt(this.dataset.changes || '0');
+              const remainingChanges = 2 - nameChanges;
+              
+              document.getElementById('player-id').value = playerId;
+              document.getElementById('current-name').value = playerName;
+              document.getElementById('new-name').value = playerName;
+              document.getElementById('changes-remaining').textContent = 
+                remainingChanges === 1 ? 'This is the last name change allowed.' : 'After this change, you will have 1 more change available.';
+            });
+          }
+        } else {
+          // Display error
+          document.getElementById('scan-result').innerHTML = `
+            <div class="alert alert-danger">${data.message}</div>
+          `;
+        }
+      })
+      .catch(error => {
+        console.error('Error processing QR code:', error);
+        document.getElementById('scan-result').innerHTML = `
+          <div class="alert alert-danger">Error processing QR code. Please try again.</div>
+        `;
+      });
+    }
+  });
+</script>

@@ -1,0 +1,112 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">About Striker Splash</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-12">
+              <h4>The Ultimate Football Challenge</h4>
+              <p>
+                Striker Splash is Belize's premier football skills competition, bringing together players of all ages and skill levels to test their accuracy, speed, and technique.
+              </p>
+              <p>
+                Founded in 2023, our competition has quickly become a favorite among football enthusiasts across the country, offering a fun and competitive environment for players to showcase their talents.
+              </p>
+            </div>
+          </div>
+          
+          <h4 class="mt-4">How It Works</h4>
+          <p>
+            Participants purchase "kicks" for $1 BZD each, with a minimum of 5 kicks required to enter the competition. Each 5-kick session is recorded on our leaderboard, helping players climb the rankings with every successful attempt.
+          </p>
+          
+          <div class="row mt-4">
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-bullseye" style="font-size: 3rem; color: #dc3545;"></i>
+                  <h5 class="mt-3">Accuracy Challenge</h5>
+                  <p>Test your precision by hitting targets in the goal. Points are awarded based on difficulty and placement.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-lightning" style="font-size: 3rem; color: #fd7e14;"></i>
+                  <h5 class="mt-3">Speed Challenge</h5>
+                  <p>How fast can you score? Players compete to record the fastest successful kicks.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-trophy" style="font-size: 3rem; color: #ffc107;"></i>
+                  <h5 class="mt-3">Juggling Challenge</h5>
+                  <p>Show off your ball control skills by keeping the ball in the air as long as possible.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upcoming Events Section -->
+          <h4 class="mt-5">Upcoming Events</h4>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Event</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (events && events.length > 0) { %>
+                  <% events.forEach(event => { %>
+                    <tr>
+                      <td><%= new Date(event.event_date).toLocaleDateString() %></td>
+                      <td><%= event.name %></td>
+                      <td><%= event.location %></td>
+                      <td>
+                        <% if (new Date(event.event_date) > new Date()) { %>
+                          <span class="badge bg-primary">Upcoming</span>
+                        <% } else { %>
+                          <span class="badge bg-success">In Progress</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center">No upcoming events scheduled at this time. Check back soon!</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+          
+          <h4 class="mt-4">Our Mission</h4>
+          <p>
+            At Striker Splash, our mission is to promote football skills development while creating a fun, competitive environment for players of all ages. We believe in:
+          </p>
+          <ul>
+            <li>Encouraging healthy competition</li>
+            <li>Developing technical football skills</li>
+            <li>Creating community events that bring people together</li>
+            <li>Providing a platform for players to showcase their talents</li>
+          </ul>
+          
+          <h4 class="mt-4">Join Us</h4>
+          <p>
+            Whether you're a seasoned footballer or just looking for a fun challenge, Striker Splash welcomes players of all skill levels. Check our events calendar for upcoming competitions in your area!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

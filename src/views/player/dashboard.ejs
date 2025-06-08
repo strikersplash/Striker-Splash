@@ -1,0 +1,161 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Player Dashboard</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="card mb-4">
+                <div class="card-body text-center">
+                  <% if (player.photo_path) { %>
+                    <img src="<%= player.photo_path %>" alt="Profile Photo" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                  <% } else { %>
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
+                      <i class="bi bi-person-fill" style="font-size: 5rem;"></i>
+                    </div>
+                  <% } %>
+                  <h4><%= player.name %></h4>
+                  <p class="text-muted"><%= player.phone %><br><%= player.email || '' %></p>
+                  <p><strong>District:</strong> <%= player.residence %></p>
+                  <p><strong>Age Group:</strong> <%= player.age_group %></p>
+                  <a href="/player/edit-profile" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+              </div>
+              
+              <!-- QR Code Card -->
+              <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0">Your QR Code</h5>
+                </div>
+                <div class="card-body text-center">
+                  <% if (player.qr_code_path) { %>
+                    <img src="<%= player.qr_code_path %>" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
+                  <% } else { %>
+                    <img src="/qr/<%= player.id %>" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
+                  <% } %>
+                  <p class="mb-2">Show this QR code to the referee to log your goals.</p>
+                  <a href="/player/download-qr" class="btn btn-outline-success">Download QR Code</a>
+                </div>
+              </div>
+              
+              <!-- Team Card -->
+              <div class="card">
+                <div class="card-header bg-info text-white">
+                  <h5 class="mb-0">Team</h5>
+                </div>
+                <div class="card-body" id="team-card-body">
+                  <div class="d-grid gap-2">
+                    <a href="/teams/create" class="btn btn-primary mb-2">Create a Team</a>
+                    <a href="/teams/browse" class="btn btn-outline-secondary">Browse All Teams</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-8">
+              <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0">Your Stats</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-4 mb-3">
+                      <div class="card text-center">
+                        <div class="card-body">
+                          <h5 class="card-title">Total Goals</h5>
+                          <h2><%= stats.total_goals || 0 %></h2>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <div class="card text-center">
+                        <div class="card-body">
+                          <h5 class="card-title">Total Attempts</h5>
+                          <h2><%= stats.total_attempts || 0 %></h2>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <div class="card text-center">
+                        <div class="card-body">
+                          <h5 class="card-title">Accuracy</h5>
+                          <h2><%= stats.total_attempts ? ((stats.total_goals / stats.total_attempts) * 100).toFixed(1) : 0 %>%</h2>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-3">
+                    <h5>Kicks Balance: <span class="badge bg-primary"><%= player.kicks_balance || 0 %></span></h5>
+                    <p>Visit a cashier to purchase more kicks.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <div class="card-header bg-warning text-dark">
+                  <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Goals</th>
+                          <th>Location</th>
+                          <th>Referee</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% if (typeof recentActivity !== 'undefined' && recentActivity && recentActivity.length > 0) { %>
+                          <% recentActivity.forEach(activity => { %>
+                            <tr>
+                              <td><%= new Date(activity.timestamp).toLocaleDateString() %></td>
+                              <td><%= activity.goals %></td>
+                              <td><%= activity.location %></td>
+                              <td><%= activity.staff_name || 'Unknown' %></td>
+                            </tr>
+                          <% }); %>
+                        <% } else { %>
+                          <tr>
+                            <td colspan="4" class="text-center">No recent activity</td>
+                          </tr>
+                        <% } %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check if player is in a team
+    fetch('/teams/check-membership/<%= player.id %>')
+      .then(response => response.json())
+      .then(data => {
+        if (data.team) {
+          // Update team card if player is in a team
+          document.getElementById('team-card-body').innerHTML = `
+            <h5>${data.team.name}</h5>
+            <p>You are a member of this team.</p>
+            <div class="d-grid gap-2">
+              <a href="/teams/dashboard/${data.team.id}" class="btn btn-primary mb-2">View Team Dashboard</a>
+              <a href="/teams/browse" class="btn btn-outline-secondary">Browse All Teams</a>
+            </div>
+          `;
+        }
+      })
+      .catch(error => console.error('Error checking team membership:', error));
+  });
+</script>

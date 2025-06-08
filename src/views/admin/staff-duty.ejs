@@ -1,0 +1,295 @@
+<div class="container mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/staff-duty">
+              <i class="bi bi-calendar-check"></i> Staff on Duty
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-ticket-perforated"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/reports">
+              <i class="bi bi-graph-up"></i> Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/settings">
+              <i class="bi bi-gear"></i> Settings
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Staff on Duty</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="input-group">
+            <input type="date" class="form-control" id="duty-date" value="<%= today %>">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="load-date">
+              <i class="bi bi-calendar"></i> Load Date
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff on Duty -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Cashier</h5>
+            </div>
+            <div class="card-body">
+              <% 
+                const cashier = staffOnDuty.find(s => s.role === 'cashier');
+                if (cashier) { 
+              %>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 class="mb-0"><%= cashier.name %></h5>
+                    <small class="text-muted"><%= cashier.username %></small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger remove-staff" data-id="<%= cashier.id %>">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              <% } else { %>
+                <div class="text-center">
+                  <p class="mb-2">No cashier assigned</p>
+                  <button class="btn btn-sm btn-primary assign-staff" data-role="cashier">
+                    <i class="bi bi-plus-circle"></i> Assign Cashier
+                  </button>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-success text-white">
+              <h5 class="mb-0">Referee</h5>
+            </div>
+            <div class="card-body">
+              <% 
+                const referee = staffOnDuty.find(s => s.role === 'referee');
+                if (referee) { 
+              %>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 class="mb-0"><%= referee.name %></h5>
+                    <small class="text-muted"><%= referee.username %></small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger remove-staff" data-id="<%= referee.id %>">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              <% } else { %>
+                <div class="text-center">
+                  <p class="mb-2">No referee assigned</p>
+                  <button class="btn btn-sm btn-success assign-staff" data-role="referee">
+                    <i class="bi bi-plus-circle"></i> Assign Referee
+                  </button>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-info text-white">
+              <h5 class="mb-0">Attendant</h5>
+            </div>
+            <div class="card-body">
+              <% 
+                const attendant = staffOnDuty.find(s => s.role === 'attendant');
+                if (attendant) { 
+              %>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 class="mb-0"><%= attendant.name %></h5>
+                    <small class="text-muted"><%= attendant.username %></small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger remove-staff" data-id="<%= attendant.id %>">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              <% } else { %>
+                <div class="text-center">
+                  <p class="mb-2">No attendant assigned</p>
+                  <button class="btn btn-sm btn-info assign-staff" data-role="attendant">
+                    <i class="bi bi-plus-circle"></i> Assign Attendant
+                  </button>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff List -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Available Staff</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (staffMembers && staffMembers.length > 0) { %>
+                  <% staffMembers.forEach(staff => { %>
+                    <tr>
+                      <td><%= staff.name %></td>
+                      <td><%= staff.username %></td>
+                      <td>
+                        <% if (staff.role === 'admin') { %>
+                          <span class="badge bg-danger">Admin</span>
+                        <% } else { %>
+                          <span class="badge bg-primary">Staff</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div class="btn-group">
+                          <button class="btn btn-sm btn-outline-primary assign-staff-btn" data-id="<%= staff.id %>" data-name="<%= staff.name %>" data-role="cashier">
+                            Cashier
+                          </button>
+                          <button class="btn btn-sm btn-outline-success assign-staff-btn" data-id="<%= staff.id %>" data-name="<%= staff.name %>" data-role="referee">
+                            Referee
+                          </button>
+                          <button class="btn btn-sm btn-outline-info assign-staff-btn" data-id="<%= staff.id %>" data-name="<%= staff.name %>" data-role="attendant">
+                            Attendant
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center">No staff members found</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load date button
+    document.getElementById('load-date').addEventListener('click', function() {
+      const date = document.getElementById('duty-date').value;
+      window.location.href = `/admin/staff-duty?date=${date}`;
+    });
+    
+    // Assign staff buttons
+    document.querySelectorAll('.assign-staff-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const staffId = this.dataset.id;
+        const staffName = this.dataset.name;
+        const role = this.dataset.role;
+        const date = document.getElementById('duty-date').value;
+        
+        if (confirm(`Assign ${staffName} as ${role} for ${date}?`)) {
+          assignStaff(staffId, role, date);
+        }
+      });
+    });
+    
+    // Assign staff buttons (from cards)
+    document.querySelectorAll('.assign-staff').forEach(button => {
+      button.addEventListener('click', function() {
+        const role = this.dataset.role;
+        const date = document.getElementById('duty-date').value;
+        
+        // Show staff selection modal
+        alert(`Please use the staff list below to assign a ${role} for ${date}.`);
+      });
+    });
+    
+    // Remove staff buttons
+    document.querySelectorAll('.remove-staff').forEach(button => {
+      button.addEventListener('click', function() {
+        const id = this.dataset.id;
+        
+        if (confirm('Are you sure you want to remove this staff member from duty?')) {
+          removeStaff(id);
+        }
+      });
+    });
+    
+    // Assign staff function
+    function assignStaff(staffId, role, date) {
+      fetch('/admin/staff-duty/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ staffId, role, date })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(`Error: ${data.message}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error assigning staff:', error);
+        alert('Error assigning staff. Please try again.');
+      });
+    }
+    
+    // Remove staff function
+    function removeStaff(id) {
+      fetch(`/admin/staff-duty/${id}`, {
+        method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(`Error: ${data.message}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error removing staff:', error);
+        alert('Error removing staff. Please try again.');
+      });
+    }
+  });
+</script>

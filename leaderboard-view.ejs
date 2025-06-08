@@ -1,0 +1,338 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Striker Splash Leaderboard</h3>
+        </div>
+        <div class="card-body">
+          <!-- Filters -->
+          <div class="row mb-4">
+            <div class="col-md-2">
+              <label for="gender-filter" class="form-label">Gender</label>
+              <select class="form-select" id="gender-filter">
+                <option value="all" <%= filters.gender === 'all' ? 'selected' : '' %>>All</option>
+                <option value="male" <%= filters.gender === 'male' ? 'selected' : '' %>>Men</option>
+                <option value="female" <%= filters.gender === 'female' ? 'selected' : '' %>>Women</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label for="age-filter" class="form-label">Age Bracket</label>
+              <select class="form-select" id="age-filter">
+                <option value="all" <%= filters.ageGroup === 'all' ? 'selected' : '' %>>All Ages</option>
+                <% ageBrackets.forEach(bracket => { %>
+                  <option value="<%= bracket.name %>" <%= filters.ageGroup === bracket.name ? 'selected' : '' %>><%= bracket.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label for="district-filter" class="form-label">District</label>
+              <input type="text" class="form-control" id="district-filter" placeholder="Filter by district" value="<%= filters.residence !== 'all' ? filters.residence : '' %>">
+            </div>
+            <div class="col-md-2">
+              <label for="competition-filter" class="form-label">Competition Type</label>
+              <select class="form-select" id="competition-filter">
+                <option value="all" <%= filters.competitionType === 'all' ? 'selected' : '' %>>All Types</option>
+                <% competitionTypes.forEach(type => { %>
+                  <option value="<%= type.name %>" <%= filters.competitionType === type.name ? 'selected' : '' %>><%= type.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label for="time-filter" class="form-label">Time Range</label>
+              <select class="form-select" id="time-filter">
+                <option value="all" <%= filters.timeRange === 'all' ? 'selected' : '' %>>All Time</option>
+                <option value="day" <%= filters.timeRange === 'day' ? 'selected' : '' %>>Today</option>
+                <option value="week" <%= filters.timeRange === 'week' ? 'selected' : '' %>>This Week</option>
+                <option value="month" <%= filters.timeRange === 'month' ? 'selected' : '' %>>This Month</option>
+                <option value="year" <%= filters.timeRange === 'year' ? 'selected' : '' %>>This Year</option>
+              </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="button" class="btn btn-primary w-100" id="apply-filters">
+                <i class="bi bi-funnel"></i> Apply Filters
+              </button>
+            </div>
+          </div>
+          
+          <!-- Reset Filters Button -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <button type="button" class="btn btn-outline-secondary" id="reset-filters">
+                <i class="bi bi-x-circle"></i> Reset Filters
+              </button>
+            </div>
+          </div>
+          
+          <!-- Leaderboard Tabs -->
+          <ul class="nav nav-tabs" id="leaderboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="accuracy-tab" data-bs-toggle="tab" data-bs-target="#accuracy" type="button" role="tab" aria-controls="accuracy" aria-selected="true">Accuracy</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="speed-tab" data-bs-toggle="tab" data-bs-target="#speed" type="button" role="tab" aria-controls="speed" aria-selected="false">Speed</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="juggling-tab" data-bs-toggle="tab" data-bs-target="#juggling" type="button" role="tab" aria-controls="juggling" aria-selected="false">Juggling</button>
+            </li>
+          </ul>
+          
+          <!-- Tab Content -->
+          <div class="tab-content mt-3" id="leaderboardTabContent">
+            <!-- Accuracy Tab -->
+            <div class="tab-pane fade show active" id="accuracy" role="tabpanel" aria-labelledby="accuracy-tab">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Name</th>
+                      <th>District</th>
+                      <th>Gender</th>
+                      <th>Age Group</th>
+                      <th>Goals</th>
+                      <th>Attempts</th>
+                      <th>Referees</th>
+                      <th>Percentile</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accuracy-leaderboard">
+                    <% 
+                      const accuracyLeaderboard = leaderboard.filter(player => 
+                        !filters.competitionType || filters.competitionType === 'all' || filters.competitionType === 'accuracy'
+                      );
+                      
+                      if (accuracyLeaderboard.length > 0) {
+                        accuracyLeaderboard.forEach((player, index) => { 
+                    %>
+                      <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= player.name %></td>
+                        <td><%= player.residence %></td>
+                        <td><%= player.gender || 'Unknown' %></td>
+                        <td><%= player.age_group %></td>
+                        <td><%= player.total_goals %></td>
+                        <td><%= player.total_attempts %></td>
+                        <td><small><%= player.referees || 'Unknown' %></small></td>
+                        <td>
+                          <% if (player.percentile <= 10) { %>
+                            <span class="badge bg-danger">Top 10%</span>
+                          <% } else if (player.percentile <= 25) { %>
+                            <span class="badge bg-warning">Top 25%</span>
+                          <% } else if (player.percentile <= 50) { %>
+                            <span class="badge bg-info">Top 50%</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }); } else { %>
+                      <tr>
+                        <td colspan="9" class="text-center">No data available</td>
+                      </tr>
+                    <% } %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Speed Tab -->
+            <div class="tab-pane fade" id="speed" role="tabpanel" aria-labelledby="speed-tab">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Name</th>
+                      <th>District</th>
+                      <th>Gender</th>
+                      <th>Age Group</th>
+                      <th>Goals</th>
+                      <th>Attempts</th>
+                      <th>Referees</th>
+                      <th>Percentile</th>
+                    </tr>
+                  </thead>
+                  <tbody id="speed-leaderboard">
+                    <% 
+                      const speedLeaderboard = leaderboard.filter(player => 
+                        filters.competitionType === 'speed'
+                      );
+                      
+                      if (speedLeaderboard.length > 0) {
+                        speedLeaderboard.forEach((player, index) => { 
+                    %>
+                      <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= player.name %></td>
+                        <td><%= player.residence %></td>
+                        <td><%= player.gender || 'Unknown' %></td>
+                        <td><%= player.age_group %></td>
+                        <td><%= player.total_goals %></td>
+                        <td><%= player.total_attempts %></td>
+                        <td><small><%= player.referees || 'Unknown' %></small></td>
+                        <td>
+                          <% if (player.percentile <= 10) { %>
+                            <span class="badge bg-danger">Top 10%</span>
+                          <% } else if (player.percentile <= 25) { %>
+                            <span class="badge bg-warning">Top 25%</span>
+                          <% } else if (player.percentile <= 50) { %>
+                            <span class="badge bg-info">Top 50%</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }); } else { %>
+                      <tr>
+                        <td colspan="9" class="text-center">No data available</td>
+                      </tr>
+                    <% } %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Juggling Tab -->
+            <div class="tab-pane fade" id="juggling" role="tabpanel" aria-labelledby="juggling-tab">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Name</th>
+                      <th>District</th>
+                      <th>Gender</th>
+                      <th>Age Group</th>
+                      <th>Goals</th>
+                      <th>Attempts</th>
+                      <th>Referees</th>
+                      <th>Percentile</th>
+                    </tr>
+                  </thead>
+                  <tbody id="juggling-leaderboard">
+                    <% 
+                      const jugglingLeaderboard = leaderboard.filter(player => 
+                        filters.competitionType === 'juggling'
+                      );
+                      
+                      if (jugglingLeaderboard.length > 0) {
+                        jugglingLeaderboard.forEach((player, index) => { 
+                    %>
+                      <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= player.name %></td>
+                        <td><%= player.residence %></td>
+                        <td><%= player.gender || 'Unknown' %></td>
+                        <td><%= player.age_group %></td>
+                        <td><%= player.total_goals %></td>
+                        <td><%= player.total_attempts %></td>
+                        <td><small><%= player.referees || 'Unknown' %></small></td>
+                        <td>
+                          <% if (player.percentile <= 10) { %>
+                            <span class="badge bg-danger">Top 10%</span>
+                          <% } else if (player.percentile <= 25) { %>
+                            <span class="badge bg-warning">Top 25%</span>
+                          <% } else if (player.percentile <= 50) { %>
+                            <span class="badge bg-info">Top 50%</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }); } else { %>
+                      <tr>
+                        <td colspan="9" class="text-center">No data available</td>
+                      </tr>
+                    <% } %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Staff on Duty -->
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">Today's Staff on Duty</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <% if (staffOnDuty && staffOnDuty.length > 0) { %>
+              <% staffOnDuty.forEach(staff => { %>
+                <div class="col-md-4 mb-3">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h5 class="card-title"><%= staff.name %></h5>
+                      <p class="card-text">
+                        <span class="badge 
+                          <%= staff.role === 'cashier' ? 'bg-primary' : 
+                             staff.role === 'referee' ? 'bg-success' : 
+                             'bg-info' %>">
+                          <%= staff.role.charAt(0).toUpperCase() + staff.role.slice(1) %>
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div class="col-12">
+                <p class="text-center">No staff on duty today</p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Apply filters button
+    document.getElementById('apply-filters').addEventListener('click', function() {
+      const gender = document.getElementById('gender-filter').value;
+      const ageGroup = document.getElementById('age-filter').value;
+      const residence = document.getElementById('district-filter').value;
+      const competitionType = document.getElementById('competition-filter').value;
+      const timeRange = document.getElementById('time-filter').value;
+      
+      // Build query string
+      let queryParams = [];
+      if (gender !== 'all') queryParams.push(`gender=${gender}`);
+      if (ageGroup !== 'all') queryParams.push(`ageGroup=${ageGroup}`);
+      if (residence) queryParams.push(`residence=${residence}`);
+      if (competitionType !== 'all') queryParams.push(`competitionType=${competitionType}`);
+      if (timeRange !== 'all') queryParams.push(`timeRange=${timeRange}`);
+      
+      // Redirect with filters
+      window.location.href = `/leaderboard?${queryParams.join('&')}`;
+    });
+    
+    // Reset filters button
+    document.getElementById('reset-filters').addEventListener('click', function() {
+      window.location.href = '/leaderboard';
+    });
+    
+    // Tab change handler
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+      tab.addEventListener('shown.bs.tab', function(event) {
+        const competitionType = event.target.id.replace('-tab', '');
+        document.getElementById('competition-filter').value = competitionType;
+      });
+    });
+    
+    // Set active tab based on competition filter
+    const competitionFilter = document.getElementById('competition-filter').value;
+    if (competitionFilter !== 'all') {
+      const tabToActivate = document.getElementById(`${competitionFilter}-tab`);
+      if (tabToActivate) {
+        const tab = new bootstrap.Tab(tabToActivate);
+        tab.show();
+      }
+    }
+  });
+</script><!-- TEST CHANGE Wed Jun  4 04:48:33 PM CST 2025 -->

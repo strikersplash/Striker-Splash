@@ -1,0 +1,194 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff-duty">
+              <i class="bi bi-calendar-check"></i> Staff on Duty
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/reports">
+              <i class="bi bi-graph-up"></i> Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/settings">
+              <i class="bi bi-gear"></i> Settings
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Admin Dashboard</h1>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3 mb-4">
+          <div class="card text-white bg-primary">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 class="card-title">Total Players</h5>
+                  <h2 class="mb-0"><%= stats.totalPlayers %></h2>
+                </div>
+                <i class="bi bi-people-fill fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="card text-white bg-success">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 class="card-title">Today's Kicks</h5>
+                  <h2 class="mb-0"><%= stats.todayKicks %></h2>
+                </div>
+                <i class="bi bi-calendar-check fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="card text-white bg-info">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 class="card-title">Total Revenue</h5>
+                  <h2 class="mb-0">$<%= stats.totalRevenue %></h2>
+                </div>
+                <i class="bi bi-cash fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="card text-white bg-warning">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 class="card-title">Queue Size</h5>
+                  <h2 class="mb-0"><%= stats.queueSize %></h2>
+                </div>
+                <i class="bi bi-list-ol fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Activity -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Today's Activity</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Player</th>
+                  <th>Activity</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (recentActivity && recentActivity.length > 0) { %>
+                  <% recentActivity.forEach(activity => { %>
+                    <tr>
+                      <td><%= new Date(activity.timestamp).toLocaleTimeString() %></td>
+                      <td><%= activity.player_name %></td>
+                      <td><%= activity.activity_type %></td>
+                      <td><%= activity.details %></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center">No activity recorded today</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Events -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Upcoming Events</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Event</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (upcomingEvents && upcomingEvents.length > 0) { %>
+                  <% upcomingEvents.forEach(event => { %>
+                    <tr>
+                      <td><%= new Date(event.event_date).toLocaleDateString() %></td>
+                      <td><%= event.name %></td>
+                      <td><%= event.location %></td>
+                      <td>
+                        <% if (new Date(event.event_date) > new Date()) { %>
+                          <span class="badge bg-primary">Upcoming</span>
+                        <% } else { %>
+                          <span class="badge bg-success">In Progress</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center">No upcoming events</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

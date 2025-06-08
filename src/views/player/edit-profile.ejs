@@ -1,0 +1,55 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Edit Profile</h3>
+        </div>
+        <div class="card-body">
+          <form action="/player/edit-profile" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="name" name="name" value="<%= player.name %>" readonly>
+              <div class="form-text text-danger">Names can only be changed by a referee or admin.</div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="phone" class="form-label">Phone Number</label>
+              <input type="tel" class="form-control" id="phone" name="phone" value="<%= player.phone %>" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email" value="<%= player.email || '' %>">
+            </div>
+            
+            <div class="mb-3">
+              <label for="residence" class="form-label">District</label>
+              <input type="text" class="form-control" id="residence" name="residence" value="<%= player.residence %>" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="photo" class="form-label">Profile Photo</label>
+              <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+              <% if (player.photo_path) { %>
+                <div class="mt-2">
+                  <img src="<%= player.photo_path %>" alt="Current Profile Photo" class="img-thumbnail" style="max-height: 100px;">
+                </div>
+              <% } %>
+            </div>
+            
+            <div class="mb-3">
+              <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+              <input type="password" class="form-control" id="password" name="password">
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Update Profile</button>
+              <a href="/player/dashboard" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

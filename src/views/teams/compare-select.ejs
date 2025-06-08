@@ -1,0 +1,85 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Compare Teams</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-4">Select two teams to compare their performance.</p>
+          
+          <form action="/teams/compare" method="GET">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="team1" class="form-label">First Team</label>
+                  <select class="form-select" id="team1" name="team1" required>
+                    <option value="" selected disabled>Select a team</option>
+                    <% teams.forEach(team => { %>
+                      <option value="<%= team.id %>"><%= team.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="team2" class="form-label">Second Team</label>
+                  <select class="form-select" id="team2" name="team2" required>
+                    <option value="" selected disabled>Select a team</option>
+                    <% teams.forEach(team => { %>
+                      <option value="<%= team.id %>"><%= team.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Compare Teams</button>
+              <a href="/teams/browse" class="btn btn-outline-secondary">Back to Teams</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Prevent selecting the same team twice
+    document.getElementById('team1').addEventListener('change', function() {
+      const team1Value = this.value;
+      const team2Select = document.getElementById('team2');
+      
+      Array.from(team2Select.options).forEach(option => {
+        if (option.value === team1Value) {
+          option.disabled = true;
+        } else if (option.value !== '') {
+          option.disabled = false;
+        }
+      });
+      
+      if (team2Select.value === team1Value) {
+        team2Select.value = '';
+      }
+    });
+    
+    document.getElementById('team2').addEventListener('change', function() {
+      const team2Value = this.value;
+      const team1Select = document.getElementById('team1');
+      
+      Array.from(team1Select.options).forEach(option => {
+        if (option.value === team2Value) {
+          option.disabled = true;
+        } else if (option.value !== '') {
+          option.disabled = false;
+        }
+      });
+      
+      if (team1Select.value === team2Value) {
+        team1Select.value = '';
+      }
+    });
+  });
+</script>

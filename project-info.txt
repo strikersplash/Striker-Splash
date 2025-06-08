@@ -1,0 +1,274 @@
+striker-splash/
+│
+├── .env                      # Environment variables (e.g., DB URL)
+├── .gitignore                # Ignores node_modules, .env, etc.
+├── package.json              # NPM dependencies and scripts
+├── tsconfig.json             # TypeScript config
+├── src/
+│   ├── app.ts                # Express app configuration
+│   ├── server.ts             # Entry point to start server
+│
+│   ├── config/
+│   │   └── db.ts             # Database connection setup
+│
+│   ├── controllers/
+│   │   ├── auth/
+│   │   │   └── loginController.ts         # Handles login/logout
+│   │   ├── player/
+│   │   │   ├── transactionController.ts   # Payment + QR + confirmation
+│   │   │   └── profileController.ts       # Player profile info
+│   │   ├── staff/
+│   │   │   └── interfaceController.ts     # Scan & log goal
+│   │   ├── public/
+│   │   │   └── homeController.ts          # Scrollable home page sections
+│   │   └── system/
+│   │       └── errorController.ts         # Unified 404/500 handler
+│
+│   ├── routes/
+│   │   ├── auth/
+│   │   │   └── index.ts                   # Login/logout routes
+│   │   ├── player/
+│   │   │   └── index.ts                   # Dashboard, QR, payment
+│   │   ├── staff/
+│   │   │   └── index.ts                   # Worker route to log hits
+│   │   ├── public/
+│   │   │   └── index.ts                   # Homepage and leaderboard
+│   │   └── system/
+│   │       └── error.ts                   # Catch-all errors
+│
+│   ├── models/
+│   │   ├── Player.ts                      # Player info + QR code
+│   │   ├── Shot.ts                        # Payment logs
+│   │   ├── GameStat.ts                    # Goal logs
+│   │   └── Staff.ts                       # Staff login model
+│
+│   ├── views/
+│   │   ├── public/
+│   │   │   └── home.ejs                   # Unified homepage
+│   │   ├── auth/
+│   │   │   ├── login.ejs                  # Login page
+│   │   │   └── auth-flow.ejs             # Forgot + Reset in one screen
+│   │   ├── player/
+│   │   │   ├── dashboard.ejs             # View QR, stats
+│   │   │   └── transaction.ejs           # Pay + QR + confirmation
+│   │   ├── staff/
+│   │   │   └── interface.ejs             # Log hits (scan QR)
+│   │   ├── admin/
+│   │   │   └── dashboard.ejs             # Optional: Admin panel
+│   │   ├── system/
+│   │   │   └── error.ejs                 # 404/500/etc.
+│   │   └── partials/
+│   │       ├── navbar.ejs
+│   │       └── footer.ejs
+│
+│   ├── public/
+│   │   ├── css/
+│   │   │   └── style.css                 # Main stylesheet
+│   │   ├── js/
+│   │   │   └── main.js                   # Frontend scripts
+│   │   └── images/
+│   │       └── README.txt                # Store mascot/logo/etc.
+
+
+🧩 What is Striker Splash?
+
+Striker Splash is a travelling, football-themed dunk tank attraction. Players:
+
+    Buy shots
+
+    Are assigned a QR code
+
+    Get their goals logged
+
+    Compete on local and national leaderboards
+
+The system includes:
+
+    A public site (homepage, leaderboard, how-to)
+
+    A player portal (registration, QR, payment)
+
+    A staff interface (verify player, log goals)
+
+    A simple admin interface (optional)
+
+    QR-based gameplay tracking
+
+    Real-time leaderboard updates
+
+📋 Phase-by-Phase Breakdown
+
+Each step contains frontend, backend, and error handling expectations.
+✅ Phase 1: Branding & Setup (Week 1)
+Goals:
+
+    Logo, mascot (Otto), and palette created
+
+    Domain + hosting setup (Render, Neon, etc.)
+
+    GitHub repo initialized with starter folder structure
+
+Deliverables:
+
+    public/images/otto-logo.png
+
+    src/public/css/style.css
+
+    Basic Express + TypeScript + EJS project scaffolded
+
+✅ Phase 2: App Skeleton & Responsive Layout (Week 2)
+Backend
+
+    Set up src/app.ts and src/server.ts
+
+    Middleware: body-parser, express-session, helmet
+
+    Session + flash setup
+
+Frontend
+
+    views/public/home.ejs scrollable layout:
+
+        #welcome
+
+        #how-to-play
+
+        #leaderboard (empty for now)
+
+        #about-us
+
+Error Handling
+
+    Create system/error.ejs (for 404/500)
+
+    Catch all unknown routes
+
+app.use((req, res) => {
+  res.status(404).render('system/error', { code: 404, message: 'Not found' });
+});
+
+✅ Phase 3: Player Portal & QR Code Generation (Week 3)
+Backend
+
+    Model: Player.ts with fields:
+
+        id, name, phone, dob, residence, qrHash, ageGroup, photoPath
+
+    Services:
+
+        qrService.ts (generates and saves QR image)
+
+        registrationService.ts (validates + stores player)
+
+    Routes:
+
+        POST /player/register
+
+        GET /player/dashboard
+
+    QR Code: Generated upon registration or payment
+
+Frontend
+
+    views/player/transaction.ejs handles:
+
+        Name, phone, DOB form
+
+        QR Code display
+
+        "Payment successful" message
+
+Error Handling
+
+    Validate unique phone #
+
+    Age under 13 must show guardian fields
+
+    Catch form errors, missing fields, QR generation failures
+
+✅ Phase 4: Staff Interface & Score Logging (Week 4)
+Backend
+
+    Model: GameStat.ts (player ID, time, goals)
+
+    Auth:
+
+        Staff.ts for login
+
+        middleware/auth.ts to protect routes
+
+    Controller: interfaceController.ts
+
+    Routes:
+
+        GET /staff/interface (scan QR, log goal)
+
+Frontend
+
+    views/staff/interface.ejs:
+
+        QR input field or scan
+
+        Display player info
+
+        Log hit or miss buttons
+
+Error Handling
+
+    Invalid QR? → Show message: "Player not found"
+
+    Log goal fails? → Flash error
+
+✅ Phase 5: Leaderboards & Public Pages (Week 5)
+Backend
+
+    Service: leaderboardService.ts (top players by age group/location)
+
+    Route: GET /leaderboard
+
+    Optional caching (to improve load time)
+
+Frontend
+
+    #leaderboard section on home
+
+        Filter dropdowns: by town, district, age group
+
+        Default: National top 10
+
+Error Handling
+
+    No scores → Show placeholder
+
+    Empty group → Message: “Be the first!”
+
+✅ Phase 6: Testing, Training, Deployment (Week 6)
+Backend
+
+    Unit tests: model functions, services (e.g. QR generation, leaderboard calc)
+
+    Error logging: fallback for try/catch blocks, e.g. in QR or DB logic
+
+Frontend
+
+    Test:
+
+        Small screen
+
+        Tablet
+
+        Desktop
+
+    Final polish:
+
+        CSS cleanup
+
+        EJS partials for consistent headers, footers
+
+Deployment
+
+    Use Render or VPS
+
+    Enable HTTPS with SSL
+
+    Set up .env with production DB, session secrets

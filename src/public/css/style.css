@@ -1,0 +1,149 @@
+/* Main Styles for Striker Splash */
+
+/* General Styles */
+body {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+.section {
+  padding: 4rem 0;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.section-title:after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: #007bff;
+  margin: 15px auto;
+}
+
+/* Hero Section */
+.hero {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/hero-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  text-align: center;
+  padding: 8rem 0;
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+/* How to Play Section */
+.step-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s;
+  height: 100%;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+}
+
+.step-number {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* Leaderboard Section */
+.leaderboard-table {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.leaderboard-row:nth-child(1) {
+  background-color: #ffd700;
+}
+
+.leaderboard-row:nth-child(2) {
+  background-color: #c0c0c0;
+}
+
+.leaderboard-row:nth-child(3) {
+  background-color: #cd7f32;
+}
+
+/* QR Code Styles */
+.qr-container {
+  max-width: 250px;
+}
+
+.qr-code {
+  width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  background: white;
+}
+
+/* Player Dashboard */
+.stats-card {
+  border-left: 4px solid #007bff;
+}
+
+/* Staff Interface */
+.scan-container {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.player-info {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Admin Dashboard */
+.stat-card {
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.stat-card.primary {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.stat-card.success {
+  background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+
+.stat-card.warning {
+  background: linear-gradient(45deg, #ffc107, #d39e00);
+}
+
+.stat-card.danger {
+  background: linear-gradient(45deg, #dc3545, #bd2130);
+}
+
+.stat-icon {
+  font-size: 3rem;
+  opacity: 0.7;
+}
