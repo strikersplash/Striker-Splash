@@ -1,0 +1,1 @@
+Put all static images (e.g., mascot, icons) here

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Competition System Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test-result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Competition System Test</h1>
+    <div id="test-results"></div>
+    <button onclick="runTests()">Run Tests</button>
+
+    <script>
+      async function runTests() {
+        const resultsDiv = document.getElementById("test-results");
+        resultsDiv.innerHTML = '<div class="info">Running tests...</div>';
+
+        try {
+          // Test 1: Check if competition setup page loads
+          await testEndpoint(
+            "/staff/competition-setup",
+            "Competition setup page"
+          );
+
+          // Test 2: Check if player search works
+          await testEndpoint(
+            "/staff/search-by-name?name=test",
+            "Player search endpoint"
+          );
+
+          // Test 3: Check if team search works
+          await testEndpoint(
+            "/referee/api/search-teams?query=test",
+            "Team search endpoint"
+          );
+
+          addResult("All tests completed!", "info");
+        } catch (error) {
+          addResult("Test failed: " + error.message, "error");
+        }
+      }
+
+      async function testEndpoint(url, testName) {
+        try {
+          const response = await fetch(url);
+          if (response.ok || response.status === 401) {
+            // 401 means auth required, which is expected
+            addResult(`✓ ${testName}: Endpoint accessible`, "success");
+          } else {
+            addResult(`✗ ${testName}: Status ${response.status}`, "error");
+          }
+        } catch (error) {
+          addResult(`✗ ${testName}: ${error.message}`, "error");
+        }
+      }
+
+      function addResult(message, type) {
+        const resultsDiv = document.getElementById("test-results");
+        const div = document.createElement("div");
+        div.className = `test-result ${type}`;
+        div.textContent = message;
+        resultsDiv.appendChild(div);
+      }
+    </script>
+  </body>
+</html>

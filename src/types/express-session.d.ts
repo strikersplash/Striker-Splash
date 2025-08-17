@@ -9,5 +9,6 @@ declare module 'express-session' {
       role: string;
       type?: string;
     };
+    returnTo?: string;
   }
 }

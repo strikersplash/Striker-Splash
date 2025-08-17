@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avatar Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .test-row {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+      }
+      .avatar-container {
+        margin-right: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Avatar Generation Test</h1>
+
+    <div class="test-row">
+      <div id="avatar-1" class="avatar-container"></div>
+      <span>Alejandro Cruz (no photo)</span>
+    </div>
+
+    <div class="test-row">
+      <div id="avatar-2" class="avatar-container"></div>
+      <span>Billy Kid (has photo)</span>
+    </div>
+
+    <div class="test-row">
+      <div id="avatar-3" class="avatar-container"></div>
+      <span>John Doe (no photo)</span>
+    </div>
+
+    <script src="/js/avatar.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Test with no photo (should show initials)
+        const avatar1 = createAvatar("Alejandro Cruz", 30, "");
+        document.getElementById("avatar-1").appendChild(avatar1);
+
+        // Test with photo (should try to load photo, fallback to initials)
+        const avatar2 = createAvatar(
+          "Billy Kid",
+          30,
+          "uploads/1748844098408-profile.jpeg"
+        );
+        document.getElementById("avatar-2").appendChild(avatar2);
+
+        // Test with another no photo
+        const avatar3 = createAvatar("John Doe", 30, null);
+        document.getElementById("avatar-3").appendChild(avatar3);
+
+        console.log("Avatars generated successfully");
+      });
+    </script>
+  </body>
+</html>

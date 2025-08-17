@@ -6,7 +6,7 @@ import QueueTicket from '../../models/QueueTicket';
 export const getRefereeInterface = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow staff to access this page
-    if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'staff')) {
+    if (!(req.session as any).user || ((req.session as any).user.role !== 'admin' && (req.session as any).user.role !== 'staff')) {
       req.flash('error_msg', 'Unauthorized access');
       return res.redirect('/auth/login');
     }
@@ -29,7 +29,7 @@ export const getRefereeInterface = async (req: Request, res: Response): Promise<
 export const logGoal = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow staff to access this API
-    if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'staff')) {
+    if (!(req.session as any).user || ((req.session as any).user.role !== 'admin' && (req.session as any).user.role !== 'staff')) {
       res.status(401).json({ success: false, message: 'Unauthorized access' });
       return;
     }
@@ -72,7 +72,7 @@ export const logGoal = async (req: Request, res: Response): Promise<void> => {
     
     const insertResult = await pool.query(insertQuery, [
       playerId,
-      req.session.user.id,
+      (req.session as any).user.id,
       goals,
       location,
       ticketId,
@@ -108,7 +108,7 @@ export const logGoal = async (req: Request, res: Response): Promise<void> => {
 export const skipQueue = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow staff to access this API
-    if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'staff')) {
+    if (!(req.session as any).user || ((req.session as any).user.role !== 'admin' && (req.session as any).user.role !== 'staff')) {
       res.status(401).json({ success: false, message: 'Unauthorized access' });
       return;
     }

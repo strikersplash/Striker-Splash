@@ -20,28 +20,25 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="/admin/tickets">
               <i class="bi bi-ticket-perforated"></i> Ticket Management
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/staff-duty">
-              <i class="bi bi-calendar-check"></i> Staff on Duty
-            </a>
-          </li>
+
           <li class="nav-item">
             <a class="nav-link" href="/admin/raffle">
               <i class="bi bi-trophy"></i> Daily Raffle
             </a>
           </li>
+          <li class="nav-item"></li>
           <li class="nav-item">
-            <a class="nav-link" href="/admin/reports">
-              <i class="bi bi-graph-up"></i> Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/settings">
-              <i class="bi bi-gear"></i> Settings
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
             </a>
           </li>
         </ul>
@@ -50,9 +47,29 @@
 
     <!-- Main Content -->
     <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
         <h1 class="h2">Admin Dashboard</h1>
       </div>
+
+      <!-- Low Ticket Warning -->
+      <% if (stats.lowTicketWarning) { %>
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Low Ticket Warning!</strong>
+        Only <strong><%= stats.availableTickets %></strong> tickets remaining in
+        the current roll (<%= stats.ticketRange %>).
+        <a href="/admin/tickets" class="alert-link">Update ticket range</a> when
+        running low.
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %>
 
       <!-- Stats Cards -->
       <div class="row mb-4">
@@ -127,19 +144,22 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (recentActivity && recentActivity.length > 0) { %>
-                  <% recentActivity.forEach(activity => { %>
-                    <tr>
-                      <td><%= new Date(activity.timestamp).toLocaleTimeString() %></td>
-                      <td><%= activity.player_name %></td>
-                      <td><%= activity.activity_type %></td>
-                      <td><%= activity.details %></td>
-                    </tr>
-                  <% }); %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="4" class="text-center">No activity recorded today</td>
-                  </tr>
+                <% if (recentActivity && recentActivity.length > 0) { %> <%
+                recentActivity.forEach(activity => { %>
+                <tr>
+                  <td>
+                    <%= new Date(activity.activity_time).toLocaleTimeString() %>
+                  </td>
+                  <td><%= activity.player_name %></td>
+                  <td><%= activity.activity_type %></td>
+                  <td><%= activity.details %></td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="4" class="text-center">
+                    No activity recorded today
+                  </td>
+                </tr>
                 <% } %>
               </tbody>
             </table>
@@ -164,25 +184,26 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (upcomingEvents && upcomingEvents.length > 0) { %>
-                  <% upcomingEvents.forEach(event => { %>
-                    <tr>
-                      <td><%= new Date(event.event_date).toLocaleDateString() %></td>
-                      <td><%= event.name %></td>
-                      <td><%= event.location %></td>
-                      <td>
-                        <% if (new Date(event.event_date) > new Date()) { %>
-                          <span class="badge bg-primary">Upcoming</span>
-                        <% } else { %>
-                          <span class="badge bg-success">In Progress</span>
-                        <% } %>
-                      </td>
-                    </tr>
-                  <% }); %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="4" class="text-center">No upcoming events</td>
-                  </tr>
+                <% if (upcomingEvents && upcomingEvents.length > 0) { %> <%
+                upcomingEvents.forEach(event => { %>
+                <tr>
+                  <td>
+                    <%= new Date(event.start_date).toLocaleDateString() %>
+                  </td>
+                  <td><%= event.name %></td>
+                  <td><%= event.address %></td>
+                  <td>
+                    <% if (new Date(event.start_date) > new Date()) { %>
+                    <span class="badge bg-primary">Upcoming</span>
+                    <% } else { %>
+                    <span class="badge bg-success">In Progress</span>
+                    <% } %>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="4" class="text-center">No upcoming events</td>
+                </tr>
                 <% } %>
               </tbody>
             </table>

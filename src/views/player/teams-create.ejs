@@ -1,0 +1,432 @@
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h3 class="mb-0"><i class="fas fa-plus"></i> Create New Team</h3>
+        </div>
+        <div class="card-body">
+          <form
+            id="create-team-form"
+            action="/player/teams/create"
+            method="POST"
+          >
+            <!-- Team Name -->
+            <div class="mb-3">
+              <label for="team-name" class="form-label">
+                Team Name <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="team-name"
+                name="name"
+                required
+                maxlength="50"
+              />
+              <div class="form-text">
+                Choose a unique name for your team (max 50 characters)
+              </div>
+            </div>
+
+            <!-- Team Size -->
+            <div class="mb-3">
+              <label for="team-size" class="form-label">
+                Team Size <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select"
+                id="team-size"
+                name="team_size"
+                required
+              >
+                <option value="">Select team size...</option>
+                <option value="3">3-a-side</option>
+                <option value="5">5-a-side</option>
+                <option value="10">10-a-side</option>
+                <option value="11">11-a-side (Full Team)</option>
+                <option value="18">18-a-side (Full Squad)</option>
+                <option value="23">23-a-side (Extended Squad)</option>
+              </select>
+              <div class="form-text">
+                Choose the number of players for your team. This determines what
+                competitions you can participate in.
+              </div>
+            </div>
+
+            <!-- Team Description -->
+            <div class="mb-3">
+              <label for="description" class="form-label"
+                >Team Description</label
+              >
+              <textarea
+                class="form-control"
+                id="description"
+                name="description"
+                rows="3"
+                maxlength="500"
+                placeholder="Tell other players about your team..."
+              ></textarea>
+              <div class="form-text">
+                <span id="char-count">0</span>/500 characters (optional)
+              </div>
+            </div>
+
+            <!-- Team Slug -->
+            <div class="mb-3">
+              <label for="slug" class="form-label">Team Handle</label>
+              <div class="input-group">
+                <span class="input-group-text">@</span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="slug"
+                  name="slug"
+                  maxlength="20"
+                  placeholder="teamhandle"
+                />
+              </div>
+              <div class="form-text">
+                Optional: A unique handle for your team (letters, numbers, and
+                hyphens only)
+              </div>
+              <div id="slug-feedback" class="form-text"></div>
+            </div>
+
+            <!-- Recruitment Status -->
+            <div class="mb-4">
+              <label class="form-label">Recruitment Status</label>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="is_recruiting"
+                  id="recruiting-yes"
+                  value="true"
+                  checked
+                />
+                <label class="form-check-label" for="recruiting-yes">
+                  <i class="fas fa-users text-success"></i> Open for new members
+                </label>
+              </div>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="is_recruiting"
+                  id="recruiting-no"
+                  value="false"
+                />
+                <label class="form-check-label" for="recruiting-no">
+                  <i class="fas fa-lock text-warning"></i> Invite only
+                </label>
+              </div>
+              <div class="form-text">You can change this setting later</div>
+            </div>
+
+            <!-- Team Preview -->
+            <div class="card bg-light mb-4">
+              <div class="card-header">
+                <h6 class="mb-0">Team Preview</h6>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h6 class="mb-0" id="preview-name">Your Team Name</h6>
+                  <span class="badge bg-primary" id="preview-size"
+                    >Select Size</span
+                  >
+                </div>
+                <p class="text-muted mb-2" id="preview-description">
+                  Your team description will appear here...
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">
+                    <span id="preview-handle">@teamhandle</span>
+                  </small>
+                  <small class="text-muted">
+                    <span id="preview-status">🟢 Recruiting</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <a href="/player/teams/browse" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Teams
+              </a>
+              <button type="submit" class="btn btn-success" id="submit-btn">
+                <i class="fas fa-plus"></i> Create Team
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Info Card -->
+      <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0">
+            <i class="fas fa-info-circle"></i> Team Information
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Team Sizes & Competitions:</h6>
+              <ul class="list-unstyled">
+                <li><strong>3-a-side:</strong> Quick matches, tournaments</li>
+                <li><strong>5-a-side:</strong> Most popular format</li>
+                <li><strong>10-a-side:</strong> Large team competitions</li>
+                <li><strong>11-a-side:</strong> Full football matches</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6>As Team Creator:</h6>
+              <ul class="list-unstyled">
+                <li>✓ You become the team admin</li>
+                <li>✓ Manage team settings</li>
+                <li>✓ Approve/decline join requests</li>
+                <li>✓ Schedule matches and competitions</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const teamNameInput = document.getElementById("team-name");
+    const teamSizeSelect = document.getElementById("team-size");
+    const descriptionTextarea = document.getElementById("description");
+    const slugInput = document.getElementById("slug");
+    const recruitingInputs = document.querySelectorAll(
+      'input[name="is_recruiting"]'
+    );
+
+    // Preview elements
+    const previewName = document.getElementById("preview-name");
+    const previewSize = document.getElementById("preview-size");
+    const previewDescription = document.getElementById("preview-description");
+    const previewHandle = document.getElementById("preview-handle");
+    const previewStatus = document.getElementById("preview-status");
+
+    // Character counter
+    const charCount = document.getElementById("char-count");
+
+    // Auto-generate slug from team name
+    teamNameInput.addEventListener("input", function () {
+      const name = this.value;
+      previewName.textContent = name || "Your Team Name";
+
+      // Auto-generate slug if not manually entered
+      if (!slugInput.dataset.manuallyEdited) {
+        const autoSlug = generateSlug(name);
+        slugInput.value = autoSlug;
+        previewHandle.textContent = autoSlug ? `@${autoSlug}` : "@teamhandle";
+      }
+    });
+
+    // Team size preview
+    teamSizeSelect.addEventListener("change", function () {
+      const size = this.value;
+      if (size) {
+        previewSize.textContent = `${size}-a-side (1/${size})`;
+        previewSize.className = "badge bg-success";
+      } else {
+        previewSize.textContent = "Select Size";
+        previewSize.className = "badge bg-secondary";
+      }
+    });
+
+    // Description preview and character count
+    descriptionTextarea.addEventListener("input", function () {
+      const text = this.value;
+      charCount.textContent = text.length;
+      previewDescription.textContent =
+        text || "Your team description will appear here...";
+
+      // Update color based on character limit
+      if (text.length > 450) {
+        charCount.style.color = "#dc3545";
+      } else if (text.length > 350) {
+        charCount.style.color = "#fd7e14";
+      } else {
+        charCount.style.color = "";
+      }
+    });
+
+    // Slug input
+    slugInput.addEventListener("input", function () {
+      slugInput.dataset.manuallyEdited = "true";
+      const slug = this.value;
+      previewHandle.textContent = slug ? `@${slug}` : "@teamhandle";
+
+      // Validate slug format
+      validateSlug(slug);
+    });
+
+    // Recruitment status
+    recruitingInputs.forEach((input) => {
+      input.addEventListener("change", function () {
+        if (this.value === "true") {
+          previewStatus.textContent = "🟢 Recruiting";
+        } else {
+          previewStatus.textContent = "🔒 Invite Only";
+        }
+      });
+    });
+
+    // Form submission
+    document
+      .getElementById("create-team-form")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById("submit-btn");
+        submitBtn.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+        submitBtn.disabled = true;
+
+        // Submit form data
+        const formData = new FormData(this);
+
+        // Convert form data to JSON for better handling
+        const jsonData = {};
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+
+        fetch("/player/teams/create", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify(jsonData),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error("Response status:", response.status);
+              console.error("Response status text:", response.statusText);
+              return response.json().catch((error) => {
+                throw new Error(
+                  `Request failed with status ${response.status}: ${error.message}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success) {
+              // Show success message
+              showAlert("success", "Team created successfully!");
+
+              // Redirect to team view or browse teams
+              setTimeout(() => {
+                window.location.href = "/player/teams/browse";
+              }, 1500);
+            } else {
+              showAlert("danger", data.message || "Failed to create team");
+              submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Team';
+              submitBtn.disabled = false;
+            }
+          })
+          .catch((error) => {
+            console.error("Error creating team:", error);
+            showAlert(
+              "danger",
+              "An error occurred while creating the team. Check console for details."
+            );
+            submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Team';
+            submitBtn.disabled = false;
+          });
+      });
+  });
+
+  function generateSlug(name) {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single
+      .replace(/^-|-$/g, "") // Remove leading/trailing hyphens
+      .substring(0, 20); // Limit length
+  }
+
+  function validateSlug(slug) {
+    const feedback = document.getElementById("slug-feedback");
+
+    if (!slug) {
+      feedback.textContent = "";
+      return;
+    }
+
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      feedback.textContent =
+        "Handle can only contain lowercase letters, numbers, and hyphens";
+      feedback.className = "form-text text-danger";
+      return;
+    }
+
+    if (slug.length < 3) {
+      feedback.textContent = "Handle must be at least 3 characters";
+      feedback.className = "form-text text-warning";
+      return;
+    }
+
+    // TODO: Check if slug is available via API
+    feedback.textContent = "Handle looks good!";
+    feedback.className = "form-text text-success";
+  }
+
+  function showAlert(type, message) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll(".alert-floating");
+    existingAlerts.forEach((alert) => alert.remove());
+
+    // Create new alert
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-floating position-fixed`;
+    alertDiv.style.cssText =
+      "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    alertDiv.innerHTML = `
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    ${message}
+  `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+  }
+</script>
+
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-check-label {
+    cursor: pointer;
+  }
+
+  .badge {
+    font-size: 0.8rem;
+  }
+
+  #preview-handle {
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+  }
+</style>

@@ -25,7 +25,7 @@ CREATE TABLE players (
   dob DATE NOT NULL,
   residence VARCHAR(100) NOT NULL,
   qr_hash VARCHAR(100) NOT NULL UNIQUE,
-  age_group VARCHAR(10) NOT NULL CHECK (age_group IN ('under13', '13-18', 'adult')),
+  age_group VARCHAR(50) NOT NULL,
   photo_path VARCHAR(255),
   password_hash VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT now(),
@@ -53,6 +53,26 @@ CREATE TABLE game_stats (
   timestamp TIMESTAMP NOT NULL DEFAULT now()
 );
 
+-- Event locations table
+CREATE TABLE event_locations (
+  id SERIAL PRIMARY KEY,
+  location VARCHAR(100) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- Uploads table
+CREATE TABLE uploads (
+  id SERIAL PRIMARY KEY,
+  player_id INTEGER REFERENCES players(id),
+  filename VARCHAR(255) NOT NULL,
+  filepath VARCHAR(255) NOT NULL,
+  mimetype VARCHAR(100) NOT NULL,
+  size INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Insert default admin user (password: admin123)
 INSERT INTO staff (username, password_hash, name, role) 
 VALUES ('admin', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi', 'Administrator', 'admin');
@@ -64,9 +84,9 @@ VALUES ('staff', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi',
 -- Insert test players
 INSERT INTO players (name, phone, dob, residence, qr_hash, age_group, password_hash)
 VALUES 
-  ('John Doe', '07700900001', '1990-01-15', 'Belize City', 'qr_hash_john_123456789', 'adult', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi'),
-  ('Jane Smith', '07700900002', '2010-05-20', 'San Pedro', 'qr_hash_jane_123456789', '13-18', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi'),
-  ('Billy Kid', '07700900003', '2015-11-10', 'Belmopan', 'qr_hash_billy_123456789', 'under13', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi');
+  ('John Doe', '07700900001', '1990-01-15', 'Belize City', 'qr_hash_john_123456789', 'Adults 31-50 years', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi'),
+  ('Jane Smith', '07700900002', '2010-05-20', 'San Pedro', 'qr_hash_jane_123456789', 'Teens 11-17 years', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi'),
+  ('Billy Kid', '07700900003', '2015-11-10', 'Belmopan', 'qr_hash_billy_123456789', 'Up to 10 years', '$2a$10$JmQzF5KSGdJ8O5oRlVUgxOUKFvgBFbKgQZpJMJkJ6.UZe.z1JpJXi');
 
 -- Insert test shots
 INSERT INTO shots (player_id, amount, shots_quantity, payment_status, payment_reference)
@@ -81,6 +101,14 @@ VALUES
   (1, 3, 1, 'Belize City Event'),
   (1, 2, 1, 'San Pedro Event'),
   (2, 1, 2, 'Belmopan Event');
+
+-- Insert test event locations
+INSERT INTO event_locations (location, start_date, end_date)
+VALUES
+  ('Belize City - BTL Park', '2023-06-10', '2023-06-12'),
+  ('San Pedro - Central Park', '2023-06-17', '2023-06-19'),
+  ('Belmopan - Market Square', '2023-06-24', '2023-06-26'),
+  ('Placencia - Main Beach', '2023-07-01', '2023-07-03');
 
 GRANT ALL PRIVILEGES ON DATABASE striker_splash TO striker_splash;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO striker_splash;

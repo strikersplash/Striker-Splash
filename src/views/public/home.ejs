@@ -1,16 +1,32 @@
 <!-- Hero Section -->
-<div class="bg-primary text-white py-5">
+<div
+  class="text-white hero-section py-5"
+  style="
+    background: linear-gradient(135deg, #007bff 0%, #6c5ce7 100%);
+    margin: 0;
+    border: none;
+  "
+>
   <div class="container">
     <div class="row align-items-center">
       <div class="col-md-6">
         <h1 class="display-4 fw-bold">Striker Splash</h1>
         <p class="lead">Test your football skills and compete for prizes!</p>
-        <p>Join our football challenge and see if you have what it takes to top the leaderboard.</p>
-        <a href="/leaderboard" class="btn btn-light btn-lg">View Leaderboard</a>
-        <a href="/auth/register" class="btn btn-outline-light btn-lg ms-2">Register Now</a>
+        <p>
+          Join our football challenge and see if you have what it takes to top
+          the leaderboard.
+        </p>
+        <a href="/leaderboard" class="btn btn-light btn-lg mobile-btn-spacing"
+          >View Leaderboard</a
+        >
+        <a
+          href="/auth/register"
+          class="btn btn-outline-light btn-lg ms-2 mobile-btn-left"
+          >Register Now</a
+        >
       </div>
       <div class="col-md-6">
-        <img src="/images/hero-image.jpg" alt="Striker Splash" class="img-fluid rounded">
+        <!-- Image removed -->
       </div>
     </div>
   </div>
@@ -22,16 +38,19 @@
     <div class="col-md-4 mb-4">
       <div class="card h-100">
         <div class="card-body">
-          <i class="bi bi-trophy text-primary" style="font-size: 3rem;"></i>
+          <i class="bi bi-trophy text-primary" style="font-size: 3rem"></i>
           <h3 class="my-3">Compete</h3>
-          <p>Challenge yourself against other players and climb the leaderboard rankings.</p>
+          <p>
+            Challenge yourself against other players and climb the leaderboard
+            rankings.
+          </p>
         </div>
       </div>
     </div>
     <div class="col-md-4 mb-4">
       <div class="card h-100">
         <div class="card-body">
-          <i class="bi bi-graph-up text-primary" style="font-size: 3rem;"></i>
+          <i class="bi bi-graph-up text-primary" style="font-size: 3rem"></i>
           <h3 class="my-3">Track Progress</h3>
           <p>Monitor your performance and see your improvement over time.</p>
         </div>
@@ -40,7 +59,7 @@
     <div class="col-md-4 mb-4">
       <div class="card h-100">
         <div class="card-body">
-          <i class="bi bi-gift text-primary" style="font-size: 3rem;"></i>
+          <i class="bi bi-gift text-primary" style="font-size: 3rem"></i>
           <h3 class="my-3">Win Prizes</h3>
           <p>Top performers can win exciting prizes and recognition.</p>
         </div>
@@ -54,28 +73,32 @@
   <div class="container">
     <h2 class="text-center mb-4">Upcoming Events</h2>
     <div class="row">
-      <% if (events && events.length > 0) { %>
-        <% events.forEach(event => { %>
-          <div class="col-md-4 mb-4">
-            <div class="card h-100">
-              <div class="card-body">
-                <h5 class="card-title"><%= event.name %></h5>
-                <h6 class="card-subtitle mb-2 text-muted">
-                  <%= new Date(event.event_date).toLocaleDateString() %>
-                </h6>
-                <p class="card-text"><%= event.description %></p>
-                <p><strong>Location:</strong> <%= event.location %></p>
-              </div>
-              <div class="card-footer">
-                <a href="/events/<%= event.id %>" class="btn btn-primary">Learn More</a>
-              </div>
-            </div>
+      <% if (events && events.length > 0) { %> <% events.forEach(event => { %>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><%= event.name %></h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              <%= new Date(event.start_date).toLocaleDateString() %> - <%= new
+              Date(event.end_date).toLocaleDateString() %>
+            </h6>
+            <p class="card-text">
+              <%- event.description || 'Join us for this exciting event!' %>
+            </p>
+            <p><strong>Location:</strong> <%= event.address %></p>
+            <p><strong>Pricing:</strong> $1 per kick (max 5 kicks per turn)</p>
           </div>
-        <% }); %>
-      <% } else { %>
-        <div class="col-12 text-center">
-          <p>No upcoming events at this time. Check back soon!</p>
+          <div class="card-footer">
+            <a href="/about" class="btn btn-primary mobile-event-btn"
+              >View Details</a
+            >
+          </div>
         </div>
+      </div>
+      <% }); %> <% } else { %>
+      <div class="col-12 text-center">
+        <p>No upcoming events at this time. Check back soon!</p>
+      </div>
       <% } %>
     </div>
   </div>
@@ -86,35 +109,69 @@
   <h2 class="text-center mb-4">How It Works</h2>
   <div class="row">
     <div class="col-md-3 mb-4 text-center">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
         <h3>1</h3>
       </div>
       <h4>Register</h4>
       <p>Create your player account</p>
     </div>
     <div class="col-md-3 mb-4 text-center">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
         <h3>2</h3>
       </div>
       <h4>Purchase Kicks</h4>
-      <p>Buy kicks for $1 each (min. 5 kicks)</p>
+      <p>Buy kicks for $1 each (max 5 kicks per turn)</p>
     </div>
     <div class="col-md-3 mb-4 text-center">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
         <h3>3</h3>
       </div>
       <h4>Compete</h4>
       <p>Show your skills and score goals</p>
     </div>
     <div class="col-md-3 mb-4 text-center">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
         <h3>4</h3>
       </div>
       <h4>Win</h4>
       <p>Top the leaderboard and win prizes</p>
     </div>
-  </div>
-  <div class="text-center mt-3">
-    <a href="/about" class="btn btn-outline-primary btn-lg">Learn More</a>
+    <div class="text-center mt-3">
+      <a href="/about" class="btn btn-outline-primary btn-lg">Learn More</a>
+    </div>
   </div>
 </div>
+
+<style>
+  /* Mobile-specific button styling */
+  @media (max-width: 767.98px) {
+    .mobile-btn-spacing {
+      margin-bottom: 15px !important;
+      display: block;
+      width: 100%;
+    }
+
+    .mobile-btn-left {
+      margin-left: 0 !important;
+      display: block;
+      width: 100%;
+    }
+
+    .mobile-event-btn {
+      width: 100% !important;
+      text-align: center;
+    }
+  }
+</style>

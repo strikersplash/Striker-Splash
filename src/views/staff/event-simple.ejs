@@ -1,0 +1,115 @@
+<!-- Super Simple Event Management Page -->
+<div class="container mt-5">
+  <h1>Event Management</h1>
+
+  <div class="mb-4">
+    <button id="load-btn" class="btn btn-primary">Load Events</button>
+  </div>
+
+  <div id="result-area" class="border p-3 rounded bg-light">
+    <div id="events-list"></div>
+  </div>
+
+  <div id="registrations-area" class="border p-3 rounded bg-light mt-4 d-none">
+    <h3>Registrations</h3>
+    <div id="registrations-list"></div>
+    <button id="back-btn" class="btn btn-secondary mt-3">Back</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const loadBtn = document.getElementById("load-btn");
+    const eventsList = document.getElementById("events-list");
+    const registrationsArea = document.getElementById("registrations-area");
+    const registrationsList = document.getElementById("registrations-list");
+    const backBtn = document.getElementById("back-btn");
+    const resultArea = document.getElementById("result-area");
+
+    // Load events function
+    loadBtn.addEventListener("click", function () {
+      eventsList.innerHTML = "Loading...";
+
+      fetch("/staff/events-with-registrations")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success && data.events && data.events.length > 0) {
+            let html = '<h3>Events</h3><ul class="list-group">';
+
+            data.events.forEach((event) => {
+              html += `
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                ${event.name} - ${event.address}
+                <button class="btn btn-sm btn-primary view-btn" data-id="${event.id}">View Registrations</button>
+              </li>
+            `;
+            });
+
+            html += "</ul>";
+            eventsList.innerHTML = html;
+
+            // Add click event to view buttons
+            document.querySelectorAll(".view-btn").forEach((btn) => {
+              btn.addEventListener("click", function () {
+                const eventId = this.getAttribute("data-id");
+                loadRegistrations(eventId);
+              });
+            });
+          } else {
+            eventsList.innerHTML = "No events found or error loading events";
+          }
+        })
+        .catch((error) => {
+          eventsList.innerHTML = "Error: " + error.message;
+        });
+    });
+
+    // Load registrations function
+    function loadRegistrations(eventId) {
+      registrationsList.innerHTML = "Loading registrations...";
+      resultArea.classList.add("d-none");
+      registrationsArea.classList.remove("d-none");
+
+      fetch(`/staff/registered-players/${eventId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success && data.registrations) {
+            if (data.registrations.length === 0) {
+              registrationsList.innerHTML =
+                "No registrations found for this event";
+              return;
+            }
+
+            let html = '<ul class="list-group">';
+
+            data.registrations.forEach((reg) => {
+              html += `
+              <li class="list-group-item">
+                <strong>${reg.player_name}</strong><br>
+                Registration #: ${reg.registration_number}<br>
+                Kicks: ${reg.kicks_requested}
+              </li>
+            `;
+            });
+
+            html += "</ul>";
+            registrationsList.innerHTML = html;
+          } else {
+            registrationsList.innerHTML = "Error loading registrations";
+          }
+        })
+        .catch((error) => {
+          registrationsList.innerHTML = "Error: " + error.message;
+        });
+    }
+
+    // Back button
+    backBtn.addEventListener("click", function () {
+      registrationsArea.classList.add("d-none");
+      resultArea.classList.remove("d-none");
+    });
+
+    // Auto-load
+    loadBtn.click();
+  });
+</script>

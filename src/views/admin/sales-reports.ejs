@@ -1,0 +1,590 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
+        <h1 class="h2">
+          <i class="bi bi-graph-up me-2"></i>Live Staff Sales Tracking
+        </h1>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if(typeof messages != 'undefined'){ %> <% if(messages.success_msg){ %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% if(messages.error_msg){ %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% } %>
+
+      <!-- Real-Time Staff Sales Tracking -->
+      <div class="card shadow mb-4" id="real-time-tracking">
+        <div
+          class="card-header py-3 d-flex justify-content-between align-items-center"
+        >
+          <h6 class="m-0 font-weight-bold text-success">
+            <i class="bi bi-activity me-2"></i>Live Staff Sales Tracking
+          </h6>
+          <div class="d-flex align-items-center">
+            <span id="last-update" class="badge bg-success me-2"
+              >Loading...</span
+            >
+            <button
+              id="refresh-btn"
+              class="btn btn-sm btn-outline-success"
+              onclick="loadSalesTrackingData()"
+            >
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover" id="live-sales-table">
+              <thead class="table-success">
+                <tr>
+                  <th><i class="bi bi-person me-1"></i>Staff Name</th>
+                  <th><i class="bi bi-calendar-day me-1"></i>Today</th>
+                  <th><i class="bi bi-calendar-week me-1"></i>This Week</th>
+                  <th><i class="bi bi-calendar-month me-1"></i>This Month</th>
+                  <th><i class="bi bi-calendar-year me-1"></i>Year</th>
+                </tr>
+              </thead>
+              <tbody id="live-sales-tbody">
+                <tr>
+                  <td colspan="5" class="text-center">
+                    <div class="spinner-border text-success" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-12">
+              <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Auto-updates every 10 seconds. Shows customers served and
+                revenue for each staff member.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yearly Sales Report Section -->
+      <div class="card shadow mb-4" id="yearly-sales-section">
+        <div
+          class="card-header py-3 d-flex justify-content-between align-items-center"
+        >
+          <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-calendar-year me-2"></i>Yearly Sales Overview
+          </h6>
+          <div class="d-flex align-items-center">
+            <select
+              id="year-selector"
+              class="form-select form-select-sm me-2"
+              style="width: 120px"
+            >
+              <!-- Years will be populated by JavaScript -->
+            </select>
+            <button
+              id="download-yearly-btn"
+              class="btn btn-sm btn-outline-primary"
+              onclick="downloadYearlySalesReport()"
+            >
+              <i class="bi bi-download me-1"></i>Download CSV
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3" id="yearly-summary">
+            <div class="col-md-3">
+              <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-currency-dollar fs-2"></i>
+                  <h4 id="yearly-revenue" class="mt-2">$0.00</h4>
+                  <small>Total Revenue</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-people fs-2"></i>
+                  <h4 id="yearly-customers" class="mt-2">0</h4>
+                  <small>Customers Served</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-receipt fs-2"></i>
+                  <h4 id="yearly-transactions" class="mt-2">0</h4>
+                  <small>Transactions</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-warning text-dark h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-activity fs-2"></i>
+                  <h4 id="yearly-kicks" class="mt-2">0</h4>
+                  <small>Kicks Sold</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .avatar-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+  }
+
+  #live-sales-table tbody tr {
+    transition: background-color 0.3s ease;
+  }
+
+  #live-sales-table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+  }
+
+  .table-success th {
+    background-color: #198754;
+    color: white;
+    border-color: #198754;
+  }
+
+  @media (max-width: 768px) {
+    .btn-toolbar {
+      flex-direction: column;
+    }
+
+    .btn-group {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .col-xl-3,
+    .col-lg-6,
+    .col-md-6 {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+  }
+</style>
+
+<script>
+  // Real-time sales tracking functionality
+  let updateInterval;
+
+  // Load sales tracking data from API
+  async function loadSalesTrackingData() {
+    try {
+      const refreshBtn = document.getElementById("refresh-btn");
+      const lastUpdateSpan = document.getElementById("last-update");
+
+      // Disable refresh button during loading
+      if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML =
+          '<i class="bi bi-arrow-clockwise"></i> Loading...';
+      }
+
+      console.log("Fetching sales tracking data...");
+      const response = await fetch("/admin/api/sales-tracking");
+      const data = await response.json();
+
+      console.log("Sales tracking response:", data);
+
+      if (data.success) {
+        // Load current year data for the Year column
+        const currentYear = new Date().getFullYear();
+        const yearResponse = await fetch(
+          `/admin/api/sales-yearly?year=${currentYear}`
+        );
+        const yearData = await yearResponse.json();
+
+        updateSalesTrackingTable(
+          data.salesData,
+          yearData.success ? yearData.salesData : null
+        );
+
+        // Update last update time
+        if (lastUpdateSpan) {
+          const now = new Date();
+          lastUpdateSpan.textContent = `Updated: ${now.toLocaleTimeString()}`;
+          lastUpdateSpan.className = "badge bg-success me-2";
+        }
+      } else {
+        console.error("Failed to load sales tracking data:", data.message);
+        if (lastUpdateSpan) {
+          lastUpdateSpan.textContent = "Update failed";
+          lastUpdateSpan.className = "badge bg-danger me-2";
+        }
+      }
+    } catch (error) {
+      console.error("Error loading sales tracking data:", error);
+      const lastUpdateSpan = document.getElementById("last-update");
+      if (lastUpdateSpan) {
+        lastUpdateSpan.textContent = "Error";
+        lastUpdateSpan.className = "badge bg-danger me-2";
+      }
+    } finally {
+      // Re-enable refresh button
+      const refreshBtn = document.getElementById("refresh-btn");
+      if (refreshBtn) {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+      }
+    }
+  }
+
+  // Update the sales tracking table with new data
+  function updateSalesTrackingTable(salesData, yearlyData) {
+    console.log("Updating table with data:", salesData);
+    const tbody = document.getElementById("live-sales-tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (salesData && salesData.length > 0) {
+      salesData.forEach((staff) => {
+        const row = document.createElement("tr");
+
+        // Find yearly data for this staff member
+        let yearRevenue = "0.00";
+        let yearCustomers = "0";
+        if (yearlyData) {
+          const yearStaff = yearlyData.find(
+            (y) => y.staff_id === staff.staff_id
+          );
+          if (yearStaff) {
+            yearRevenue = parseFloat(yearStaff.revenue_year || 0).toFixed(2);
+            yearCustomers = yearStaff.customers_year || 0;
+          }
+        }
+
+        // Determine role badge color
+        let roleBadgeClass = "bg-secondary";
+        if (staff.role === "admin") roleBadgeClass = "bg-danger";
+        else if (staff.role === "staff") roleBadgeClass = "bg-primary";
+        else if (staff.role === "sales") roleBadgeClass = "bg-success";
+
+        row.innerHTML = `
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="avatar-circle me-2">
+                ${staff.staff_name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <strong>${staff.staff_name}</strong>
+                <br>
+                <span class="badge ${roleBadgeClass} small">
+                  ${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
+                </span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-info me-1">${
+                staff.customers_today
+              } customers</span>
+              <strong class="text-success">$${parseFloat(
+                staff.revenue_today || 0
+              ).toFixed(2)}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-warning me-1">${
+                staff.customers_week
+              } customers</span>
+              <strong class="text-primary">$${parseFloat(
+                staff.revenue_week || 0
+              ).toFixed(2)}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-secondary me-1">${
+                staff.customers_month
+              } customers</span>
+              <strong class="text-info">$${parseFloat(
+                staff.revenue_month || 0
+              ).toFixed(2)}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-dark me-1">${yearCustomers} customers</span>
+              <strong class="text-warning">$${yearRevenue}</strong>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    } else {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td colspan="5" class="text-center text-muted py-4">
+          <i class="bi bi-info-circle me-2"></i>No staff sales data available
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+  }
+
+  // Auto-refresh functionality
+  function startAutoRefresh() {
+    // Load data immediately
+    loadSalesTrackingData();
+
+    // Set up interval for auto-refresh every 10 seconds
+    updateInterval = setInterval(loadSalesTrackingData, 10000);
+  }
+
+  function stopAutoRefresh() {
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+  }
+
+  // Handle page visibility for auto-refresh
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
+  });
+
+  // Start auto-refresh when page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    startAutoRefresh();
+  });
+
+  // Year dropdown and summary cards functionality
+  // Initialize year selector dropdown
+  function initializeYearSelector() {
+    const yearSelector = document.getElementById("year-selector");
+    if (!yearSelector) return;
+
+    const currentYear = new Date().getFullYear();
+
+    // Clear existing options
+    yearSelector.innerHTML = "";
+
+    // Populate with years (current year and 4 previous years)
+    for (let year = currentYear; year >= currentYear - 4; year--) {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      if (year === currentYear) option.selected = true;
+      yearSelector.appendChild(option);
+    }
+
+    // Add event listener for year changes
+    yearSelector.addEventListener("change", function () {
+      loadYearlySalesData(this.value);
+    });
+  }
+
+  // Load yearly sales data for the summary cards
+  async function loadYearlySalesData(year = new Date().getFullYear()) {
+    try {
+      console.log(`Loading yearly sales data for year: ${year}`);
+
+      const response = await fetch(`/admin/api/sales-yearly?year=${year}`);
+      const data = await response.json();
+
+      if (data.success) {
+        updateYearlySummary(data);
+      } else {
+        console.error("Failed to load yearly sales data:", data.message);
+        // Reset to zeros if failed
+        resetYearlySummary();
+      }
+    } catch (error) {
+      console.error("Error loading yearly sales data:", error);
+      // Reset to zeros if error
+      resetYearlySummary();
+    }
+  }
+
+  // Update yearly summary cards
+  function updateYearlySummary(data) {
+    const revenueEl = document.getElementById("yearly-revenue");
+    const customersEl = document.getElementById("yearly-customers");
+    const transactionsEl = document.getElementById("yearly-transactions");
+    const kicksEl = document.getElementById("yearly-kicks");
+
+    if (revenueEl)
+      revenueEl.textContent = `$${data.totals.year.revenue.toFixed(2)}`;
+    if (customersEl) customersEl.textContent = data.totals.year.customers;
+    if (transactionsEl)
+      transactionsEl.textContent = data.totals.year.transactions;
+    if (kicksEl) kicksEl.textContent = data.totals.year.kicks;
+  }
+
+  // Reset yearly summary cards to zeros
+  function resetYearlySummary() {
+    const revenueEl = document.getElementById("yearly-revenue");
+    const customersEl = document.getElementById("yearly-customers");
+    const transactionsEl = document.getElementById("yearly-transactions");
+    const kicksEl = document.getElementById("yearly-kicks");
+
+    if (revenueEl) revenueEl.textContent = "$0.00";
+    if (customersEl) customersEl.textContent = "0";
+    if (transactionsEl) transactionsEl.textContent = "0";
+    if (kicksEl) kicksEl.textContent = "0";
+  }
+
+  // Download yearly sales report
+  async function downloadYearlySalesReport() {
+    try {
+      // Get selected year from dropdown
+      const yearSelector = document.getElementById("year-selector");
+      const selectedYear = yearSelector
+        ? yearSelector.value
+        : new Date().getFullYear();
+
+      // Since we removed the yearly section but kept the summary cards,
+      // we'll just check if there's a download button somewhere
+      let downloadBtn = document.getElementById("download-yearly-btn");
+      if (!downloadBtn) {
+        // Fallback: create a temporary download notification
+        console.log("Starting download for current year...");
+      } else {
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML =
+          '<i class="bi bi-hourglass-split me-1"></i>Generating...';
+      }
+
+      const response = await fetch(
+        `/admin/api/sales-yearly-download?year=${selectedYear}`
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = `sales-report-yearly-${selectedYear}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        console.log(
+          `Downloaded yearly report: sales-report-yearly-${selectedYear}.csv`
+        );
+      } else {
+        console.error("Download failed:", response.statusText);
+        alert("Failed to download report. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error downloading yearly sales report:", error);
+      alert("An error occurred while downloading the report.");
+    } finally {
+      const downloadBtn = document.getElementById("download-yearly-btn");
+      if (downloadBtn) {
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML =
+          '<i class="bi bi-download me-1"></i>Download CSV';
+      }
+    }
+  }
+
+  // Initialize everything when page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    initializeYearSelector();
+    loadYearlySalesData(); // Load current year data for summary cards
+    startAutoRefresh();
+  });
+</script>

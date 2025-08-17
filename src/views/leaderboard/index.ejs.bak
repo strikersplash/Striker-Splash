@@ -1,288 +1,260 @@
-<div class="container mt-5">
+<div class="container-fluid mt-3">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Striker Splash Leaderboard</h3>
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <h4 class="mb-2 mb-md-0">Striker Splash Leaderboard</h4>
+            <!-- Team/Individual Toggle -->
+            <div class="btn-group" role="group" aria-label="Leaderboard Type">
+              <input type="radio" class="btn-check" name="leaderboard-type" id="individual-radio" autocomplete="off" <%= (!filters.type || filters.type === 'individual') ? 'checked' : '' %>>
+              <label class="btn btn-outline-light btn-sm" for="individual-radio">
+                <i class="fas fa-user"></i> Individual
+              </label>
+              
+              <input type="radio" class="btn-check" name="leaderboard-type" id="team-radio" autocomplete="off" <%= (filters.type === 'team') ? 'checked' : '' %>>
+              <label class="btn btn-outline-light btn-sm" for="team-radio">
+                <i class="fas fa-users"></i> Teams
+              </label>
+            </div>
+          </div>
         </div>
         <div class="card-body">
           <!-- Filters -->
-          <div class="row mb-4">
-            <div class="col-md-2">
+          <div class="row g-2 mb-4">
+            <div class="col-6 col-sm-4 col-md-2">
               <label for="gender-filter" class="form-label">Gender</label>
-              <select class="form-select" id="gender-filter">
+              <select class="form-select form-select-sm" id="gender-filter">
                 <option value="all" <%= filters.gender === 'all' ? 'selected' : '' %>>All</option>
                 <option value="male" <%= filters.gender === 'male' ? 'selected' : '' %>>Men</option>
                 <option value="female" <%= filters.gender === 'female' ? 'selected' : '' %>>Women</option>
               </select>
             </div>
-            <div class="col-md-2">
-              <label for="age-filter" class="form-label">Age Bracket</label>
-              <select class="form-select" id="age-filter">
+            <div class="col-6 col-sm-4 col-md-2">
+              <label for="age-filter" class="form-label">Age</label>
+              <select class="form-select form-select-sm" id="age-filter">
                 <option value="all" <%= filters.ageGroup === 'all' ? 'selected' : '' %>>All Ages</option>
                 <% ageBrackets.forEach(bracket => { %>
                   <option value="<%= bracket.name %>" <%= filters.ageGroup === bracket.name ? 'selected' : '' %>><%= bracket.name %></option>
                 <% }); %>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-6 col-sm-4 col-md-2">
               <label for="district-filter" class="form-label">District</label>
-              <input type="text" class="form-control" id="district-filter" placeholder="Filter by district" value="<%= filters.residence !== 'all' ? filters.residence : '' %>">
+              <input type="text" class="form-control form-control-sm" id="district-filter" placeholder="District" value="<%= filters.residence !== 'all' ? filters.residence : '' %>">
             </div>
-            <div class="col-md-2">
-              <label for="competition-filter" class="form-label">Competition Type</label>
-              <select class="form-select" id="competition-filter">
-                <option value="all" <%= filters.competitionType === 'all' ? 'selected' : '' %>>All Types</option>
-                <% competitionTypes.forEach(type => { %>
-                  <option value="<%= type.name %>" <%= filters.competitionType === type.name ? 'selected' : '' %>><%= type.name %></option>
-                <% }); %>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label for="time-filter" class="form-label">Time Range</label>
-              <select class="form-select" id="time-filter">
+            <div class="col-6 col-sm-4 col-md-2">
+              <label for="time-filter" class="form-label">Time</label>
+              <select class="form-select form-select-sm" id="time-filter">
                 <option value="all" <%= filters.timeRange === 'all' ? 'selected' : '' %>>All Time</option>
-                <option value="day" <%= filters.timeRange === 'day' ? 'selected' : '' %>>Today</option>
-                <option value="week" <%= filters.timeRange === 'week' ? 'selected' : '' %>>This Week</option>
+                <option value="day" <%= filters.timeRange === 'day' ? 'selected' : '' %>>Today</option>                <option value="week" <%= filters.timeRange === 'week' ? 'selected' : '' %>>This Week</option>
                 <option value="month" <%= filters.timeRange === 'month' ? 'selected' : '' %>>This Month</option>
                 <option value="year" <%= filters.timeRange === 'year' ? 'selected' : '' %>>This Year</option>
               </select>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
-              <button type="button" class="btn btn-primary w-100" id="apply-filters">
-                <i class="bi bi-funnel"></i> Apply Filters
+            <div class="col-6 col-sm-4 col-md-2">
+              <label for="sort-filter" class="form-label">Sort</label>
+              <select class="form-select form-select-sm" id="sort-filter">
+                <option value="goals" <%= filters.sortBy === 'goals' || !filters.sortBy ? 'selected' : '' %>>Goals</option>
+                <option value="streak" <%= filters.sortBy === 'streak' ? 'selected' : '' %>>🔥 Streak</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4 col-md-2 d-flex align-items-end">
+              <button type="button" class="btn btn-primary btn-sm w-100" id="apply-filters">
+                <i class="bi bi-funnel"></i> Apply
               </button>
+            </div>
+          </div>
+          
+          <!-- Filter Info Message (will be populated by JavaScript) -->
+          <div class="row">
+            <div class="col-12">
+              <div id="filter-info" class="small text-muted mt-2"></div>
             </div>
           </div>
           
           <!-- Reset Filters Button -->
           <div class="row mb-4">
             <div class="col-12">
-              <button type="button" class="btn btn-outline-secondary" id="reset-filters">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="reset-filters">
                 <i class="bi bi-x-circle"></i> Reset Filters
               </button>
             </div>
           </div>
           
-          <!-- Leaderboard Tabs -->
-          <ul class="nav nav-tabs" id="leaderboardTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="accuracy-tab" data-bs-toggle="tab" data-bs-target="#accuracy" type="button" role="tab" aria-controls="accuracy" aria-selected="true">Accuracy</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="speed-tab" data-bs-toggle="tab" data-bs-target="#speed" type="button" role="tab" aria-controls="speed" aria-selected="false">Speed</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="juggling-tab" data-bs-toggle="tab" data-bs-target="#juggling" type="button" role="tab" aria-controls="juggling" aria-selected="false">Juggling</button>
-            </li>
-          </ul>
-          
-          <!-- Tab Content -->
-          <div class="tab-content mt-3" id="leaderboardTabContent">
-            <!-- Accuracy Tab -->
-            <div class="tab-pane fade show active" id="accuracy" role="tabpanel" aria-labelledby="accuracy-tab">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Name</th>
-                      <th>District</th>
-                      <th>Gender</th>
-                      <th>Age Group</th>
-                      <th>Goals</th>
-                      <th>Attempts</th>
-                      <th>Referees</th>
-                      <th>Percentile</th>
-                    </tr>
-                  </thead>
-                  <tbody id="accuracy-leaderboard">
-                    <% 
-                      const accuracyLeaderboard = leaderboard.filter(player => 
-                        !filters.competitionType || filters.competitionType === 'all' || filters.competitionType === 'accuracy'
-                      );
-                      
-                      if (accuracyLeaderboard.length > 0) {
-                        accuracyLeaderboard.forEach((player, index) => { 
-                    %>
+          <!-- Leaderboard Content -->
+          <!-- Individual Leaderboard -->
+          <div id="individual-leaderboard" class="<%= filters.type === 'team' ? 'd-none' : '' %>">
+            <!-- Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Gender</th>
+                    <th>Age Group</th>
+                    <th>Goals</th>
+                    <th>Attempts</th>
+                    <th>Best Streak</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (leaderboard && leaderboard.length > 0) { %>
+                    <% leaderboard.forEach((player, index) => { %>
                       <tr>
-                        <td><%= index + 1 %></td>
-                        <td><%= player.name %></td>
-                        <td><%= player.residence %></td>
-                        <td><%= player.gender || 'Unknown' %></td>
-                        <td><%= player.age_group %></td>
-                        <td><%= player.total_goals %></td>
-                        <td><%= player.total_attempts %></td>
-                        <td><small><%= player.referees || 'Unknown' %></small></td>
                         <td>
-                          <% if (player.percentile <= 10) { %>
-                            <span class="badge bg-danger">Top 10%</span>
-                          <% } else if (player.percentile <= 25) { %>
-                            <span class="badge bg-warning">Top 25%</span>
-                          <% } else if (player.percentile <= 50) { %>
-                            <span class="badge bg-info">Top 50%</span>
+                          <span class="rank-badge <%= index < 3 ? 'rank-' + (index + 1) : '' %>">
+                            <%= index + 1 %>
+                          </span>
+                        </td>
+                        <td>
+                          <strong><%= player.name %></strong>
+                        </td>
+                        <td><%= player.city_village || player.residence %></td>
+                        <td><%= player.gender %></td>
+                        <td><%= player.age_group %></td>
+                        <td>
+                          <span class="badge bg-success"><%= player.total_goals %></span>
+                        </td>
+                        <td>
+                          <span class="badge bg-secondary"><%= player.total_attempts %></span>
+                        </td>
+                        <td>
+                          <% if (player.best_streak > 0) { %>
+                            <span class="badge bg-warning text-dark">
+                              <i class="fas fa-fire"></i> <%= player.best_streak %>
+                            </span>
                           <% } else { %>
-                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
+                            <span class="text-muted">-</span>
                           <% } %>
                         </td>
                       </tr>
-                    <% }); } else { %>
-                      <tr>
-                        <td colspan="9" class="text-center">No data available</td>
-                      </tr>
-                    <% } %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            
-            <!-- Speed Tab -->
-            <div class="tab-pane fade" id="speed" role="tabpanel" aria-labelledby="speed-tab">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
+                    <% }); %>
+                  <% } else { %>
                     <tr>
-                      <th>Rank</th>
-                      <th>Name</th>
-                      <th>District</th>
-                      <th>Gender</th>
-                      <th>Age Group</th>
-                      <th>Goals</th>
-                      <th>Attempts</th>
-                      <th>Referees</th>
-                      <th>Percentile</th>
+                      <td colspan="8" class="text-center">No individual data available</td>
                     </tr>
-                  </thead>
-                  <tbody id="speed-leaderboard">
-                    <% 
-                      const speedLeaderboard = leaderboard.filter(player => 
-                        filters.competitionType === 'speed'
-                      );
-                      
-                      if (speedLeaderboard.length > 0) {
-                        speedLeaderboard.forEach((player, index) => { 
-                    %>
-                      <tr>
-                        <td><%= index + 1 %></td>
-                        <td><%= player.name %></td>
-                        <td><%= player.residence %></td>
-                        <td><%= player.gender || 'Unknown' %></td>
-                        <td><%= player.age_group %></td>
-                        <td><%= player.total_goals %></td>
-                        <td><%= player.total_attempts %></td>
-                        <td><small><%= player.referees || 'Unknown' %></small></td>
-                        <td>
-                          <% if (player.percentile <= 10) { %>
-                            <span class="badge bg-danger">Top 10%</span>
-                          <% } else if (player.percentile <= 25) { %>
-                            <span class="badge bg-warning">Top 25%</span>
-                          <% } else if (player.percentile <= 50) { %>
-                            <span class="badge bg-info">Top 50%</span>
-                          <% } else { %>
-                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
-                          <% } %>
-                        </td>
-                      </tr>
-                    <% }); } else { %>
-                      <tr>
-                        <td colspan="9" class="text-center">No data available</td>
-                      </tr>
-                    <% } %>
-                  </tbody>
-                </table>
-              </div>
+                  <% } %>
+                </tbody>
+              </table>
             </div>
-            
-            <!-- Juggling Tab -->
-            <div class="tab-pane fade" id="juggling" role="tabpanel" aria-labelledby="juggling-tab">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Name</th>
-                      <th>District</th>
-                      <th>Gender</th>
-                      <th>Age Group</th>
-                      <th>Goals</th>
-                      <th>Attempts</th>
-                      <th>Referees</th>
-                      <th>Percentile</th>
-                    </tr>
-                  </thead>
-                  <tbody id="juggling-leaderboard">
-                    <% 
-                      const jugglingLeaderboard = leaderboard.filter(player => 
-                        filters.competitionType === 'juggling'
-                      );
-                      
-                      if (jugglingLeaderboard.length > 0) {
-                        jugglingLeaderboard.forEach((player, index) => { 
-                    %>
-                      <tr>
-                        <td><%= index + 1 %></td>
-                        <td><%= player.name %></td>
-                        <td><%= player.residence %></td>
-                        <td><%= player.gender || 'Unknown' %></td>
-                        <td><%= player.age_group %></td>
-                        <td><%= player.total_goals %></td>
-                        <td><%= player.total_attempts %></td>
-                        <td><small><%= player.referees || 'Unknown' %></small></td>
-                        <td>
-                          <% if (player.percentile <= 10) { %>
-                            <span class="badge bg-danger">Top 10%</span>
-                          <% } else if (player.percentile <= 25) { %>
-                            <span class="badge bg-warning">Top 25%</span>
-                          <% } else if (player.percentile <= 50) { %>
-                            <span class="badge bg-info">Top 50%</span>
-                          <% } else { %>
-                            <span class="badge bg-secondary"><%= player.percentile %>%</span>
-                          <% } %>
-                        </td>
-                      </tr>
-                    <% }); } else { %>
-                      <tr>
-                        <td colspan="9" class="text-center">No data available</td>
-                      </tr>
-                    <% } %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Staff on Duty -->
-      <div class="card">
-        <div class="card-header bg-secondary text-white">
-          <h5 class="mb-0">Today's Staff on Duty</h5>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <% if (staffOnDuty && staffOnDuty.length > 0) { %>
-              <% staffOnDuty.forEach(staff => { %>
-                <div class="col-md-4 mb-3">
-                  <div class="card h-100">
-                    <div class="card-body">
-                      <h5 class="card-title"><%= staff.name %></h5>
-                      <p class="card-text">
-                        <span class="badge 
-                          <%= staff.role === 'cashier' ? 'bg-primary' : 
-                             staff.role === 'referee' ? 'bg-success' : 
-                             'bg-info' %>">
-                          <%= staff.role.charAt(0).toUpperCase() + staff.role.slice(1) %>
+
+            <!-- Mobile Card View -->
+            <div class="d-md-none">
+              <% if (leaderboard && leaderboard.length > 0) { %>
+                <% leaderboard.forEach((player, index) => { %>
+                  <div class="mobile-card-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div class="item-title">
+                        <span class="rank-badge <%= index < 3 ? 'rank-' + (index + 1) : '' %> me-2">
+                          #<%= index + 1 %>
                         </span>
-                      </p>
+                        <%= player.name %>
+                      </div>
+                      <div class="text-end">
+                        <span class="badge bg-success"><%= player.total_goals %> goals</span>
+                      </div>
+                    </div>
+                    <div class="row g-2 small">
+                      <div class="col-6">
+                        <div class="item-detail">
+                          <strong>Location:</strong> <%= player.city_village || player.residence %>
+                        </div>
+                        <div class="item-detail">
+                          <strong>Gender:</strong> <%= player.gender %>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="item-detail">
+                          <strong>Age:</strong> <%= player.age_group %>
+                        </div>
+                        <div class="item-detail">
+                          <strong>Attempts:</strong> <span class="badge bg-secondary"><%= player.total_attempts %></span>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="item-detail">
+                          <strong>Best Streak:</strong> 
+                          <% if (player.best_streak > 0) { %>
+                            <span class="badge bg-warning text-dark">
+                              <i class="fas fa-fire"></i> <%= player.best_streak %>
+                            </span>
+                          <% } else { %>
+                            <span class="text-muted">-</span>
+                          <% } %>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                <% }); %>
+              <% } else { %>
+                <div class="mobile-card-item text-center">
+                  <div class="text-muted">No individual data available</div>
                 </div>
-              <% }); %>
-            <% } else { %>
-              <div class="col-12">
-                <p class="text-center">No staff on duty today</p>
-              </div>
-            <% } %>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Team Leaderboard -->
+          <div id="team-leaderboard" class="<%= filters.type === 'team' ? '' : 'd-none' %>">
+            <!-- Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Team Name</th>
+                    <th>Members</th>
+                    <th>Total Goals</th>
+                    <th>Total Attempts</th>
+                    <th>Recent Activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (teamLeaderboard && teamLeaderboard.length > 0) { %>
+                  <% teamLeaderboard.forEach((team, index) => { %>
+                    <tr>
+                      <td>
+                        <span class="rank-badge <%= index < 3 ? 'rank-' + (index + 1) : '' %>">
+                          <%= index + 1 %>
+                        </span>
+                      </td>
+                      <td>
+                        <strong><%= team.name %></strong>
+                        <% if (team.slug) { %>
+                          <small class="text-muted d-block">@<%= team.slug %></small>
+                        <% } %>
+                      </td>
+                      <td>
+                        <span class="badge bg-info"><%= team.member_count %> players</span>
+                      </td>
+                      <td>
+                        <span class="badge bg-success"><%= team.total_goals || 0 %></span>
+                      </td>
+                      <td>
+                        <span class="badge bg-secondary"><%= team.total_attempts || 0 %></span>
+                      </td>
+
+                      <td>
+                        <% if (team.last_activity) { %>
+                          <small class="text-muted">
+                            <%= new Date(team.last_activity).toLocaleDateString() %>
+                          </small>
+                        <% } else { %>
+                          <span class="text-muted">No activity</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center">No team data available</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -292,21 +264,98 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('Leaderboard script loaded');
+    
+    // Check initial state
+    const individualLeaderboard = document.getElementById('individual-leaderboard');
+    const teamLeaderboard = document.getElementById('team-leaderboard');
+    
+    // Set initial filter state based on current view
+    const isTeamView = document.getElementById('team-radio').checked;
+    if (isTeamView) {
+      // Wait for all elements to be available before disabling filters
+      setTimeout(() => disableIndividualOnlyFilters(true), 100);
+    }
+    
+    console.log('Individual leaderboard:', individualLeaderboard);
+    console.log('Team leaderboard:', teamLeaderboard);
+    console.log('Individual display:', individualLeaderboard ? individualLeaderboard.style.display : 'not found');
+    console.log('Team display:', teamLeaderboard ? teamLeaderboard.style.display : 'not found');
+    
+    // Team/Individual toggle
+    document.querySelectorAll('input[name="leaderboard-type"]').forEach(radio => {
+      console.log('Found radio:', radio.id, 'checked:', radio.checked);
+      radio.addEventListener('change', function() {
+        console.log('Radio changed:', this.id, 'checked:', this.checked);
+        if (this.checked) {
+          const type = this.id === 'team-radio' ? 'team' : 'individual';
+          console.log('Switching to type:', type);
+          
+          // Client-side toggle for immediate feedback
+          if (type === 'team') {
+            console.log('Hiding individual, showing team');
+            individualLeaderboard.classList.add('d-none');
+            teamLeaderboard.classList.remove('d-none');
+            
+            // Disable filters that don't apply to teams
+            disableIndividualOnlyFilters(true);
+          } else {
+            console.log('Showing individual, hiding team');
+            individualLeaderboard.classList.remove('d-none');
+            teamLeaderboard.classList.add('d-none');
+            
+            // Enable all filters for individual leaderboard
+            disableIndividualOnlyFilters(false);
+          }
+          
+          // Build current filters
+          let queryParams = [`type=${type}`];
+          
+          const gender = document.getElementById('gender-filter').value;
+          const ageGroup = document.getElementById('age-filter').value;
+          const residence = document.getElementById('district-filter').value;
+          const timeRange = document.getElementById('time-filter').value;
+          const sortBy = document.getElementById('sort-filter').value;
+          
+          if (gender !== 'all') queryParams.push(`gender=${gender}`);
+          if (ageGroup !== 'all') queryParams.push(`ageGroup=${ageGroup}`);
+          if (residence) queryParams.push(`residence=${residence}`);
+          if (timeRange !== 'all') queryParams.push(`timeRange=${timeRange}`);
+          if (sortBy !== 'goals') queryParams.push(`sortBy=${sortBy}`);
+          
+          console.log('Navigating to:', `/leaderboard?${queryParams.join('&')}`);
+          // Navigate to updated leaderboard
+          window.location.href = `/leaderboard?${queryParams.join('&')}`;
+        }
+      });
+    });
+    
     // Apply filters button
     document.getElementById('apply-filters').addEventListener('click', function() {
-      const gender = document.getElementById('gender-filter').value;
-      const ageGroup = document.getElementById('age-filter').value;
-      const residence = document.getElementById('district-filter').value;
-      const competitionType = document.getElementById('competition-filter').value;
+      const type = document.querySelector('input[name="leaderboard-type"]:checked').id === 'team-radio' ? 'team' : 'individual';
+      const isTeamView = type === 'team';
+      
+      // Get filter values - for team view, we'll only use applicable filters
       const timeRange = document.getElementById('time-filter').value;
+      const sortBy = document.getElementById('sort-filter').value;
       
       // Build query string
-      let queryParams = [];
-      if (gender !== 'all') queryParams.push(`gender=${gender}`);
-      if (ageGroup !== 'all') queryParams.push(`ageGroup=${ageGroup}`);
-      if (residence) queryParams.push(`residence=${residence}`);
-      if (competitionType !== 'all') queryParams.push(`competitionType=${competitionType}`);
+      let queryParams = [`type=${type}`];
+      
+      // Only add individual filters if we're in individual view
+      if (!isTeamView) {
+        const gender = document.getElementById('gender-filter').value;
+        const ageGroup = document.getElementById('age-filter').value;
+        const residence = document.getElementById('district-filter').value;
+        
+        if (gender !== 'all') queryParams.push(`gender=${gender}`);
+        if (ageGroup !== 'all') queryParams.push(`ageGroup=${ageGroup}`);
+        if (residence) queryParams.push(`residence=${residence}`);
+      }
+      
+      // These filters apply to both views
       if (timeRange !== 'all') queryParams.push(`timeRange=${timeRange}`);
+      if (sortBy !== 'goals') queryParams.push(`sortBy=${sortBy}`);
       
       // Redirect with filters
       window.location.href = `/leaderboard?${queryParams.join('&')}`;
@@ -314,25 +363,114 @@
     
     // Reset filters button
     document.getElementById('reset-filters').addEventListener('click', function() {
-      window.location.href = '/leaderboard';
+      // Keep the current leaderboard type when resetting filters
+      const type = document.querySelector('input[name="leaderboard-type"]:checked').id === 'team-radio' ? 'team' : 'individual';
+      window.location.href = `/leaderboard?type=${type}`;
     });
     
-    // Tab change handler
-    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
-      tab.addEventListener('shown.bs.tab', function(event) {
-        const competitionType = event.target.id.replace('-tab', '');
-        document.getElementById('competition-filter').value = competitionType;
-      });
-    });
-    
-    // Set active tab based on competition filter
-    const competitionFilter = document.getElementById('competition-filter').value;
-    if (competitionFilter !== 'all') {
-      const tabToActivate = document.getElementById(`${competitionFilter}-tab`);
-      if (tabToActivate) {
-        const tab = new bootstrap.Tab(tabToActivate);
-        tab.show();
+    // Function to disable or enable filters that only apply to individual players
+    function disableIndividualOnlyFilters(disable) {
+      // Define which filters should be disabled for team view
+      const individualOnlyFilters = [
+        'gender-filter',
+        'age-filter', 
+        'district-filter'
+      ];
+      
+      // Always disable sort filter separately - it has special handling
+      const sortFilter = document.getElementById('sort-filter');
+      if (sortFilter) {
+        if (disable) {
+          sortFilter.disabled = true;
+          sortFilter.parentElement.classList.add('text-muted');
+          sortFilter.title = 'This filter is only available for individual players';
+        } else {
+          sortFilter.disabled = false;
+          sortFilter.parentElement.classList.remove('text-muted');
+          sortFilter.removeAttribute('title');
+        }
       }
+      
+      // Apply or remove disabled state for other filters
+      individualOnlyFilters.forEach(filterId => {
+        const filterElement = document.getElementById(filterId);
+        if (filterElement) {
+          if (disable) {
+            filterElement.disabled = true;
+            filterElement.parentElement.classList.add('text-muted');
+            filterElement.title = 'This filter is only available for individual players';
+          } else {
+            filterElement.disabled = false;
+            filterElement.parentElement.classList.remove('text-muted');
+            filterElement.removeAttribute('title');
+          }
+        }
+      });
+      
+      // Update help text to explain why filters are disabled
+      const filterInfo = document.getElementById('filter-info');
+      if (!filterInfo) {
+        const filtersRow = document.querySelector('.row.g-2.mb-4');
+        const infoDiv = document.createElement('div');
+        infoDiv.id = 'filter-info';
+        infoDiv.className = 'col-12 small text-muted mt-2';
+        filtersRow.appendChild(infoDiv);
+      }
+      
+      if (disable) {
+        document.getElementById('filter-info').innerHTML = 
+          '<i class="bi bi-info-circle"></i> Some filters are disabled for team leaderboards.';
+      } else {
+        document.getElementById('filter-info').innerHTML = '';
+      }
+    }
+    
+    // Check initial state and set filters accordingly
+    if (document.getElementById('team-radio').checked) {
+      disableIndividualOnlyFilters(true);
     }
   });
 </script>
+
+<style>
+  .rank-badge {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+    color: white;
+    background-color: #6c757d;
+  }
+  
+  .rank-1 {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #333;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  }
+  
+  .rank-2 {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    color: #333;
+    box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
+  }
+  
+  .rank-3 {
+    background: linear-gradient(135deg, #cd7f32, #daa520);
+    color: white;
+    box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
+  }
+  
+  .btn-check:checked + .btn-outline-light {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .progress {
+    border: 1px solid #dee2e6;
+  }
+  
+  /* No custom styles needed for leaderboard tables - using Bootstrap's d-none class */
+</style>

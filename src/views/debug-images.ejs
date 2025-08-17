@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Images</title>
+  </head>
+  <body>
+    <h1>Testing Image Paths</h1>
+
+    <h2>Default Profile Image</h2>
+    <img
+      src="/images/default-profile.png"
+      alt="Default Profile"
+      style="width: 150px; height: 150px"
+    />
+
+    <h2>Test Profile Images from Uploads</h2>
+    <div>
+      <% uploadFiles.forEach(function(file) { %>
+      <div style="margin: 20px 0">
+        <h3><%= file %></h3>
+        <img
+          src="/uploads/<%= file %>"
+          alt="<%= file %>"
+          style="max-width: 200px; max-height: 200px"
+          onerror="this.onerror=null; this.style.border='2px solid red'; this.src='/images/default-profile.png';"
+        />
+      </div>
+      <% }); %>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+                                                                                   List of relations
+ Schema |              Name               | Type  |     Owner      | Persistence | Access method |    Size    |                              Description                               
+--------+---------------------------------+-------+----------------+-------------+---------------+------------+------------------------------------------------------------------------
+ public | age_brackets                    | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | competition_types               | table | postgres       | permanent   | heap          | 16 kB      | 
+ public | custom_competition_activity     | table | striker_splash | permanent   | heap          | 16 kB      | Log of all goals scored in custom competitions
+ public | custom_competition_participants | table | striker_splash | permanent   | heap          | 8192 bytes | Individual players participating in custom competitions
+ public | custom_competition_teams        | table | striker_splash | permanent   | heap          | 8192 bytes | Teams participating in custom competitions
+ public | custom_competitions             | table | striker_splash | permanent   | heap          | 16 kB      | Staff-created custom competitions
+ public | daily_raffles                   | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | event_locations                 | table | striker_splash | permanent   | heap          | 16 kB      | 
+ public | event_registrations             | table | striker_splash | permanent   | heap          | 8192 bytes | 
+ public | events                          | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | game_stats                      | table | postgres       | permanent   | heap          | 40 kB      | 
+ public | global_counters                 | table | postgres       | permanent   | heap          | 40 kB      | 
+ public | kick_log                        | table | striker_splash | permanent   | heap          | 8192 bytes | Unified log of all kicks from both matches and solo competitions
+ public | match_participants              | table | striker_splash | permanent   | heap          | 0 bytes    | 
+ public | match_scores                    | table | striker_splash | permanent   | heap          | 0 bytes    | 
+ public | matches                         | table | striker_splash | permanent   | heap          | 0 bytes    | Head-to-head matches between two teams
+ public | notifications                   | table | striker_splash | permanent   | heap          | 16 kB      | 
+ public | players                         | table | postgres       | permanent   | heap          | 48 kB      | 
+ public | queue_tickets                   | table | postgres       | permanent   | heap          | 40 kB      | 
+ public | shots                           | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | site_content                    | table | striker_splash | permanent   | heap          | 16 kB      | 
+ public | solo_competitions               | table | striker_splash | permanent   | heap          | 8192 bytes | Individual competitions where players compete without team affiliation
+ public | solo_participants               | table | striker_splash | permanent   | heap          | 0 bytes    | 
+ public | staff                           | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | staff_on_duty                   | table | postgres       | permanent   | heap          | 0 bytes    | 
+ public | team_join_requests              | table | striker_splash | permanent   | heap          | 16 kB      | 
+ public | team_members                    | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | team_stats                      | table | postgres       | permanent   | heap          | 40 kB      | 
+ public | teams                           | table | postgres       | permanent   | heap          | 16 kB      | 
+ public | ticket_ranges                   | table | postgres       | permanent   | heap          | 8192 bytes | 
+ public | transactions                    | table | striker_splash | permanent   | heap          | 48 kB      | 
+ public | uploads                         | table | postgres       | permanent   | heap          | 16 kB      | 
+(32 rows)
+

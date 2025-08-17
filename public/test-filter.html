@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Filter Test</title>
+  </head>
+  <body>
+    <h1>Simple Filter Test</h1>
+
+    <!-- Hidden form for testing -->
+    <form id="test-form" method="GET" action="/leaderboard">
+      <input type="hidden" name="gender" id="hidden-gender" value="" />
+      <input type="hidden" name="type" id="hidden-type" value="" />
+    </form>
+
+    <button onclick="testSubmit()">Test Female Filter</button>
+
+    <script>
+      function testSubmit() {
+        console.log("Testing form submission...");
+        document.getElementById("hidden-gender").value = "female";
+        document.getElementById("hidden-type").value = "individual";
+
+        console.log("Form values:", {
+          gender: document.getElementById("hidden-gender").value,
+          type: document.getElementById("hidden-type").value,
+        });
+
+        document.getElementById("test-form").submit();
+      }
+    </script>
+  </body>
+</html>

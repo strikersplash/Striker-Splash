@@ -20,28 +20,25 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link active" href="/admin/tickets">
               <i class="bi bi-ticket-perforated"></i> Ticket Management
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/staff-duty">
-              <i class="bi bi-calendar-check"></i> Staff on Duty
-            </a>
-          </li>
+
           <li class="nav-item">
             <a class="nav-link" href="/admin/raffle">
               <i class="bi bi-trophy"></i> Daily Raffle
             </a>
           </li>
+          <li class="nav-item"></li>
           <li class="nav-item">
-            <a class="nav-link" href="/admin/reports">
-              <i class="bi bi-graph-up"></i> Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/settings">
-              <i class="bi bi-gear"></i> Settings
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
             </a>
           </li>
         </ul>
@@ -50,127 +47,181 @@
 
     <!-- Main Content -->
     <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
         <h1 class="h2">Ticket Management</h1>
       </div>
 
-      <!-- Ticket Information -->
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="mb-0">Current Ticket Information</h5>
+      <div class="row">
+        <!-- Left Column - Ticket Management Controls -->
+        <div class="col-lg-6">
+          <!-- Ticket Information Card -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">Ticket Information</h5>
             </div>
             <div class="card-body">
-              <% if (ticketRange && ticketRange.total_tickets > 0) { %>
-                <p><strong>Ticket Range:</strong> <%= ticketRange.min_ticket %> - <%= ticketRange.max_ticket %></p>
-                <p><strong>Total Tickets Issued:</strong> <%= ticketRange.total_tickets %></p>
+              <% if (ticketRangeSettings) { %>
+              <p id="configured-range" class="mb-2">
+                <strong>Ticket Range:</strong> <%=
+                ticketRangeSettings.start_ticket %> - <%=
+                ticketRangeSettings.end_ticket %>
+              </p>
+              <p id="available-tickets" class="mb-2">
+                <strong>Available Tickets:</strong> <%=
+                ticketRangeSettings.end_ticket - nextTicket + 1 %>
+              </p>
+              <% } %> <% if (ticketRange && ticketRange.total_tickets > 0) { %>
+              <p class="mb-2">
+                <strong>Total Tickets Issued:</strong> <%=
+                ticketRange.total_tickets %>
+              </p>
               <% } else { %>
-                <p>No tickets have been issued yet.</p>
+              <p class="mb-2">No tickets have been issued yet.</p>
               <% } %>
-              <p><strong>Next Ticket Number:</strong> <span id="next-ticket-display"><%= nextTicket %></span></p>
+              <p class="mb-0">
+                <strong>Next Ticket Number:</strong>
+                <span id="next-ticket-display"><%= nextTicket %></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Set Ticket Range Card -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">Set Ticket Range</h5>
+            </div>
+            <div class="card-body">
+              <form id="ticket-range-form">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="start-ticket" class="form-label"
+                        >Start Ticket Number</label
+                      >
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="start-ticket"
+                        name="startTicket"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="end-ticket" class="form-label"
+                        >End Ticket Number</label
+                      >
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="end-ticket"
+                        name="endTicket"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="alert alert-info py-2">
+                  <p class="mb-0">
+                    Set the range of tickets available for the current batch.
+                    This helps track when you're running low on physical
+                    tickets.
+                  </p>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  Set Ticket Range
+                </button>
+              </form>
             </div>
           </div>
         </div>
-        
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
+
+        <!-- Right Column - Update/Info -->
+        <div class="col-lg-6">
+          <!-- Update Next Ticket Number Card -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
               <h5 class="mb-0">Update Next Ticket Number</h5>
             </div>
             <div class="card-body">
               <form id="update-ticket-form">
                 <div class="mb-3">
-                  <label for="next-ticket" class="form-label">Next Ticket Number</label>
-                  <input type="number" class="form-control" id="next-ticket" name="nextTicket" value="<%= nextTicket %>" min="1" required>
+                  <label for="next-ticket" class="form-label"
+                    >Next Ticket Number</label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="next-ticket"
+                    name="nextTicket"
+                    value="<%= nextTicket %>"
+                    min="1"
+                    required
+                  />
                   <div class="form-text">
-                    Use this to set the starting number for a new roll of physical tickets.
+                    Use this to set the starting number for a new roll of
+                    physical tickets.
                   </div>
                 </div>
                 <div class="alert alert-warning">
-                  <p class="mb-0"><strong>Important:</strong> Changing this number will affect all future ticket issuances. Make sure you're using the correct starting number from your physical ticket roll.</p>
+                  <p class="mb-0">
+                    <strong>Important:</strong> Changing this number will affect
+                    all future ticket issuances. Make sure you're using the
+                    correct starting number from your physical ticket roll.
+                  </p>
                 </div>
-                <button type="submit" class="btn btn-primary">Update Ticket Number</button>
+                <button type="submit" class="btn btn-primary">
+                  Update Ticket Number
+                </button>
               </form>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Set Ticket Range -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h5 class="mb-0">Set Ticket Range</h5>
-        </div>
-        <div class="card-body">
-          <form id="ticket-range-form">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="start-ticket" class="form-label">Start Ticket Number</label>
-                  <input type="number" class="form-control" id="start-ticket" name="startTicket" min="1" required>
-                </div>
+          <!-- Ticket Usage Card -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">Ticket Usage</h5>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info mb-3 py-3">
+                <h5 class="mb-2">How Tickets Work</h5>
+                <p>
+                  Tickets are issued sequentially and never reset. Each ticket
+                  corresponds to a physical raffle ticket given to players.
+                </p>
+                <ul class="mb-0">
+                  <li>
+                    When a player purchases 5 kicks for competition entry, they
+                    receive a physical ticket with the next available number.
+                  </li>
+                  <li>
+                    The ticket number is recorded in the system and linked to
+                    the player's account.
+                  </li>
+                  <li>
+                    Ticket numbers are used for both queue order and daily
+                    raffles.
+                  </li>
+                </ul>
               </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="end-ticket" class="form-label">End Ticket Number</label>
-                  <input type="number" class="form-control" id="end-ticket" name="endTicket" min="1" required>
-                </div>
+
+              <div class="alert alert-warning py-3 mb-0">
+                <h5 class="mb-2">Low Ticket Warning</h5>
+                <p class="mb-2">
+                  The system will display a warning when you're running low on
+                  tickets (less than 50 remaining in your current roll).
+                </p>
+                <p class="mb-0">
+                  When you get a new roll of tickets, update the "Next Ticket
+                  Number" to match the first number on your new roll.
+                </p>
               </div>
             </div>
-            <div class="alert alert-info">
-              <p class="mb-0">Set the range of tickets available for the current batch. This helps track when you're running low on physical tickets.</p>
-            </div>
-            <button type="submit" class="btn btn-primary">Set Ticket Range</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Ticket Usage -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h5 class="mb-0">Ticket Usage</h5>
-        </div>
-        <div class="card-body">
-          <div class="alert alert-info">
-            <h5>How Tickets Work</h5>
-            <p>Tickets are issued sequentially and never reset. Each ticket corresponds to a physical raffle ticket given to players.</p>
-            <ul>
-              <li>When a player purchases 5 kicks for competition entry, they receive a physical ticket with the next available number.</li>
-              <li>The ticket number is recorded in the system and linked to the player's account.</li>
-              <li>Ticket numbers are used for both queue order and daily raffles.</li>
-            </ul>
-          </div>
-          
-          <div class="alert alert-warning">
-            <h5>Low Ticket Warning</h5>
-            <p>The system will display a warning when you're running low on tickets (less than 50 remaining in your current roll).</p>
-            <p>When you get a new roll of tickets, update the "Next Ticket Number" to match the first number on your new roll.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Tickets -->
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">Recent Tickets</h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover" id="recent-tickets-table">
-              <thead>
-                <tr>
-                  <th>Ticket #</th>
-                  <th>Player</th>
-                  <th>Competition</th>
-                  <th>Status</th>
-                  <th>Issued</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- This will be populated dynamically -->
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -179,130 +230,153 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Load recent tickets
-    loadRecentTickets();
-    
+  document.addEventListener("DOMContentLoaded", function () {
     // Update ticket form
-    document.getElementById('update-ticket-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const nextTicket = document.getElementById('next-ticket').value;
-      
-      if (!confirm(`Are you sure you want to set the next ticket number to ${nextTicket}?`)) {
-        return;
-      }
-      
-      // Send update request to server
-      fetch('/admin/tickets/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ nextTicket })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          document.getElementById('next-ticket-display').textContent = data.nextTicket;
-          alert('Next ticket number updated successfully');
-        } else {
-          alert(`Error: ${data.message}`);
+    document
+      .getElementById("update-ticket-form")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const nextTicket = document.getElementById("next-ticket").value;
+
+        if (
+          !confirm(
+            `Are you sure you want to set the next ticket number to ${nextTicket}?`
+          )
+        ) {
+          return;
         }
-      })
-      .catch(error => {
-        console.error('Error updating ticket number:', error);
-        alert('Error updating ticket number. Please try again.');
-      });
-    });
-    
-    // Ticket range form
-    document.getElementById('ticket-range-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const startTicket = document.getElementById('start-ticket').value;
-      const endTicket = document.getElementById('end-ticket').value;
-      
-      if (parseInt(startTicket) >= parseInt(endTicket)) {
-        alert('End ticket number must be greater than start ticket number');
-        return;
-      }
-      
-      if (!confirm(`Are you sure you want to set the ticket range to ${startTicket}-${endTicket}?`)) {
-        return;
-      }
-      
-      // Send update request to server
-      fetch('/admin/tickets/range', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ startTicket, endTicket })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('Ticket range set successfully');
-          window.location.reload();
-        } else {
-          alert(`Error: ${data.message}`);
-        }
-      })
-      .catch(error => {
-        console.error('Error setting ticket range:', error);
-        alert('Error setting ticket range. Please try again.');
-      });
-    });
-    
-    // Load recent tickets
-    function loadRecentTickets() {
-      fetch('/api/tickets/recent')
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const table = document.getElementById('recent-tickets-table').getElementsByTagName('tbody')[0];
-            table.innerHTML = '';
-            
-            if (data.tickets.length === 0) {
-              const row = table.insertRow();
-              const cell = row.insertCell(0);
-              cell.colSpan = 5;
-              cell.className = 'text-center';
-              cell.textContent = 'No tickets found';
-              return;
-            }
-            
-            data.tickets.forEach(ticket => {
-              const row = table.insertRow();
-              
-              const ticketCell = row.insertCell(0);
-              const playerCell = row.insertCell(1);
-              const competitionCell = row.insertCell(2);
-              const statusCell = row.insertCell(3);
-              const issuedCell = row.insertCell(4);
-              
-              ticketCell.textContent = ticket.ticket_number;
-              playerCell.textContent = ticket.player_name;
-              competitionCell.textContent = ticket.competition_type;
-              
-              let statusBadge = '';
-              if (ticket.status === 'in-queue') {
-                statusBadge = '<span class="badge bg-warning">In Queue</span>';
-              } else if (ticket.status === 'played') {
-                statusBadge = '<span class="badge bg-success">Played</span>';
-              } else {
-                statusBadge = '<span class="badge bg-danger">Expired</span>';
-              }
-              statusCell.innerHTML = statusBadge;
-              
-              issuedCell.textContent = new Date(ticket.created_at).toLocaleString();
-            });
-          }
+
+        // Send update request to server
+        fetch("/admin/tickets/update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ nextTicket }),
         })
-        .catch(error => {
-          console.error('Error loading recent tickets:', error);
-        });
-    }
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              document.getElementById("next-ticket-display").textContent =
+                data.nextTicket;
+
+              // Update available tickets count if ticket range is configured
+              const availableTicketsEl =
+                document.getElementById("available-tickets");
+              const configuredRangeEl =
+                document.getElementById("configured-range");
+              if (availableTicketsEl && configuredRangeEl) {
+                const rangeText = configuredRangeEl.textContent;
+                const endTicket = parseInt(rangeText.split("-")[1].trim());
+                const available = endTicket - data.nextTicket + 1;
+                availableTicketsEl.innerHTML = `<strong>Available Tickets:</strong> ${available}`;
+              }
+
+              alert("Next ticket number updated successfully");
+            } else {
+              alert(`Error: ${data.message}`);
+            }
+          })
+          .catch((error) => {
+            console.error("Error updating ticket number:", error);
+            alert("Error updating ticket number. Please try again.");
+          });
+      });
+
+    // Ticket range form
+    document
+      .getElementById("ticket-range-form")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const startTicket = document.getElementById("start-ticket").value;
+        const endTicket = document.getElementById("end-ticket").value;
+
+        if (parseInt(startTicket) >= parseInt(endTicket)) {
+          alert("End ticket number must be greater than start ticket number");
+          return;
+        }
+
+        if (
+          !confirm(
+            `Are you sure you want to set the ticket range to ${startTicket}-${endTicket}?`
+          )
+        ) {
+          return;
+        }
+
+        // Send update request to server
+        fetch("/admin/tickets/range", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ startTicket, endTicket }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Update the ticket range display
+              const configuredRangeEl =
+                document.getElementById("configured-range");
+              if (configuredRangeEl) {
+                configuredRangeEl.innerHTML = `<strong>Ticket Range:</strong> ${data.startTicket} - ${data.endTicket}`;
+
+                // Also update the available tickets count
+                const totalTicketsEl = configuredRangeEl.nextElementSibling;
+                if (totalTicketsEl) {
+                  const currentNextTicket = document.getElementById(
+                    "next-ticket-display"
+                  ).textContent;
+                  const total =
+                    data.endTicket - parseInt(currentNextTicket) + 1;
+                  totalTicketsEl.innerHTML = `<strong>Available Tickets:</strong> ${total}`;
+                }
+              } else {
+                // If no configured range element exists yet, we need to create the section
+                const cardBody = document.querySelector(".card-body");
+                if (cardBody) {
+                  // Create and insert range information
+                  const rangeElement = document.createElement("p");
+                  rangeElement.id = "configured-range";
+                  rangeElement.innerHTML = `<strong>Ticket Range:</strong> ${data.startTicket} - ${data.endTicket}`;
+
+                  const availableTicketsElement = document.createElement("p");
+                  availableTicketsElement.id = "available-tickets";
+                  const currentNextTicket = document.getElementById(
+                    "next-ticket-display"
+                  ).textContent;
+                  availableTicketsElement.innerHTML = `<strong>Available Tickets:</strong> ${
+                    data.endTicket - parseInt(currentNextTicket) + 1
+                  }`;
+
+                  // Insert at the beginning of the card body
+                  if (cardBody.firstChild) {
+                    cardBody.insertBefore(
+                      availableTicketsElement,
+                      cardBody.firstChild
+                    );
+                    cardBody.insertBefore(rangeElement, cardBody.firstChild);
+                  } else {
+                    cardBody.appendChild(rangeElement);
+                    cardBody.appendChild(availableTicketsElement);
+                  }
+                }
+              }
+
+              alert("Ticket range set successfully");
+              // Keep form values for reference
+              document.getElementById("start-ticket").value = data.startTicket;
+              document.getElementById("end-ticket").value = data.endTicket;
+            } else {
+              alert(`Error: ${data.message}`);
+            }
+          })
+          .catch((error) => {
+            console.error("Error setting ticket range:", error);
+            alert("Error setting ticket range. Please try again.");
+          });
+      });
   });
 </script>

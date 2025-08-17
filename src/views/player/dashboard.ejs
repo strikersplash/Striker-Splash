@@ -1,161 +1,498 @@
-<div class="container mt-5">
+<div class="container-fluid py-3">
   <div class="row">
-    <div class="col-md-12">
-      <div class="card mb-4">
+    <div class="col-12">
+      <h2 class="mb-3">Player Dashboard</h2>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Left Column: Player Info & QR Code & Notifications -->
+    <div class="col-lg-4 col-md-12 col-sm-12 col-12">
+      <!-- Player Profile Card -->
+      <div class="card mb-3">
         <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Player Dashboard</h3>
+          <h5 class="mb-0">Player Profile</h5>
+        </div>
+        <div class="card-body text-center py-2">
+          <div id="player-avatar-container" class="mb-2"></div>
+          <h5><%= player.name %></h5>
+          <% if (player.is_child_account) { %>
+          <span class="badge bg-info mb-1">Child Account</span>
+          <% } %>
+          <p class="text-muted mb-1 small"><%= player.phone %></p>
+          <% if (player.email) { %>
+          <p class="text-muted mb-1 small"><%= player.email %></p>
+          <% } %>
+          <p class="small text-muted mb-1">
+            <strong>Location:</strong>
+            <% if (player.city_village) { %><%= player.city_village %>, <% } %>
+            <%= player.residence %>
+          </p>
+          <p class="small text-muted mb-2">
+            <strong>Age Group:</strong> <%= player.age_group %>
+          </p>
+          <a href="/player/edit-profile" class="btn btn-outline-primary btn-sm"
+            >Edit Profile</a
+          >
+        </div>
+      </div>
+
+      <!-- QR Code Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Your QR Code</h5>
+        </div>
+        <div class="card-body text-center py-2">
+          <% if (player.qr_code_path) { %>
+          <img
+            src="<%= player.qr_code_path %>"
+            alt="QR Code"
+            class="img-fluid mb-2"
+            style="max-width: 120px"
+          />
+          <% } else { %>
+          <img
+            src="/qr/<%= player.id %>"
+            alt="QR Code"
+            class="img-fluid mb-2"
+            style="max-width: 120px"
+          />
+          <% } %>
+          <p class="small mb-2">
+            Show this QR code to the referee to log your goals.
+          </p>
+          <a href="/player/download-qr" class="btn btn-outline-success btn-sm"
+            >Download QR Code</a
+          >
+        </div>
+      </div>
+
+      <!-- Notifications Card -->
+      <div class="card">
+        <div
+          class="card-header bg-warning text-dark d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0">
+            <i class="bi bi-bell"></i> Notifications
+            <span id="unread-count" class="badge bg-danger"></span>
+          </h5>
+          <button
+            id="clear-all-notifications-btn"
+            class="btn btn-sm btn-outline-danger"
+            style="
+              display: inline-block !important;
+              visibility: visible !important;
+            "
+          >
+            Clear All
+          </button>
         </div>
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-4">
-              <div class="card mb-4">
-                <div class="card-body text-center">
-                  <% if (player.photo_path) { %>
-                    <img src="<%= player.photo_path %>" alt="Profile Photo" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                  <% } else { %>
-                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
-                      <i class="bi bi-person-fill" style="font-size: 5rem;"></i>
-                    </div>
-                  <% } %>
-                  <h4><%= player.name %></h4>
-                  <p class="text-muted"><%= player.phone %><br><%= player.email || '' %></p>
-                  <p><strong>District:</strong> <%= player.residence %></p>
-                  <p><strong>Age Group:</strong> <%= player.age_group %></p>
-                  <a href="/player/edit-profile" class="btn btn-outline-primary">Edit Profile</a>
-                </div>
+          <div id="notifications-container">
+            <div class="alert alert-info alert-dismissible fade show py-2 mb-2">
+              <div><strong>Test Notification</strong></div>
+              <small
+                >This is a test notification to verify the clear button
+                works</small
+              >
+              <button
+                type="button"
+                class="btn-close btn-close-sm"
+                data-bs-dismiss="alert"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle Column: Stats & Teams -->
+    <div class="col-lg-4 col-md-12 col-sm-12 col-12">
+      <!-- Stats Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Your Stats</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-4">
+              <div>
+                <i class="bi bi-trophy text-primary fs-5 mb-2 d-block"></i>
               </div>
-              
-              <!-- QR Code Card -->
-              <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                  <h5 class="mb-0">Your QR Code</h5>
-                </div>
-                <div class="card-body text-center">
-                  <% if (player.qr_code_path) { %>
-                    <img src="<%= player.qr_code_path %>" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
-                  <% } else { %>
-                    <img src="/qr/<%= player.id %>" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
-                  <% } %>
-                  <p class="mb-2">Show this QR code to the referee to log your goals.</p>
-                  <a href="/player/download-qr" class="btn btn-outline-success">Download QR Code</a>
-                </div>
+              <h3 class="text-primary"><%= stats.total_goals || 0 %></h3>
+              <small>Goals</small>
+            </div>
+            <div class="col-4">
+              <div>
+                <i
+                  class="bi bi-arrow-up-circle text-info fs-5 mb-2 d-block"
+                ></i>
               </div>
-              
-              <!-- Team Card -->
-              <div class="card">
-                <div class="card-header bg-info text-white">
-                  <h5 class="mb-0">Team</h5>
-                </div>
-                <div class="card-body" id="team-card-body">
-                  <div class="d-grid gap-2">
-                    <a href="/teams/create" class="btn btn-primary mb-2">Create a Team</a>
-                    <a href="/teams/browse" class="btn btn-outline-secondary">Browse All Teams</a>
-                  </div>
-                </div>
+              <h3 class="text-info"><%= stats.total_attempts || 0 %></h3>
+              <small>Attempts</small>
+            </div>
+            <div class="col-4">
+              <div>
+                <i class="bi bi-percent text-warning fs-5 mb-2 d-block"></i>
+              </div>
+              <h3 class="text-warning">
+                <%= stats.total_attempts ? ((stats.total_goals /
+                stats.total_attempts) * 100).toFixed(1) : 0 %>%
+              </h3>
+              <small>Accuracy</small>
+            </div>
+          </div>
+          <hr />
+          <div class="row text-center">
+            <div class="col-6">
+              <div>
+                <i class="bi bi-star text-success fs-5 mb-2 d-block"></i>
+              </div>
+              <h4 class="text-success">
+                <% if (stats.best_consecutive_kicks &&
+                stats.best_consecutive_kicks > 0) { %> <%=
+                stats.best_consecutive_kicks %> <% } else { %> 0 <% } %>
+              </h4>
+              <small>Best Streak</small>
+            </div>
+            <div class="col-6">
+              <div>
+                <i
+                  class="bi bi-battery-charging text-primary fs-5 mb-2 d-block"
+                ></i>
+              </div>
+              <h4 class="text-primary"><%= player.kicks_balance || 0 %></h4>
+              <small>Kicks Available</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teams Card -->
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Teams</h5>
+        </div>
+        <div class="card-body">
+          <% if (allTeams && allTeams.length > 0) { %> <%
+          allTeams.forEach((team, index) => { %>
+          <div class="alert alert-success mb-2">
+            <h6 class="mb-1">
+              <strong><%= team.name %></strong>
+              <% if (team.slug) { %>
+              <small class="text-muted">@<%= team.slug %></small>
+              <% } %>
+            </h6>
+            <small>Size: <%= team.team_size %> players</small>
+            <% if (team.description) { %>
+            <br /><small class="text-muted"><%= team.description %></small>
+            <% } %>
+          </div>
+          <% }); %>
+
+          <div class="d-grid gap-2">
+            <% if (allTeams.length === 1) { %>
+            <a href="/player/team/view" class="btn btn-primary btn-sm">
+              View Team
+            </a>
+            <% } else { %>
+            <a href="/player/teams/browse" class="btn btn-primary btn-sm">
+              Manage My Teams (<%= allTeams.length %>)
+            </a>
+            <% } %>
+            <a
+              href="/player/teams/browse"
+              class="btn btn-outline-secondary btn-sm"
+            >
+              Browse More Teams
+            </a>
+          </div>
+          <% } else { %>
+          <div class="alert alert-light text-center">
+            <p class="mb-2">You're not part of any team yet</p>
+            <small class="text-muted"
+              >Join a team to participate in competitions!</small
+            >
+          </div>
+          <div class="d-grid gap-2">
+            <a href="/player/teams/create" class="btn btn-success btn-sm"
+              >Create Team</a
+            >
+            <a
+              href="/player/teams/browse"
+              class="btn btn-outline-primary btn-sm"
+              >Browse Teams</a
+            >
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Queue Status -->
+    <div class="col-lg-4 col-md-12 col-sm-12 col-12">
+      <!-- Queue Status Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Queue Status</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="bg-info text-white p-2 rounded">
+                <small>Now Serving</small>
+                <h4 id="current-queue-number">
+                  <%= currentQueuePosition || 'None' %>
+                </h4>
               </div>
             </div>
-            
-            <div class="col-md-8">
-              <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                  <h5 class="mb-0">Your Stats</h5>
-                </div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-4 mb-3">
-                      <div class="card text-center">
-                        <div class="card-body">
-                          <h5 class="card-title">Total Goals</h5>
-                          <h2><%= stats.total_goals || 0 %></h2>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                      <div class="card text-center">
-                        <div class="card-body">
-                          <h5 class="card-title">Total Attempts</h5>
-                          <h2><%= stats.total_attempts || 0 %></h2>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                      <div class="card text-center">
-                        <div class="card-body">
-                          <h5 class="card-title">Accuracy</h5>
-                          <h2><%= stats.total_attempts ? ((stats.total_goals / stats.total_attempts) * 100).toFixed(1) : 0 %>%</h2>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-3">
-                    <h5>Kicks Balance: <span class="badge bg-primary"><%= player.kicks_balance || 0 %></span></h5>
-                    <p>Visit a cashier to purchase more kicks.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="card">
-                <div class="card-header bg-warning text-dark">
-                  <h5 class="mb-0">Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                  <div class="table-responsive">
-                    <table class="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Goals</th>
-                          <th>Location</th>
-                          <th>Referee</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <% if (typeof recentActivity !== 'undefined' && recentActivity && recentActivity.length > 0) { %>
-                          <% recentActivity.forEach(activity => { %>
-                            <tr>
-                              <td><%= new Date(activity.timestamp).toLocaleDateString() %></td>
-                              <td><%= activity.goals %></td>
-                              <td><%= activity.location %></td>
-                              <td><%= activity.staff_name || 'Unknown' %></td>
-                            </tr>
-                          <% }); %>
-                        <% } else { %>
-                          <tr>
-                            <td colspan="4" class="text-center">No recent activity</td>
-                          </tr>
-                        <% } %>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+            <div class="col-6">
+              <div class="bg-primary text-white p-2 rounded">
+                <small>Your Position</small>
+                <h4 id="queue-position">
+                  <% if (activeTickets && activeTickets.length > 0) { %> <%
+                  const nextTicket = activeTickets.find(t => t.ticket_number >=
+                  (currentQueuePosition || 0)) %> <% if (nextTicket &&
+                  currentQueuePosition) { %> <%= nextTicket.ticket_number -
+                  currentQueuePosition %> ahead <% } else { %> Ready! <% } %> <%
+                  } else { %> No tickets <% } %>
+                </h4>
               </div>
             </div>
           </div>
+
+          <h6>Your Active Tickets:</h6>
+          <div id="tickets-container">
+            <% if (activeTickets && activeTickets.length > 0) { %> <%
+            activeTickets.forEach(ticket => { %>
+            <div
+              class="d-flex justify-content-between align-items-center border-bottom py-1"
+            >
+              <div>
+                <strong>Ticket #<%= ticket.ticket_number %></strong>
+                <br /><small class="text-muted">
+                  <%= ticket.competition_type === 'competition' ? 'Competition'
+                  : 'Practice' %>
+                </small>
+              </div>
+              <% if (currentQueuePosition && ticket.ticket_number <=
+              currentQueuePosition) { %>
+              <span class="badge bg-success">Ready!</span>
+              <% } else if (currentQueuePosition) { %>
+              <span class="badge bg-secondary">
+                <%= ticket.ticket_number - currentQueuePosition %> ahead
+              </span>
+              <% } else { %>
+              <span class="badge bg-info">In Queue</span>
+              <% } %>
+            </div>
+            <% }) %> <% } else { %>
+            <div class="alert alert-light text-center">
+              <small>No active queue tickets</small>
+            </div>
+            <% } %>
+          </div>
+          <small class="text-muted d-block mt-2"
+            >Updates every 10 seconds</small
+          >
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Avatar Script -->
+<script src="/js/avatar.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Check if player is in a team
-    fetch('/teams/check-membership/<%= player.id %>')
-      .then(response => response.json())
-      .then(data => {
-        if (data.team) {
-          // Update team card if player is in a team
-          document.getElementById('team-card-body').innerHTML = `
-            <h5>${data.team.name}</h5>
-            <p>You are a member of this team.</p>
-            <div class="d-grid gap-2">
-              <a href="/teams/dashboard/${data.team.id}" class="btn btn-primary mb-2">View Team Dashboard</a>
-              <a href="/teams/browse" class="btn btn-outline-secondary">Browse All Teams</a>
-            </div>
-          `;
-        }
+  document.addEventListener("DOMContentLoaded", function () {
+    // Create avatar
+    const avatarContainer = document.getElementById("player-avatar-container");
+    const playerPhotoPath = '<%= player.photo_path || "" %>';
+    console.log("Player photo path:", playerPhotoPath);
+    console.log("Player name:", "<%= player.name %>");
+
+    const avatar = createAvatar("<%= player.name %>", 80, playerPhotoPath);
+    avatar.classList.add("d-block", "mx-auto");
+    avatarContainer.appendChild(avatar);
+
+    // Auto-refresh queue status every 10 seconds
+    function updateQueueStatus() {
+      fetch("/player/api/queue-status")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            document.getElementById("current-queue-number").textContent =
+              data.currentQueuePosition || "None";
+
+            // Update player position
+            if (data.playerTickets && data.playerTickets.length > 0) {
+              const nextTicket = data.playerTickets.find(
+                (t) => t.ticket_number >= (data.currentQueuePosition || 0)
+              );
+              let positionText = "Ready!";
+              if (nextTicket && data.currentQueuePosition) {
+                const ahead =
+                  nextTicket.ticket_number - data.currentQueuePosition;
+                if (ahead > 0) {
+                  positionText = `${ahead} ahead`;
+                }
+              }
+              document.getElementById("queue-position").textContent =
+                positionText;
+            } else {
+              document.getElementById("queue-position").textContent =
+                "No tickets";
+            }
+          }
+        })
+        .catch((error) => console.error("Error updating queue status:", error));
+    }
+
+    // Load notifications
+    function loadNotifications() {
+      console.log("Loading notifications...");
+      fetch("/player/notifications")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Notifications response:", data);
+          const container = document.getElementById("notifications-container");
+          const unreadCount = document.getElementById("unread-count");
+          const clearBtn = document.getElementById(
+            "clear-all-notifications-btn"
+          );
+
+          if (
+            data.success &&
+            data.notifications &&
+            data.notifications.length > 0
+          ) {
+            console.log(`Found ${data.notifications.length} notifications`);
+            let html = "";
+            let unreadCounter = 0;
+
+            data.notifications.forEach((notification) => {
+              if (!notification.is_read) unreadCounter++;
+              html += `
+              <div class="alert alert-${
+                notification.type === "success" ? "success" : "info"
+              } alert-dismissible fade show py-2 mb-2">
+                <div><strong>${
+                  notification.title || "Notification"
+                }</strong></div>
+                <small>${notification.message}</small>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+              </div>
+            `;
+            });
+
+            container.innerHTML = html;
+            unreadCount.textContent = unreadCounter > 0 ? unreadCounter : "";
+
+            // Always show clear button when there are notifications
+            clearBtn.style.display = "inline-block";
+            clearBtn.style.visibility = "visible";
+          } else {
+            console.log("No notifications found");
+            container.innerHTML =
+              '<small class="text-muted">No notifications</small>';
+            unreadCount.textContent = "";
+            // Keep button visible even when no notifications
+            clearBtn.style.display = "inline-block";
+            clearBtn.style.visibility = "visible";
+          }
+        })
+        .catch((error) => {
+          console.error("Error loading notifications:", error);
+          document.getElementById("notifications-container").innerHTML =
+            '<small class="text-muted">Unable to load notifications</small>';
+          // Keep button visible even on error
+        });
+    }
+
+    // Clear all notifications
+    function clearAllNotifications() {
+      fetch("/player/notifications/clear", {
+        method: "DELETE",
       })
-      .catch(error => console.error('Error checking team membership:', error));
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            loadNotifications(); // Reload notifications
+          } else {
+            console.error("Failed to clear notifications:", data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error clearing notifications:", error);
+        });
+    }
+
+    // Add click handler for clear all button
+    document
+      .getElementById("clear-all-notifications-btn")
+      .addEventListener("click", clearAllNotifications);
+
+    // Initialize
+    loadNotifications();
+    updateQueueStatus();
+
+    // Set intervals
+    setInterval(updateQueueStatus, 10000);
+    setInterval(loadNotifications, 30000);
   });
 </script>
+
+<style>
+  /* Dashboard specific styles */
+  .card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+  }
+
+  #player-avatar-container img,
+  #player-avatar-container canvas {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+  }
+
+  .table th {
+    border-top: none;
+    font-weight: 600;
+  }
+
+  .alert {
+    border-radius: 0.375rem;
+  }
+
+  #clear-all-notifications-btn {
+    white-space: nowrap;
+    font-size: 0.875rem;
+    display: inline-block !important;
+    visibility: visible !important;
+  }
+
+  /* Ensure button visibility */
+  .card-header .btn {
+    z-index: 10;
+    position: relative;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .container-fluid {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    #player-avatar-container img,
+    #player-avatar-container canvas {
+      width: 80px;
+      height: 80px;
+    }
+  }
+</style>

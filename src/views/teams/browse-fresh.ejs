@@ -1,0 +1,303 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-gradient bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-people-fill me-2" style="font-size: 1.5rem"></i>
+              <h3 class="mb-0">Browse Teams</h3>
+            </div>
+            <% if (!playerTeam) { %>
+            <a href="/teams/create" class="btn btn-light btn-sm">
+              <i class="bi bi-plus-circle me-1"></i>Create Team
+            </a>
+            <% } %>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <% if (playerTeam) { %>
+          <div class="alert alert-info d-flex align-items-center mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            <div>
+              You are currently a member of
+              <strong><%= playerTeam.name %></strong>.
+              <a
+                href="/teams/dashboard/<%= playerTeam.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') %>"
+                class="alert-link"
+                >View your team dashboard</a
+              >
+            </div>
+          </div>
+          <% } %> <% if (teams && teams.length > 0) { %>
+          <div class="row g-4">
+            <% teams.forEach(team => { %>
+            <div class="col-lg-4 col-md-6">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-3">
+                    <div
+                      class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style="width: 50px; height: 50px"
+                    >
+                      <i
+                        class="bi bi-people-fill"
+                        style="font-size: 1.5rem"
+                      ></i>
+                    </div>
+                    <div>
+                      <h5 class="card-title mb-1">
+                        <%= team.name %> <% if (team.team_size) { %>
+                        <span
+                          class="badge <%= (parseInt(team.current_members) >= team.team_size) ? 'bg-danger' : 'bg-success' %> ms-2"
+                        >
+                          <%= team.current_members || 0 %>/<%= team.team_size %>
+                        </span>
+                        <% } %>
+                      </h5>
+                      <small class="text-muted"
+                        ><%= team.team_size %>-a-side Team</small
+                      >
+                    </div>
+                  </div>
+
+                  <div class="row text-center mb-3">
+                    <div class="col-4">
+                      <div class="border-end">
+                        <h6 class="text-success mb-0">
+                          <%= team.total_goals || 0 %>
+                        </h6>
+                        <small class="text-muted">Goals</small>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div class="border-end">
+                        <h6 class="text-primary mb-0">
+                          <%= team.total_attempts || 0 %>
+                        </h6>
+                        <small class="text-muted">Attempts</small>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <h6 class="text-warning mb-0">
+                        <% if (team.total_attempts) { %> <%= ((team.total_goals
+                        / team.total_attempts) * 100).toFixed(1) %>% <% } else {
+                        %> 0% <% } %>
+                      </h6>
+                      <small class="text-muted">Accuracy</small>
+                    </div>
+                  </div>
+
+                  <div class="progress mb-3" style="height: 8px">
+                    <div
+                      class="progress-bar bg-gradient"
+                      role="progressbar"
+                      <%
+                      if
+                      (team.total_attempts)
+                      {
+                      %
+                    >
+                      style="width: <%= (team.total_goals / team.total_attempts)
+                      * 100 %>%;" aria-valuenow="<%= (team.total_goals /
+                      team.total_attempts) * 100 %>" <% } else { %>
+                      style="width: 0%;" aria-valuenow="0" <% } %>
+                      aria-valuemin="0" aria-valuemax="100" >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer bg-transparent border-0 pt-0">
+                  <div class="d-grid gap-2">
+                    <a
+                      href="/teams/dashboard/<%= team.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') %>"
+                      class="btn btn-outline-primary"
+                    >
+                      <i class="bi bi-eye me-1"></i>View Team
+                    </a>
+                    <% if (!playerTeam) { %> <% if
+                    (parseInt(team.current_members) >= team.team_size) { %>
+                    <button
+                      type="button"
+                      class="btn btn-secondary w-100"
+                      disabled
+                    >
+                      <i class="bi bi-person-x me-1"></i>Team Full
+                    </button>
+                    <% } else if (team.is_recruiting) { %>
+                    <button
+                      type="button"
+                      class="btn btn-success w-100"
+                      data-bs-toggle="modal"
+                      data-bs-target="#joinModal<%= team.id %>"
+                    >
+                      <i class="bi bi-person-plus me-1"></i>Join Team
+                    </button>
+                    <% } else { %>
+                    <button
+                      type="button"
+                      class="btn btn-warning w-100"
+                      data-bs-toggle="modal"
+                      data-bs-target="#joinModal<%= team.id %>"
+                    >
+                      <i class="bi bi-envelope me-1"></i>Request to Join
+                    </button>
+                    <% } %>
+
+                    <!-- Join Request Modal -->
+                    <div
+                      class="modal fade"
+                      id="joinModal<%= team.id %>"
+                      tabindex="-1"
+                    >
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">
+                              <% if (team.is_recruiting) { %> Join <%= team.name
+                              %> <% } else { %> Request to Join <%= team.name %>
+                              <% } %>
+                            </h5>
+                            <button
+                              type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                            ></button>
+                          </div>
+                          <form
+                            action="/teams/join/<%= team.id %>"
+                            method="POST"
+                          >
+                            <div class="modal-body">
+                              <% if (team.is_recruiting) { %>
+                              <div
+                                class="alert alert-success d-flex align-items-center"
+                              >
+                                <i class="bi bi-check-circle me-2"></i>
+                                <div>
+                                  This team is open for new members! You can
+                                  join immediately.
+                                </div>
+                              </div>
+                              <% } else { %>
+                              <div
+                                class="alert alert-warning d-flex align-items-center"
+                              >
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <div>
+                                  This team requires approval to join. Your
+                                  request will be sent to the team captain.
+                                </div>
+                              </div>
+                              <% } %>
+                              <div class="mb-3">
+                                <label
+                                  for="message<%= team.id %>"
+                                  class="form-label"
+                                >
+                                  <% if (team.is_recruiting) { %> Message
+                                  (Optional) <% } else { %> Message <% } %>
+                                </label>
+                                <textarea
+                                  class="form-control"
+                                  id="message<%= team.id %>"
+                                  name="message"
+                                  rows="3"
+                                  <%
+                                  if
+                                  (!team.is_recruiting)
+                                  {
+                                  %
+                                >
+required<% } %>
+                                    <% if (team.is_recruiting) { %>
+                                    placeholder="Let the team know you're excited to join..."
+                                    <% } else { %>
+                                    placeholder="Tell the team captain why you'd like to join..."
+                                    <% } %>
+                                  ></textarea
+                                >
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button
+                                type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                class="<% if (team.is_recruiting) { %>btn btn-success<% } else { %>btn btn-warning<% } %>"
+                              >
+                                <% if (team.is_recruiting) { %>
+                                <i class="bi bi-person-plus me-1"></i>Join Team
+                                <% } else { %>
+                                <i class="bi bi-send me-1"></i>Send Request <% }
+                                %>
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    <% } else if (playerTeam.id === team.id) { %>
+                    <span class="btn btn-secondary w-100 disabled">
+                      <i class="bi bi-check-circle me-1"></i>Your Team
+                    </span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+          <% } else { %>
+          <div class="text-center py-5">
+            <div class="mb-4">
+              <i class="bi bi-people text-muted" style="font-size: 4rem"></i>
+            </div>
+            <h5 class="text-muted mb-3">No teams found</h5>
+            <p class="text-muted mb-4">
+              Be the first to create a team and start competing!
+            </p>
+            <% if (!playerTeam) { %>
+            <a href="/teams/create" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Create Team
+            </a>
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Make icons in browse teams page smaller */
+  .btn .bi {
+    font-size: 1rem !important;
+  }
+
+  /* Keep header icon size appropriate */
+  .card-header .bi {
+    font-size: 1.5rem !important;
+  }
+
+  /* Keep team avatar icon size appropriate */
+  .bg-primary .bi-people-fill {
+    font-size: 1.5rem !important;
+  }
+
+  /* Make empty state icon appropriate */
+  .text-center .bi-people {
+    font-size: 4rem !important;
+  }
+
+  /* Make alert information icon smaller */
+  .alert .bi-info-circle {
+    font-size: 1rem !important;
+  }
+</style>

@@ -1,0 +1,635 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item"></li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
+        <h1 class="h2">Player Details 
+          <% if (player.deleted_at) { %>
+            <span class="badge bg-danger">Deleted</span>
+          <% } %>
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <a
+            href="/admin/players"
+            class="btn btn-sm btn-outline-secondary me-2"
+          >
+            <i class="bi bi-arrow-left fs-6"></i> Back to Players
+          </a>
+          <% if (!player.deleted_at) { %>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deletePlayerModal"
+          >
+            <i class="bi bi-trash fs-6"></i> Delete Player
+          </button>
+          <% } else { %>
+          <button
+            type="button"
+            class="btn btn-sm btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#restorePlayerModal"
+          >
+            <i class="bi bi-arrow-clockwise fs-6"></i> Restore Player
+          </button>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if(typeof messages != 'undefined'){ %> <% if(messages.success_msg){ %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% if(messages.error_msg){ %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% } %>
+
+      <!-- Player Profile -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <h5 class="mb-0">Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+              <div id="player-avatar-container" class="mb-3"></div>
+              <h4><%= player.name %></h4>
+              <p class="text-muted mb-1">ID: <%= player.id %></p>
+
+              <div class="mt-4">
+                <% if (!player.deleted_at) { %>
+                <button
+                  class="btn btn-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editPlayerModal"
+                >
+                  <i class="bi bi-pencil fs-6"></i> Edit Player
+                </button>
+                <% } else { %>
+                <span class="text-muted">Player is deleted - editing disabled</span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card h-100">
+            <div class="card-header">
+              <h5 class="mb-0">Player Details</h5>
+            </div>
+            <div class="card-body">
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Name:</div>
+                <div class="col-sm-8"><%= player.name %></div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Email:</div>
+                <div class="col-sm-8">
+                  <%= player.email || 'Not provided' %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Phone:</div>
+                <div class="col-sm-8">
+                  <%= player.phone || 'Not provided' %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Residence:</div>
+                <div class="col-sm-8">
+                  <%= player.residence || 'Not provided' %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Gender:</div>
+                <div class="col-sm-8">
+                  <%= player.gender ? player.gender.charAt(0).toUpperCase() + player.gender.slice(1) : 'Not provided' %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Age Group:</div>
+                <div class="col-sm-8">
+                  <%= player.age_group ? player.age_group.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not provided' %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Kicks Balance:</div>
+                <div class="col-sm-8">
+                  <span class="badge bg-primary"
+                    ><%= player.kicks_balance || 0 %> Kicks</span
+                  >
+                  <button
+                    class="btn btn-sm btn-outline-primary ms-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#updateKicksModal"
+                  >
+                    <i class="bi bi-plus-circle fs-6"></i> Update Balance
+                  </button>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Account Created:</div>
+                <div class="col-sm-8">
+                  <%= new Date(player.created_at).toLocaleString() %>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Last Updated:</div>
+                <div class="col-sm-8">
+                  <%= player.updated_at ? new
+                  Date(player.updated_at).toLocaleString() : 'Never' %>
+                </div>
+              </div>
+
+              <% if (player.deleted_at) { %>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Deleted At:</div>
+                <div class="col-sm-8 text-danger">
+                  <%= new Date(player.deleted_at).toLocaleString() %>
+                </div>
+              </div>
+              <% if (player.deleted_by) { %>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Deleted By:</div>
+                <div class="col-sm-8 text-danger">
+                  Staff ID: <%= player.deleted_by %>
+                </div>
+              </div>
+              <% } %>
+              <div class="alert alert-warning mt-3">
+                <i class="bi bi-info-circle"></i>
+                <strong>Note:</strong> This player has been deleted but transaction history is preserved for sales reports and auditing purposes.
+              </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game History Heading -->
+      <h3 class="mb-3">Game History</h3>
+
+      <!-- Game History Card -->
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0">Game History</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Ticket #</th>
+                  <th>Goals</th>
+                  <th>Staff Member</th>
+                  <th>Event Type</th>
+                  <th>Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (stats && stats.length > 0) { %> <%
+                stats.forEach(function(stat) { %>
+                <tr>
+                  <td><%= new Date(stat.timestamp).toLocaleString() %></td>
+                  <td>
+                    <% if (stat.queue_ticket_id) { %>
+                    <span class="badge bg-primary"
+                      ><%= stat.queue_ticket_id %></span
+                    >
+                    <% } else { %>
+                    <span class="text-muted">N/A</span>
+                    <% } %>
+                  </td>
+                  <td><%= stat.goals %></td>
+                  <td><%= stat.staff_name || 'Unknown' %></td>
+                  <td>
+                    <% /* Check competition_type field for more accurate game
+                    type */ const compType = stat.competition_type ?
+                    stat.competition_type.toLowerCase() : ''; const isPractice =
+                    compType.includes('practice') || compType ===
+                    'no-competition'; if (!isPractice) { %>
+                    <span class="badge bg-success">Competition</span>
+                    <% } else { %>
+                    <span class="badge bg-info">Practice</span>
+                    <% } %>
+                  </td>
+                  <td><%= stat.location || 'Unknown' %></td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="6" class="text-center">
+                    No game history found for this player.
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- End of Game History Card -->
+    </div>
+  </div>
+</div>
+
+<!-- Edit Player Modal -->
+<div
+  class="modal fade"
+  id="editPlayerModal"
+  tabindex="-1"
+  aria-labelledby="editPlayerModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editPlayerModalLabel">Edit Player</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form action="/admin/players/update/<%= player.id %>" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="name" class="form-label">Full Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              value="<%= player.name %>"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              name="email"
+              value="<%= player.email || '' %>"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input
+              type="text"
+              class="form-control"
+              id="phone"
+              name="phone"
+              value="<%= player.phone || '' %>"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="residence" class="form-label">Residence</label>
+            <input
+              type="text"
+              class="form-control"
+              id="residence"
+              name="residence"
+              value="<%= player.residence || '' %>"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="gender" class="form-label">Gender</label>
+            <select class="form-control" id="gender" name="gender">
+              <option value="">Select Gender</option>
+              <option value="male" <%= player.gender === 'male' ? 'selected' : '' %>>Male</option>
+              <option value="female" <%= player.gender === 'female' ? 'selected' : '' %>>Female</option>
+              <option value="other" <%= player.gender === 'other' ? 'selected' : '' %>>Other</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="age_group" class="form-label">Age Group</label>
+            <select class="form-control" id="age_group" name="age_group" required>
+              <option value="">Select Age Group</option>
+              <option value="Up to 10 years" <%= player.age_group === 'Up to 10 years' ? 'selected' : '' %>>Up to 10 years</option>
+              <option value="Teens 11-17 years" <%= player.age_group === 'Teens 11-17 years' ? 'selected' : '' %>>Teens 11-17 years</option>
+              <option value="Young Adults 18-30 years" <%= player.age_group === 'Young Adults 18-30 years' ? 'selected' : '' %>>Young Adults 18-30 years</option>
+              <option value="Adults 31-50 years" <%= player.age_group === 'Adults 31-50 years' ? 'selected' : '' %>>Adults 31-50 years</option>
+              <option value="Seniors 51+ years" <%= player.age_group === 'Seniors 51+ years' ? 'selected' : '' %>>Seniors 51+ years</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Update Kicks Balance Modal -->
+<div
+  class="modal fade"
+  id="updateKicksModal"
+  tabindex="-1"
+  aria-labelledby="updateKicksModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updateKicksModalLabel">
+          Update Kicks Balance
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form action="/admin/players/update-kicks/<%= player.id %>" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currentBalance" class="form-label"
+              >Current Balance</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="currentBalance"
+              value="<%= player.kicks_balance || 0 %>"
+              disabled
+            />
+          </div>
+          <div class="mb-3">
+            <label for="amount" class="form-label">Change Amount</label>
+            <div class="input-group">
+              <select class="form-select" id="operation" name="operation">
+                <option value="add">Add</option>
+                <option value="subtract">Subtract</option>
+                <option value="set">Set to</option>
+              </select>
+              <input
+                type="number"
+                class="form-control"
+                id="amount"
+                name="amount"
+                min="1"
+                required
+              />
+            </div>
+            <small class="form-text text-muted"
+              >Choose to add, subtract, or set a specific balance.</small
+            >
+          </div>
+          <div class="mb-3">
+            <label for="reason" class="form-label">Reason for Update</label>
+            <textarea
+              class="form-control"
+              id="reason"
+              name="reason"
+              rows="2"
+              required
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Update Balance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Player Confirmation Modal -->
+<div
+  class="modal fade"
+  id="deletePlayerModal"
+  tabindex="-1"
+  aria-labelledby="deletePlayerModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deletePlayerModalLabel">
+          <i class="bi bi-exclamation-triangle me-2"></i>Delete Player Account
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <strong><i class="bi bi-info-circle"></i> Soft Delete:</strong> Player will be marked as deleted but transaction history will be preserved for sales reports.
+        </div>
+        <p>
+          You are about to delete the player account for:
+        </p>
+        <div class="text-center p-3 bg-light rounded">
+          <h5 class="mb-1"><%= player.name %></h5>
+          <small class="text-muted">Player ID: <%= player.id %></small><br>
+          <small class="text-muted">Phone: <%= player.phone %></small>
+        </div>
+        <br>
+        <p><strong>This will:</strong></p>
+        <ul>
+          <li><span class="text-success">✓ Preserve transaction history for sales reports</span></li>
+          <li><span class="text-warning">• Mark player as deleted (prevent new logins/games)</span></li>
+          <li><span class="text-warning">• Cancel any active queue tickets</span></li>
+          <li><span class="text-warning">• Hide player from active player lists</span></li>
+        </ul>
+        <div class="alert alert-success">
+          <strong><i class="bi bi-shield-check"></i> Financial Data Safe:</strong> All transaction records will remain intact for business reporting and auditing purposes.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          <i class="bi bi-x-circle me-1"></i>Cancel
+        </button>
+        <form action="/admin/players/delete/<%= player.id %>" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-archive me-1"></i>Delete Player (Preserve Data)
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Restore Player Modal -->
+<div
+  class="modal fade"
+  id="restorePlayerModal"
+  tabindex="-1"
+  aria-labelledby="restorePlayerModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="restorePlayerModalLabel">
+          <i class="bi bi-arrow-clockwise me-2"></i>Restore Player Account
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <strong><i class="bi bi-info-circle"></i> Account Restoration:</strong> This will make the player account active again.
+        </div>
+        <p>
+          You are about to restore the deleted account for:
+        </p>
+        <div class="text-center p-3 bg-light rounded">
+          <h5 class="mb-1"><%= player.name %></h5>
+          <small class="text-muted">Player ID: <%= player.id %></small><br>
+          <small class="text-muted">Phone: <%= player.phone %></small>
+        </div>
+        <br>
+        <p><strong>This will:</strong></p>
+        <ul>
+          <li><span class="text-success">✓ Reactivate the player account</span></li>
+          <li><span class="text-success">✓ Allow the player to log in again</span></li>
+          <li><span class="text-success">✓ Restore access to their kick balance</span></li>
+          <li><span class="text-success">✓ Enable participation in games and events</span></li>
+          <li><span class="text-info">• Reactivate recent cancelled queue tickets</span></li>
+        </ul>
+        <div class="alert alert-warning">
+          <strong><i class="bi bi-exclamation-triangle"></i> Note:</strong> The player will be able to use the same phone number to log in. Their transaction history and kick balance will be preserved.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          <i class="bi bi-x-circle me-1"></i>Cancel
+        </button>
+        <form action="/admin/players/restore/<%= player.id %>" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-arrow-clockwise me-1"></i>Restore Player Account
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/avatar.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Create avatar for the player details page
+    const avatarContainer = document.getElementById("player-avatar-container");
+    if (avatarContainer) {
+      const avatar = createAvatar(
+        "<%= player.name %>",
+        150,
+        '<%= player.photo_path || "" %>'
+      );
+      avatar.classList.add("d-block", "mx-auto");
+      avatarContainer.appendChild(avatar);
+    }
+  });
+</script>

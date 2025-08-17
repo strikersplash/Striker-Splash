@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Registrations Viewer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <h3 class="mb-0">Simple Registrations Viewer</h3>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="event-id" class="form-label">Event ID:</label>
+                <div class="input-group">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="event-id"
+                    placeholder="Enter event ID"
+                  />
+                  <button class="btn btn-primary" id="fetch-btn">
+                    Fetch Registrations
+                  </button>
+                </div>
+              </div>
+
+              <div id="response-debug" class="alert alert-info d-none">
+                <p><strong>Response will appear here</strong></p>
+              </div>
+
+              <!-- Registrations List -->
+              <div id="registrations-container">
+                <h4 class="mb-3">Registrations</h4>
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                      <tr>
+                        <th>Reg #</th>
+                        <th>Player Name</th>
+                        <th>Phone</th>
+                        <th>Kicks</th>
+                        <th>Registration Date</th>
+                        <th>Type</th>
+                      </tr>
+                    </thead>
+                    <tbody id="registrations-table">
+                      <tr>
+                        <td colspan="6" class="text-center">
+                          Enter an event ID and click "Fetch Registrations"
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const eventIdInput = document.getElementById("event-id");
+        const fetchBtn = document.getElementById("fetch-btn");
+        const registrationsTable = document.getElementById(
+          "registrations-table"
+        );
+        const responseDebug = document.getElementById("response-debug");
+
+        // Function to fetch registrations
+        function fetchRegistrations() {
+          const eventId = eventIdInput.value.trim();
+
+          if (!eventId) {
+            alert("Please enter an event ID");
+            return;
+          }
+
+          registrationsTable.innerHTML =
+            '<tr><td colspan="6" class="text-center">Loading registrations...</td></tr>';
+          responseDebug.classList.remove("d-none");
+          responseDebug.innerHTML = `<p>Making request to /staff/registered-players/${eventId}...</p>`;
+
+          fetch(`/staff/registered-players/${eventId}`)
+            .then((response) => {
+              const status = response.status;
+              const statusText = response.statusText;
+              responseDebug.innerHTML += `<p>Response status: ${status} ${statusText}</p>`;
+
+              return response.json().catch((err) => {
+                throw new Error(`Failed to parse JSON: ${err.message}`);
+              });
+            })
+            .then((data) => {
+              responseDebug.innerHTML += `<p>Success: ${data.success}</p>`;
+
+              if (data.event) {
+                responseDebug.innerHTML += `<p>Event: ${data.event.name}</p>`;
+              }
+
+              if (data.registrations) {
+                responseDebug.innerHTML += `<p>Registrations found: ${data.registrations.length}</p>`;
+              }
+
+              responseDebug.innerHTML += `<pre>${JSON.stringify(
+                data,
+                null,
+                2
+              )}</pre>`;
+
+              if (
+                data.success &&
+                data.registrations &&
+                data.registrations.length > 0
+              ) {
+                registrationsTable.innerHTML = "";
+
+                data.registrations.forEach((reg) => {
+                  const regDate = new Date(
+                    reg.registration_date
+                  ).toLocaleString();
+
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
+                                    <td>#${reg.registration_number}</td>
+                                    <td>${reg.player_name}</td>
+                                    <td>${reg.phone || "N/A"}</td>
+                                    <td>${reg.kicks_requested}</td>
+                                    <td>${regDate}</td>
+                                    <td><span class="badge ${
+                                      reg.is_competition
+                                        ? "bg-warning"
+                                        : "bg-info"
+                                    }">${
+                    reg.is_competition ? "Competition" : "Practice"
+                  }</span></td>
+                                `;
+
+                  registrationsTable.appendChild(row);
+                });
+              } else if (
+                data.success &&
+                (!data.registrations || data.registrations.length === 0)
+              ) {
+                registrationsTable.innerHTML =
+                  '<tr><td colspan="6" class="text-center">No registrations found for this event</td></tr>';
+              } else {
+                registrationsTable.innerHTML =
+                  '<tr><td colspan="6" class="text-center text-danger">Failed to load registrations</td></tr>';
+              }
+            })
+            .catch((error) => {
+              const errorMsg = error.message || "Unknown error";
+              console.error("Error loading registrations:", error);
+              responseDebug.innerHTML += `<p class="text-danger">Error: ${errorMsg}</p>`;
+              registrationsTable.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading registrations: ${errorMsg}</td></tr>`;
+            });
+        }
+
+        // Add event listener for fetch button
+        fetchBtn.addEventListener("click", fetchRegistrations);
+
+        // Also fetch when pressing Enter in the input field
+        eventIdInput.addEventListener("keyup", function (event) {
+          if (event.key === "Enter") {
+            fetchRegistrations();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

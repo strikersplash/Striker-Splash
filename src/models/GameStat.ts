@@ -1,4 +1,4 @@
-import { pool } from '../config/db';
+import { pool } from "../config/db";
 
 export interface IGameStat {
   id: number;
@@ -12,7 +12,10 @@ export interface IGameStat {
   first_five_kicks?: boolean;
   player_gender?: string;
   player_age_bracket?: string;
+  consecutive_kicks?: number; // Track consecutive kicks made (minimum 3)
   timestamp: Date;
+  // Track kicks_used separately in application logic
+  kicks_used?: number;
 }
 
 class GameStat {
@@ -21,7 +24,7 @@ class GameStat {
     try {
       return await pool.query(text, params);
     } catch (error) {
-      console.error('Database query error:', error);
+      console.error("Database query error:", error);
       throw error;
     }
   }
@@ -30,71 +33,113 @@ class GameStat {
   static async find(criteria: { player_id?: number }): Promise<IGameStat[]> {
     try {
       if (criteria.player_id) {
-        const result = await pool.query('SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC', [criteria.player_id]);
+        const result = await pool.query(
+          "SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC",
+          [criteria.player_id]
+        );
         return result.rows;
       }
-      
-      const result = await pool.query('SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100');
+
+      const result = await pool.query(
+        "SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100"
+      );
       return result.rows;
     } catch (error) {
-      console.error('Error finding game stats:', error);
+      console.error("Error finding game stats:", error);
       return [];
     }
   }
 
   // Create new game stat
-  static async create(gameStatData: Omit<IGameStat, 'id' | 'timestamp'>): Promise<IGameStat | null> {
+  static async create(
+    gameStatData: Omit<IGameStat, "id" | "timestamp">
+  ): Promise<IGameStat | null> {
     try {
-      const { 
-        player_id, 
-        goals, 
-        staff_id, 
-        location, 
-        competition_type, 
-        queue_ticket_id, 
+      const {
+        player_id,
+        goals,
+        kicks_used,
+        staff_id,
+        location,
+        competition_type,
+        queue_ticket_id,
         requeued,
         first_five_kicks,
         player_gender,
-        player_age_bracket
+        player_age_bracket,
+        consecutive_kicks,
       } = gameStatData;
-      
-      const result = await pool.query(
-        `INSERT INTO game_stats 
-         (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-         RETURNING *`,
-        [
-          player_id, 
-          goals, 
-          staff_id, 
-          location, 
-          competition_type || 'accuracy', 
-          queue_ticket_id, 
-          requeued || false,
-          first_five_kicks || false,
-          player_gender,
-          player_age_bracket
-        ]
-      );
-      
+
+      // Try to insert with consecutive_kicks column first, fallback if column doesn't exist
+      let result;
+      try {
+        result = await pool.query(
+          `INSERT INTO game_stats 
+           (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+           RETURNING *`,
+          [
+            player_id,
+            goals,
+            staff_id,
+            location,
+            competition_type || "accuracy",
+            queue_ticket_id,
+            requeued || false,
+            first_five_kicks || false,
+            player_gender,
+            player_age_bracket,
+            consecutive_kicks || null,
+          ]
+        );
+      } catch (columnError: any) {
+        // If consecutive_kicks column doesn't exist, insert without it
+        if (columnError.code === "42703") {
+          // column does not exist
+          console.log(
+            "consecutive_kicks column not found, inserting without it"
+          );
+          result = await pool.query(
+            `INSERT INTO game_stats 
+             (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+             RETURNING *`,
+            [
+              player_id,
+              goals,
+              staff_id,
+              location,
+              competition_type || "accuracy",
+              queue_ticket_id,
+              requeued || false,
+              first_five_kicks || false,
+              player_gender,
+              player_age_bracket,
+            ]
+          );
+        } else {
+          throw columnError; // Re-throw if it's a different error
+        }
+      }
+
       return result.rows[0];
     } catch (error) {
-      console.error('Error creating game stat:', error);
+      console.error("Error creating game stat:", error);
       return null;
     }
   }
 
   // Get leaderboard
-  static async getLeaderboard(options: { 
-    ageGroup?: string, 
-    gender?: string, 
-    residence?: string, 
-    competitionType?: string,
-    limit?: number
+  static async getLeaderboard(options: {
+    ageGroup?: string;
+    gender?: string;
+    residence?: string;
+    competitionType?: string;
+    limit?: number;
   }): Promise<any[]> {
     try {
       const { ageGroup, gender, residence, competitionType, limit } = options;
-      
+
       let query = `
         SELECT 
           p.id,
@@ -114,50 +159,50 @@ class GameStat {
           qt.status = 'played'
           AND gs.first_five_kicks = true
       `;
-      
+
       const params: any[] = [];
       let paramIndex = 1;
-      
+
       if (ageGroup) {
         query += ` AND p.age_group = $${paramIndex}`;
         params.push(ageGroup);
         paramIndex++;
       }
-      
+
       if (gender) {
         query += ` AND p.gender = $${paramIndex}`;
         params.push(gender);
         paramIndex++;
       }
-      
+
       if (residence) {
         query += ` AND p.residence ILIKE $${paramIndex}`;
         params.push(`%${residence}%`);
         paramIndex++;
       }
-      
+
       if (competitionType) {
         query += ` AND gs.competition_type = $${paramIndex}`;
         params.push(competitionType);
         paramIndex++;
       }
-      
+
       query += `
         GROUP BY 
           p.id, p.name, p.age_group, p.residence, p.gender
         ORDER BY 
           "totalGoals" DESC
       `;
-      
+
       if (limit) {
         query += ` LIMIT $${paramIndex}`;
         params.push(limit);
       }
-      
+
       const result = await pool.query(query, params);
       return result.rows;
     } catch (error) {
-      console.error('Error getting leaderboard:', error);
+      console.error("Error getting leaderboard:", error);
       return [];
     }
   }
@@ -168,10 +213,10 @@ class GameStat {
       const targetDate = date || new Date();
       const startOfDay = new Date(targetDate);
       startOfDay.setHours(0, 0, 0, 0);
-      
+
       const endOfDay = new Date(targetDate);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       const query = `
         SELECT 
           s.id,
@@ -187,11 +232,11 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-      
+
       const result = await pool.query(query, [startOfDay, endOfDay]);
       return result.rows;
     } catch (error) {
-      console.error('Error getting staff activity:', error);
+      console.error("Error getting staff activity:", error);
       return [];
     }
   }
@@ -212,11 +257,11 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-      
+
       const result = await pool.query(query);
       return result.rows;
     } catch (error) {
-      console.error('Error getting stats by competition type:', error);
+      console.error("Error getting stats by competition type:", error);
       return [];
     }
   }
@@ -239,11 +284,11 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-      
+
       const result = await pool.query(query);
       return result.rows;
     } catch (error) {
-      console.error('Error getting stats by age group:', error);
+      console.error("Error getting stats by age group:", error);
       return [];
     }
   }

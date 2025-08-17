@@ -1,0 +1,526 @@
+<%- contentFor('title') %>Live Match Scoring<% include('partials/header') %>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-futbol me-2"></i>
+            Live Match: <%= match.name %>
+            <span class="badge bg-success ms-2" id="match-status"
+              ><%= match.status %></span
+            >
+          </h4>
+          <p class="mb-0 mt-2">
+            <strong>Type:</strong> <%= match.match_type %>-a-side |
+            <strong>Started:</strong>
+            <span id="match-time"
+              ><%= match.start_time ? new
+              Date(match.start_time).toLocaleString() : 'Not started' %></span
+            >
+          </p>
+        </div>
+        <div class="card-body">
+          <!-- Match Controls -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <% if (match.status === 'pending') { %>
+              <button
+                class="btn btn-success btn-lg"
+                id="start-match"
+                onclick="startMatch()"
+              >
+                <i class="fas fa-play"></i> Start Match
+              </button>
+              <% } else if (match.status === 'active') { %>
+              <button
+                class="btn btn-warning btn-lg"
+                id="pause-match"
+                onclick="pauseMatch()"
+              >
+                <i class="fas fa-pause"></i> Pause Match
+              </button>
+              <button
+                class="btn btn-danger btn-lg ms-2"
+                id="end-match"
+                onclick="endMatch()"
+              >
+                <i class="fas fa-stop"></i> End Match
+              </button>
+              <% } else if (match.status === 'paused') { %>
+              <button
+                class="btn btn-success btn-lg"
+                id="resume-match"
+                onclick="resumeMatch()"
+              >
+                <i class="fas fa-play"></i> Resume Match
+              </button>
+              <button
+                class="btn btn-danger btn-lg ms-2"
+                id="end-match"
+                onclick="endMatch()"
+              >
+                <i class="fas fa-stop"></i> End Match
+              </button>
+              <% } %>
+            </div>
+            <div class="col-md-6 text-end">
+              <div class="match-timer">
+                <h3 class="text-primary mb-0" id="timer">00:00</h3>
+                <small class="text-muted">Match Time</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Teams Display -->
+          <div class="row">
+            <% participants.forEach((participant, index) => { %>
+            <div class="col-md-6 mb-4">
+              <div class="card team-card" id="team-<%= participant.team_id %>">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">
+                    <%= participant.team_name %>
+                    <span
+                      class="badge bg-primary ms-2"
+                      id="score-<%= participant.team_id %>"
+                    >
+                      <%= participant.score || 0 %>
+                    </span>
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <!-- Team Players -->
+                  <div class="players-list mb-3">
+                    <h6>Players:</h6>
+                    <% participant.players.forEach(player => { %>
+                    <div
+                      class="player-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
+                    >
+                      <div>
+                        <strong
+                          ><%= player.first_name %> <%= player.last_name
+                          %></strong
+                        >
+                        <small class="text-muted d-block"
+                          >ID: <%= player.id %></small
+                        >
+                      </div>
+                      <div class="player-stats">
+                        <span
+                          class="badge bg-success"
+                          id="kicks-<%= player.id %>"
+                        >
+                          <%= player.kick_count || 0 %>/5 kicks
+                        </span>
+                      </div>
+                    </div>
+                    <% }); %>
+                  </div>
+
+                  <!-- Kick Logging Section -->
+                  <% if (match.status === 'active') { %>
+                  <div class="kick-logging">
+                    <h6>Log Kicks:</h6>
+                    <div class="row">
+                      <div class="col-8">
+                        <select
+                          class="form-select"
+                          id="player-select-<%= participant.team_id %>"
+                        >
+                          <option value="">Select Player</option>
+                          <% participant.players.forEach(player => { %>
+                          <option
+                            value="<%= player.id %>"
+                            <%="(player.kick_count"
+                          >
+                            = 5) ? 'disabled' : '' %>> <%= player.first_name %>
+                            <%= player.last_name %> (<%= player.kick_count || 0
+                            %>/5)
+                          </option>
+                          <% }); %>
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <button
+                          class="btn btn-primary w-100"
+                          onclick="logKick(<%= participant.team_id %>)"
+                          id="kick-btn-<%= participant.team_id %>"
+                        >
+                          <i class="fas fa-plus"></i> Add Kick
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+
+          <!-- Recent Kicks Log -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Recent Kicks
+                    <button
+                      class="btn btn-sm btn-outline-primary float-end"
+                      onclick="refreshKickLog()"
+                    >
+                      <i class="fas fa-refresh"></i> Refresh
+                    </button>
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-striped" id="kick-log-table">
+                      <thead>
+                        <tr>
+                          <th>Time</th>
+                          <th>Player</th>
+                          <th>Team</th>
+                          <th>Success</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="kick-log-body">
+                        <!-- Will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalTitle">Message</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="messageModalBody">
+        <!-- Message content -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let matchTimer;
+  let startTime = <%= match.start_time ? `new Date('${match.start_time}')` : 'null' %>;
+  let isPaused = <%= match.status === 'paused' ? 'true' : 'false' %>;
+
+  // Initialize page
+  document.addEventListener('DOMContentLoaded', function() {
+      if (startTime && !isPaused) {
+          startTimer();
+      }
+      refreshKickLog();
+
+      // Auto-refresh every 10 seconds
+      setInterval(refreshData, 10000);
+  });
+
+  function startTimer() {
+      matchTimer = setInterval(function() {
+          if (startTime && !isPaused) {
+              const now = new Date();
+              const elapsed = Math.floor((now - startTime) / 1000);
+              const minutes = Math.floor(elapsed / 60);
+              const seconds = elapsed % 60;
+              document.getElementById('timer').textContent =
+                  String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+          }
+      }, 1000);
+  }
+
+  function stopTimer() {
+      if (matchTimer) {
+          clearInterval(matchTimer);
+      }
+  }
+
+  async function startMatch() {
+      try {
+          const response = await fetch(`/staff/competitions/match/<%= match.id %>/start`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to start match', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to start match', 'error');
+      }
+  }
+
+  async function pauseMatch() {
+      try {
+          const response = await fetch(`/staff/competitions/match/<%= match.id %>/pause`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              isPaused = true;
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to pause match', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to pause match', 'error');
+      }
+  }
+
+  async function resumeMatch() {
+      try {
+          const response = await fetch(`/staff/competitions/match/<%= match.id %>/resume`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              isPaused = false;
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to resume match', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to resume match', 'error');
+      }
+  }
+
+  async function endMatch() {
+      if (!confirm('Are you sure you want to end this match?')) return;
+
+      try {
+          const response = await fetch(`/staff/competitions/match/<%= match.id %>/end`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              stopTimer();
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to end match', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to end match', 'error');
+      }
+  }
+
+  async function logKick(teamId) {
+      const playerSelect = document.getElementById(`player-select-${teamId}`);
+      const playerId = playerSelect.value;
+
+      if (!playerId) {
+          showMessage('Warning', 'Please select a player', 'warning');
+          return;
+      }
+
+      try {
+          const response = await fetch('/staff/live/log-kick', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  match_id: <%= match.id %>,
+                  player_id: playerId,
+                  successful: true // You might want to add success/fail buttons
+              })
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+              // Update UI
+              updatePlayerKickCount(playerId, result.kickCount);
+              refreshKickLog();
+
+              // Clear selection
+              playerSelect.value = '';
+
+              showMessage('Success', 'Kick logged successfully', 'success');
+          } else {
+              showMessage('Error', result.message || 'Failed to log kick', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to log kick', 'error');
+      }
+  }
+
+  function updatePlayerKickCount(playerId, kickCount) {
+      const kickBadge = document.getElementById(`kicks-${playerId}`);
+      if (kickBadge) {
+          kickBadge.textContent = `${kickCount}/5 kicks`;
+          if (kickCount >= 5) {
+              kickBadge.classList.remove('bg-success');
+              kickBadge.classList.add('bg-danger');
+
+              // Disable player in selects
+              const playerOptions = document.querySelectorAll(`option[value="${playerId}"]`);
+              playerOptions.forEach(option => {
+                  option.disabled = true;
+                  option.textContent += ' (MAX)';
+              });
+          }
+      }
+  }
+
+  async function refreshKickLog() {
+      try {
+          const response = await fetch(`/staff/live/match/<%= match.id %>/kicks`);
+          const kicks = await response.json();
+
+          const tbody = document.getElementById('kick-log-body');
+          tbody.innerHTML = '';
+
+          kicks.forEach(kick => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                  <td>${new Date(kick.created_at).toLocaleTimeString()}</td>
+                  <td>${kick.player_name}</td>
+                  <td>${kick.team_name}</td>
+                  <td>
+                      <span class="badge ${kick.successful ? 'bg-success' : 'bg-danger'}">
+                          ${kick.successful ? 'Success' : 'Miss'}
+                      </span>
+                  </td>
+                  <td>
+                      <button class="btn btn-sm btn-outline-danger" onclick="deleteKick(${kick.id})">
+                          <i class="fas fa-trash"></i>
+                      </button>
+                  </td>
+              `;
+              tbody.appendChild(row);
+          });
+      } catch (error) {
+          console.error('Failed to refresh kick log:', error);
+      }
+  }
+
+  async function deleteKick(kickId) {
+      if (!confirm('Are you sure you want to delete this kick?')) return;
+
+      try {
+          const response = await fetch(`/staff/live/kick/${kickId}`, {
+              method: 'DELETE'
+          });
+
+          if (response.ok) {
+              refreshKickLog();
+              refreshData(); // Refresh player counts
+              showMessage('Success', 'Kick deleted successfully', 'success');
+          } else {
+              showMessage('Error', 'Failed to delete kick', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to delete kick', 'error');
+      }
+  }
+
+  async function refreshData() {
+      try {
+          const response = await fetch(`/staff/competitions/match/<%= match.id %>/live-data`);
+          const data = await response.json();
+
+          // Update scores and player stats
+          data.participants.forEach(participant => {
+              const scoreElement = document.getElementById(`score-${participant.team_id}`);
+              if (scoreElement) {
+                  scoreElement.textContent = participant.score || 0;
+              }
+
+              participant.players.forEach(player => {
+                  updatePlayerKickCount(player.id, player.kick_count || 0);
+              });
+          });
+
+          // Update match status
+          const statusElement = document.getElementById('match-status');
+          if (statusElement) {
+              statusElement.textContent = data.status;
+          }
+
+      } catch (error) {
+          console.error('Failed to refresh data:', error);
+      }
+  }
+
+  function showMessage(title, message, type) {
+      const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+      document.getElementById('messageModalTitle').textContent = title;
+      document.getElementById('messageModalBody').innerHTML = `
+          <div class="alert alert-${type === 'error' ? 'danger' : type} mb-0">
+              ${message}
+          </div>
+      `;
+      modal.show();
+  }
+</script>
+
+<style>
+  .team-card {
+    transition: all 0.3s ease;
+  }
+
+  .team-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .player-item {
+    transition: background-color 0.2s ease;
+  }
+
+  .player-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .match-timer {
+    text-align: center;
+    padding: 10px;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+
+  .kick-logging {
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+  }
+
+  .badge.bg-danger {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+</style>

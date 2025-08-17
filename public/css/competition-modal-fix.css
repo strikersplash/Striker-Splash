@@ -1,0 +1,25 @@
+/* Styling fixes for team member modal */
+.list-group-item.border-0.border-bottom {
+  padding: 12px 16px;
+}
+
+.list-group-item.border-0.border-bottom strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #333;
+  font-size: 1rem;
+}
+
+.list-group-item.border-0.border-bottom .text-muted {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+#teamMembersModal .modal-body {
+  padding: 0 !important;
+}
+
+#teamMembersList {
+  max-height: 70vh;
+  overflow-y: auto;
+}

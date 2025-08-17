@@ -1,0 +1,652 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
+        <h1 class="h2">
+          <i class="bi bi-graph-up me-2"></i>Live Staff Sales Tracking
+        </h1>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if(typeof messages != 'undefined'){ %> <% if(messages.success_msg){ %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% if(messages.error_msg){ %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% } %>
+
+      <!-- Real-Time Staff Sales Tracking -->
+      <div class="card shadow mb-4" id="real-time-tracking">
+        <div
+          class="card-header py-3 d-flex justify-content-between align-items-center"
+        >
+          <h6 class="m-0 font-weight-bold text-success">
+            <i class="bi bi-activity me-2"></i>Live Staff Sales Tracking
+          </h6>
+          <div class="d-flex align-items-center">
+            <span id="last-update" class="badge bg-success me-2"
+              >Loading...</span
+            >
+            <button
+              id="refresh-btn"
+              class="btn btn-sm btn-outline-success"
+              onclick="loadSalesTrackingData()"
+            >
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover" id="live-sales-table">
+              <thead class="table-success">
+                <tr>
+                  <th><i class="bi bi-person me-1"></i>Staff Name</th>
+                  <th><i class="bi bi-calendar-day me-1"></i>Today</th>
+                  <th><i class="bi bi-calendar-week me-1"></i>This Week</th>
+                  <th><i class="bi bi-calendar-month me-1"></i>This Month</th>
+                </tr>
+              </thead>
+              <tbody id="live-sales-tbody">
+                <tr>
+                  <td colspan="4" class="text-center">
+                    <div class="spinner-border text-success" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-12">
+              <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Auto-updates every 10 seconds. Shows customers served and
+                revenue for each staff member.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="row mb-4">
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+          <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div
+                    class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                  >
+                    Total Revenue (<%= periodDisplay %>)
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    $<%= totals.totalRevenue.toFixed(2) %> BZD
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="bi bi-currency-dollar fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+          <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div
+                    class="text-xs font-weight-bold text-success text-uppercase mb-1"
+                  >
+                    Customers Served
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    <%= totals.totalCustomers %>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="bi bi-people fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+          <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div
+                    class="text-xs font-weight-bold text-info text-uppercase mb-1"
+                  >
+                    Total Transactions
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    <%= totals.totalTransactions %>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="bi bi-receipt fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+          <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div
+                    class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+                  >
+                    Kicks Sold
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    <%= totals.totalKicks %>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="bi bi-trophy fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff Sales Table -->
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-table me-2"></i>Staff Performance - <%=
+            periodDisplay %> <% if (period !== 'today') { %>
+            <small class="text-muted"
+              >(<%= startDate %> to <%= endDate %>)</small
+            >
+            <% } %>
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover" id="salesTable">
+              <thead class="table-dark">
+                <tr>
+                  <th><i class="bi bi-person me-1"></i>Staff Name</th>
+                  <th><i class="bi bi-shield me-1"></i>Role</th>
+                  <th><i class="bi bi-people me-1"></i>Customers</th>
+                  <th><i class="bi bi-receipt me-1"></i>Transactions</th>
+                  <th><i class="bi bi-trophy me-1"></i>Kicks Sold</th>
+                  <th><i class="bi bi-currency-dollar me-1"></i>Revenue</th>
+                  <th><i class="bi bi-percent me-1"></i>Performance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (salesData && salesData.length > 0) { %> <%
+                salesData.forEach(function(staff, index) { %>
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="avatar-circle me-2">
+                        <%= staff.staff_name.charAt(0).toUpperCase() %>
+                      </div>
+                      <strong><%= staff.staff_name %></strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      class="badge <%= staff.role === 'admin' ? 'bg-danger' : staff.role === 'staff' ? 'bg-primary' : 'bg-success' %>"
+                    >
+                      <%= staff.role.charAt(0).toUpperCase() +
+                      staff.role.slice(1) %>
+                    </span>
+                  </td>
+                  <td>
+                    <strong><%= staff.customers_served %></strong>
+                    <% if (staff.customers_served > 0) { %>
+                    <i class="bi bi-check-circle text-success ms-1"></i>
+                    <% } %>
+                  </td>
+                  <td><%= staff.total_transactions %></td>
+                  <td>
+                    <span class="badge bg-info"
+                      ><%= staff.total_kicks_sold %></span
+                    >
+                  </td>
+                  <td>
+                    <strong class="text-success">
+                      $<%= parseFloat(staff.total_revenue).toFixed(2) %> BZD
+                    </strong>
+                  </td>
+                  <td>
+                    <% const revenuePercent = totals.totalRevenue > 0 ?
+                    ((parseFloat(staff.total_revenue) / totals.totalRevenue) *
+                    100).toFixed(1) : 0; %>
+                    <div class="progress" style="height: 20px">
+                      <div
+                        class="progress-bar <%= revenuePercent >= 50 ? 'bg-success' : revenuePercent >= 25 ? 'bg-warning' : revenuePercent > 0 ? 'bg-info' : 'bg-secondary' %>"
+                        role="progressbar"
+                        style="width: <%= Math.max(revenuePercent, 2) %>%"
+                        aria-valuenow="<%= revenuePercent %>"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      >
+                        <%= revenuePercent %>%
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                      <p>
+                        No sales data found for <%= periodDisplay.toLowerCase()
+                        %>.
+                      </p>
+                      <small
+                        >Sales will appear here once staff members process
+                        transactions.</small
+                      >
+                    </div>
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Info -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card border-left-info">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-lg-8">
+                  <h6 class="text-info">
+                    <i class="bi bi-info-circle me-2"></i>Sales Tracking
+                    Information
+                  </h6>
+                  <p class="mb-1">
+                    <strong>Tracking Period:</strong> <%= periodDisplay %>
+                  </p>
+                  <p class="mb-1">
+                    <strong>Data Source:</strong> Live transaction database
+                  </p>
+                  <p class="mb-1"><strong>Updated:</strong> Real-time</p>
+                  <p class="mb-0">
+                    <small class="text-muted">
+                      This report tracks kick sales made through the cashier
+                      interface. Revenue includes all monetary transactions
+                      processed by staff members.
+                    </small>
+                  </p>
+                </div>
+                <div class="col-lg-4 text-end">
+                  <button
+                    class="btn btn-outline-primary"
+                    onclick="window.print()"
+                  >
+                    <i class="bi bi-printer me-1"></i>Print Report
+                  </button>
+                  <button
+                    class="btn btn-outline-success ms-2"
+                    onclick="location.reload()"
+                  >
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+  }
+
+  .border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+  }
+
+  .border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+  }
+
+  .border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+  }
+
+  .text-xs {
+    font-size: 0.7rem;
+  }
+
+  .text-gray-800 {
+    color: #5a5c69 !important;
+  }
+
+  .text-gray-300 {
+    color: #dddfeb !important;
+  }
+
+  .avatar-circle {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(45deg, #4e73df, #1cc88a);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    border: 1px solid #e3e6f0;
+  }
+
+  .table-responsive {
+    border-radius: 0.35rem;
+  }
+
+  #salesTable th {
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+
+  .progress {
+    background-color: #f8f9fc;
+  }
+
+  #live-sales-table td {
+    vertical-align: middle;
+  }
+
+  #live-sales-table .avatar-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .table-success th {
+    background-color: #d1edda !important;
+    border-color: #c3e6cb !important;
+    color: #155724 !important;
+  }
+
+  #real-time-tracking .card-header {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+  }
+
+  #real-time-tracking .card-header .badge {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+
+  #real-time-tracking .btn-outline-success {
+    border-color: white;
+    color: white;
+  }
+
+  #real-time-tracking .btn-outline-success:hover {
+    background-color: white;
+    color: #28a745;
+  }
+
+  @media print {
+    .sidebar,
+    .btn-toolbar,
+    .btn {
+      display: none !important;
+    }
+
+    .col-md-9 {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+  }
+</style>
+
+<script>
+  // Real-time sales tracking functionality
+  let updateInterval;
+
+  // Load sales tracking data from API
+  async function loadSalesTrackingData() {
+    try {
+      const refreshBtn = document.getElementById('refresh-btn');
+      const lastUpdateSpan = document.getElementById('last-update');
+
+      // Disable refresh button during loading
+      if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Loading...';
+      }
+
+      const response = await fetch('/admin/api/sales-tracking');
+      const data = await response.json();
+
+      if (data.success) {
+        updateSalesTrackingTable(data.salesData);
+
+        // Update last update time
+        if (lastUpdateSpan) {
+          const now = new Date();
+          lastUpdateSpan.textContent = `Updated: ${now.toLocaleTimeString()}`;
+          lastUpdateSpan.className = 'badge bg-success me-2';
+        }
+      } else {
+        console.error('Failed to load sales tracking data:', data.message);
+        if (lastUpdateSpan) {
+          lastUpdateSpan.textContent = 'Update failed';
+          lastUpdateSpan.className = 'badge bg-danger me-2';
+        }
+      }
+    } catch (error) {
+      console.error('Error loading sales tracking data:', error);
+      const lastUpdateSpan = document.getElementById('last-update');
+      if (lastUpdateSpan) {
+        lastUpdateSpan.textContent = 'Error';
+        lastUpdateSpan.className = 'badge bg-danger me-2';
+      }
+    } finally {
+      // Re-enable refresh button
+      const refreshBtn = document.getElementById('refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+      }
+    }
+  }
+
+  // Update the sales tracking table with new data
+  function updateSalesTrackingTable(salesData) {
+    const tbody = document.getElementById('live-sales-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (salesData && salesData.length > 0) {
+      salesData.forEach(staff => {
+        const row = document.createElement('tr');
+
+        // Determine role badge color
+        let roleBadgeClass = 'bg-secondary';
+        if (staff.role === 'admin') roleBadgeClass = 'bg-danger';
+        else if (staff.role === 'staff') roleBadgeClass = 'bg-primary';
+        else if (staff.role === 'sales') roleBadgeClass = 'bg-success';
+
+        row.innerHTML = `
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="avatar-circle me-2">
+                ${staff.staff_name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <strong>${staff.staff_name}</strong>
+                <br>
+                <span class="badge ${roleBadgeClass} small">
+                  ${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
+                </span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-info me-1">${staff.customers_today} customers</span>
+              <strong class="text-success">$${parseFloat(staff.revenue_today || 0).toFixed(2)}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-info me-1">${staff.customers_week} customers</span>
+              <strong class="text-success">$${parseFloat(staff.revenue_week || 0).toFixed(2)}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-info me-1">${staff.customers_month} customers</span>
+              <strong class="text-success">$${parseFloat(staff.revenue_month || 0).toFixed(2)}</strong>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    } else {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td colspan="4" class="text-center py-4">
+          <div class="text-muted">
+            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+            <p>No staff sales data available.</p>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+  }
+
+  // Initialize when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadSalesTrackingData();
+
+    // Set up auto-refresh every 10 seconds
+    updateInterval = setInterval(loadSalesTrackingData, 10000);
+
+    // Auto-refresh legacy table every 30 seconds for today's view
+    <% if (period === 'today') { %>
+      setInterval(function() {
+        // Only auto-refresh if user is viewing today's data
+        if (document.visibilityState === 'visible') {
+          location.reload();
+        }
+      }, 30000); // 30 seconds
+    <% } %>
+
+    // Stop auto-refresh when user leaves the page
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      } else {
+        // Resume auto-refresh when user comes back
+        if (!updateInterval) {
+          updateInterval = setInterval(loadSalesTrackingData, 10000);
+        }
+        // Load fresh data immediately
+        loadSalesTrackingData();
+      }
+    });
+  });
+
+  // Clean up interval when page unloads
+  window.addEventListener('beforeunload', function() {
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+  });
+</script>

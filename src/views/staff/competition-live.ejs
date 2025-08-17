@@ -1,0 +1,1364 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+          <i class="bi bi-play-circle"></i> Live Competition: <%=
+          competition.name %>
+        </h2>
+        <div>
+          <a href="/staff/competition-setup" class="btn btn-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Setup
+          </a>
+          <button class="btn btn-danger" id="end-competition-btn">
+            <i class="bi bi-stop-circle"></i> End Competition
+          </button>
+        </div>
+      </div>
+
+      <!-- Competition Details Card -->
+      <div class="card mb-5">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Competition Details</h5>
+        </div>
+        <div class="card-body pb-4">
+          <div class="row">
+            <div class="col-md-3">
+              <strong>Type:</strong> <%= competition.type %>
+            </div>
+            <div class="col-md-3">
+              <strong>Format:</strong> <%= competition.format %>
+            </div>
+            <div class="col-md-3">
+              <strong>Entry Cost:</strong> $<%= competition.cost %>
+            </div>
+            <div class="col-md-3">
+              <strong>Kicks per Player:</strong> <%=
+              competition.kicks_per_player %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if (competition.type === 'individual') { %>
+      <!-- Individual Competition Interface -->
+      <div class="row">
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Participants</h5>
+            </div>
+            <div class="card-body">
+                  <div id="participants-list">
+                    <% participants.forEach(participant => { %>
+                    <div
+                      class="card mb-2 participant-card"
+                      data-participant-id="<%= participant.id %>"
+                    >
+                      <div class="card-body">
+                        <div
+                          class="d-flex justify-content-between align-items-center"
+                        >
+                          <div>
+                            <h6 class="mb-1"><%= participant.name %></h6>
+                            <small class="text-muted"
+                              ><%= participant.age_group %> • <%=
+                              participant.residence %></small
+                            >
+                          </div>
+                          <div class="text-end">
+                            <div class="progress mb-2" style="width: 100px">
+                              <div
+                                class="progress-bar"
+                                role="progressbar"
+                                data-kicks-taken="<%= participant.kicks_taken %>"
+                                data-total-kicks="<%= competition.kicks_per_player %>"
+                                aria-valuenow="<%= participant.kicks_taken %>"
+                                aria-valuemin="0"
+                                aria-valuemax="<%= competition.kicks_per_player %>"
+                              >
+                                <%= participant.kicks_taken %>/<%= competition.kicks_per_player %>
+                              </div>
+                            </div>
+                            <span class="badge bg-success"
+                              >Goals: <%= participant.goals || 0 %></span
+                            >
+                          </div>
+                        </div>
+                        <div class="mt-2">
+                          <button
+                            class="btn btn-sm btn-primary me-1 log-goals-btn"
+                            data-participant-id="<%= participant.id %>"
+                            data-participant-name="<%= participant.name %>"
+                            onclick="openLogGoalsModal('<%= participant.id %>', '<%= participant.name %>');"
+                          >
+                            <i class="bi bi-plus-circle"></i> Log Goals
+                          </button>
+                          <span class="text-muted small">
+                            Accuracy: <%= participant.kicks_taken > 0 ?
+                            Math.round((participant.goals /
+                            participant.kicks_taken) * 100) : 0 %>%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <% }); %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Leaderboard Panel -->
+            <div class="col-md-6 mb-4">            <div class="card h-100">
+              <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">Live Leaderboard</h5>
+                  <button class="btn btn-sm btn-outline-dark" id="manual-refresh-btn">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                  </button>
+                </div>
+              </div>
+                <div class="card-body">
+                  <div id="leaderboard-list">
+                    <!-- Will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% } else { %>
+          <!-- Team Competition Interface -->
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0">Teams</h5>
+                </div>
+                <div class="card-body">
+                  <div id="teams-list">
+                    <% teams.forEach(team => { %>
+                    <div
+                      class="card mb-3 team-card"
+                      data-team-id="<%= team.team_id %>"
+                    >
+                      <div class="card-header">
+                        <h6 class="mb-0"><%= team.name %></h6>
+                        <small class="text-muted"
+                          >Captain: <%= team.captain_name %></small
+                        >
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-6">
+                            <strong>Team Score:</strong>
+                            <span
+                              class="badge bg-primary"
+                              id="team-score-<%= team.team_id %>"
+                              >0</span
+                            >
+                          </div>
+                          <div class="col-md-6">
+                            <strong>Total Kicks:</strong>
+                            <span id="team-kicks-<%= team.team_id %>"><%= team.total_kicks || 0 %>/<%= 
+                            team.member_count * competition.kicks_per_player %></span>
+                          </div>
+                        </div>
+                        <div class="mt-2">
+                          <button type="button"
+                            class="btn btn-primary btn-sm view-team-members-btn" 
+                            data-team-id="<%= team.team_id %>"
+                            onclick="viewTeamMembers('<%= team.team_id %>');"
+                          >
+                            <i class="bi bi-people"></i> View Team Members
+                          </button>
+                          <!-- Debug info: team_id: <%= team.team_id %>, team record id: <%= team.id %> -->
+                        </div>
+                      </div>
+                    </div>
+                    <% }); %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Leaderboard Panel -->
+            <div class="col-md-6 mb-4">
+              <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                  <h5 class="mb-0">Team Standings</h5>
+                </div>
+                <div class="card-body">
+                  <div id="team-leaderboard-list">
+                    <!-- Will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Goals Modal -->
+    <div class="modal fade" id="logGoalsModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="logGoalsModalLabel">Log Goals</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="logGoalsForm">
+              <input type="hidden" id="participantId" name="participantId" />
+              <input type="hidden" id="teamId" name="teamId" />
+              <input type="hidden" id="competitionId" name="competitionId" />
+              
+              <!-- Player Name Section -->
+              <div class="mb-3">
+                <label for="playerName" class="form-label">Player Name</label>
+                <div class="d-flex align-items-center">
+                  <input
+                    type="text"
+                    class="form-control me-2"
+                    id="playerName"
+                    readonly
+                  />
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="editPlayerName">
+                    Edit
+                  </button>
+                </div>
+                <small class="text-muted">Name can be changed up to 2 times by a referee.</small>
+              </div>
+
+              <!-- Kicks Used Section -->
+              <div class="mb-3">
+                <label for="kicksUsed" class="form-label">Kicks Used</label>
+                <select
+                  class="form-select"
+                  id="kicksUsed"
+                  name="kicksUsed"
+                  required
+                >
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5" selected>5</option>
+                </select>
+                <small class="text-muted">How many kicks did the player use? (1-5)</small>
+              </div>
+
+              <!-- Goals Scored Section -->
+              <div class="mb-3">
+                <label for="goalsScored" class="form-label">Goals Scored</label>
+                <select
+                  class="form-select"
+                  id="goalsScored"
+                  name="goalsScored"
+                  required
+                >
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+                <small class="text-muted">How many goals did the player score? (0-5)</small>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="submit-goals-btn"
+            >
+              Log Goals
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Members Modal -->
+    <div class="modal fade" id="teamMembersModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="teamMembersModalLabel">Team Members</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <!-- Team Selection Info (for 11+ member teams) -->
+            <div id="teamSelectionInfo" class="alert alert-info" style="display: none;">
+              <h6><i class="bi bi-info-circle"></i> Player Selection Required</h6>
+              <p class="mb-2">This team has more than 11 members. Please select exactly 11 players who will participate in goal logging.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <span><strong>Selected:</strong> <span id="selectedCount">0</span>/11</span>
+                <button id="savePlayerSelection" class="btn btn-sm btn-success" disabled>
+                  <i class="bi bi-check-circle"></i> Confirm Selection
+                </button>
+              </div>
+            </div>
+            
+            <!-- Team Members List -->
+            <div id="teamMembersList" class="list-group">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      console.log("=== COMPETITION LIVE PAGE SCRIPT STARTING ===");
+      console.log("Window location:", window.location.href);
+      
+      // Define global functions FIRST before anything else
+      window.openLogGoalsModal = function(participantId, participantName) {
+        console.log("Opening log goals modal for participant:", participantId, participantName);
+        
+        // Set form values
+        document.getElementById("participantId").value = participantId;
+        document.getElementById("playerName").value = participantName;
+        document.getElementById("competitionId").value = "<%= competition.id %>";
+        
+        // Reset form
+        document.getElementById("kicksUsed").value = "5";
+        document.getElementById("goalsScored").value = "0";
+        
+        // Show modal
+        try {
+          const modal = new bootstrap.Modal(document.getElementById("logGoalsModal"));
+          modal.show();
+        } catch (error) {
+          console.error("Error showing modal:", error);
+          alert("Error showing modal: " + error.message);
+        }
+      };
+
+      window.logGoals = function(participantId) {
+        // Legacy function - redirect to new function
+        const participantCard = document.querySelector(`[data-participant-id="${participantId}"]`);
+        const participantName = participantCard ? participantCard.querySelector("h6").textContent : "Unknown";
+        openLogGoalsModal(participantId, participantName);
+      };
+
+      window.viewTeamMembers = function(teamId) {
+        console.log("=== VIEW TEAM MEMBERS CALLED ===");
+        console.log("Team ID:", teamId, "Type:", typeof teamId);
+        
+        // Make sure teamId is a string
+        teamId = String(teamId);
+        
+        if (!teamId) {
+          console.error("Error: Missing team ID");
+          alert("Error: Missing team ID");
+          return;
+        }
+        
+        console.log("Opening modal for team ID:", teamId);
+        
+        // Get modal element
+        const modal = document.getElementById("teamMembersModal");
+        if (!modal) {
+          console.error("Error: Modal not found");
+          alert("Error: Modal not found");
+          return;
+        }
+        
+        // Show modal immediately
+        try {
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        } catch (error) {
+          console.error("Error showing modal:", error);
+          alert("Error showing modal: " + error.message);
+          return;
+        }
+        
+        // Set loading content - match the exact format in the screenshot
+        const teamMembersList = document.getElementById("teamMembersList");
+        if (teamMembersList) {
+          teamMembersList.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading team members...</p></div>';
+        }
+        
+        // Update modal title to exact match from screenshot
+        const modalTitle = document.getElementById("teamMembersModalLabel");
+        if (modalTitle) {
+          modalTitle.setAttribute('data-team-id', teamId);
+          modalTitle.textContent = "Team Members (Loading...)";
+        }
+        
+        // Fetch team members
+        console.log("Fetching team members for team ID:", teamId);
+        fetch(`/referee/api/team/${teamId}/members`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log("API Response:", data);
+            if (data.success && data.members) {
+              console.log("Displaying team members:", data.members.length);
+              // Update title after data is loaded - exact match for screenshot
+              if (modalTitle) {
+                modalTitle.textContent = "Team Members";
+              }
+              
+              // Check if we already have active players selected for this team
+              if (activeTeamPlayers[teamId] && activeTeamPlayers[teamId].length === 11 && data.members.length > 11) {
+                console.log("Using previously selected players for team", teamId);
+                
+                // Get the selected members data
+                const selectedMemberIds = activeTeamPlayers[teamId];
+                const membersWithSelectionInfo = data.members.map(member => ({
+                  ...member,
+                  selected: selectedMemberIds.includes(parseInt(member.id))
+                }));
+                
+                // Render the selected view directly
+                renderSelectedTeamMembers(membersWithSelectionInfo, selectedMemberIds, teamId);
+                
+                // Make sure the team's maximum kicks is updated to 55 (11 players * 5 kicks)
+                updateTeamMaxKicks(teamId, 55);
+              } else {
+                // No previous selection, show normal display
+                displayTeamMembers(data.members);
+              }
+            } else {
+              console.error("No members found in API response");
+              if (teamMembersList) {
+                teamMembersList.innerHTML = '<div class="alert alert-warning">No team members found</div>';
+              }
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching team members:", error);
+            if (teamMembersList) {
+              teamMembersList.innerHTML = '<div class="alert alert-danger">Error loading team members: ' + error.message + '</div>';
+            }
+          });
+      };
+      
+      // Define global functions first, outside of DOMContentLoaded
+      // This ensures they are available for inline onclick handlers
+      
+      // Global variables 
+      let competitionId;
+      let competitionType;
+      let participantsWithLoggedGoals = []; // Track participants who already logged goals
+      let activeTeamPlayers = {}; // Will store active player IDs for teams with size >= 11
+      
+      // Show notification function
+      function showNotification(message, type = 'info', duration = 3000) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+        notification.innerHTML = `
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Add to body
+        document.body.appendChild(notification);
+        
+        // Auto-hide after duration
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, duration);
+      }
+
+      // Function to load participants who already logged goals
+      function loadParticipantsWithLoggedGoals() {
+        const competitionId = window.location.pathname.split('/').pop();
+        fetch(`/staff/competition-setup/${competitionId}/participants-with-goals`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              participantsWithLoggedGoals = data.participantsWithGoals;
+              console.log("Loaded participants with goals:", participantsWithLoggedGoals);
+              
+              // Update UI for already logged goals
+              updateLogGoalsButtons();
+            }
+          })
+          .catch(error => {
+            console.error("Error loading participants with logged goals:", error);
+          });
+      }
+
+      // Function to update log goals buttons
+function updateLogGoalsButtons() {
+  if (participantsWithLoggedGoals.length === 0) return;
+  
+  // Handle individual participants
+  document.querySelectorAll('.log-goals-btn').forEach(button => {
+    const participantId = button.getAttribute('data-participant-id');
+    if (participantsWithLoggedGoals.some(p => p.player_id == participantId)) {
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-secondary');
+      button.disabled = true;
+      button.innerHTML = '<i class="bi bi-check-circle"></i> Logged';
+    }
+  });
+  
+  // Handle team members
+  document.querySelectorAll('.log-member-goals-btn').forEach(button => {
+    const memberId = button.getAttribute('data-member-id');
+    if (participantsWithLoggedGoals.some(p => p.player_id == memberId)) {
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-secondary');
+      button.disabled = true;
+      button.innerHTML = '<i class="bi bi-check-circle"></i> Logged';
+    }
+  });
+}
+
+      window.logTeamGoals = function(teamId) {
+        // Store the team ID for recovery
+        localStorage.setItem('currentTeamId', teamId);
+        console.log("Log goals for team ID:", teamId);
+        
+        // Get team members first
+        fetch(`/referee/api/team/${teamId}/members`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success && data.members.length > 0) {
+              let activeMembers = [];
+              
+              // Check if we have active players for this team
+              if (activeTeamPlayers && activeTeamPlayers[teamId] && activeTeamPlayers[teamId].length > 0) {
+                // Filter members to only active players
+                activeMembers = data.members.filter(member => 
+                  activeTeamPlayers[teamId].includes(parseInt(member.id))
+                );
+                
+                console.log("Active team members:", activeMembers.length, "out of", data.members.length);
+                
+                if (activeMembers.length === 0) {
+                  // No active players found, but we have members
+                  showNotification("No active players found for this team. Using all team members.", "warning");
+                  activeMembers = data.members;
+                }
+              } else {
+                // No active players defined, use all members
+                activeMembers = data.members;
+              }
+              
+              // Create a dropdown for selecting team members
+              const playerSelector = document.createElement('select');
+              playerSelector.className = 'form-select mb-3';
+              playerSelector.id = 'team-player-selector';
+              
+              activeMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = member.name;
+                playerSelector.appendChild(option);
+              });
+              
+              // Set initial values from the first member
+              const firstMember = activeMembers[0];
+              document.getElementById("participantId").value = firstMember.id;
+              document.getElementById("playerName").value = firstMember.name;
+              document.getElementById("teamId").value = teamId;
+              
+              // Replace any existing selector
+              const existingSelector = document.getElementById('team-player-selector-container');
+              if (existingSelector) {
+                existingSelector.innerHTML = '';
+                existingSelector.appendChild(playerSelector);
+              } else {
+                // Create a container for the selector
+                const container = document.createElement('div');
+                container.id = 'team-player-selector-container';
+                container.className = 'mb-3';
+                
+                const label = document.createElement('label');
+                label.htmlFor = 'team-player-selector';
+                label.textContent = 'Select Player:';
+                label.className = 'form-label';
+                
+                container.appendChild(label);
+                container.appendChild(playerSelector);
+                
+                // Add before the goals input
+                const goalsInput = document.querySelector('#logGoalsForm .modal-body .form-group');
+                if (goalsInput) {
+                  goalsInput.parentNode.insertBefore(container, goalsInput);
+                }
+              }
+              
+              // Add event listener to update values when selection changes
+              playerSelector.addEventListener('change', function() {
+                const selectedId = this.value;
+                const selectedMember = activeMembers.find(m => m.id == selectedId);
+                if (selectedMember) {
+                  document.getElementById("participantId").value = selectedMember.id;
+                  document.getElementById("playerName").value = selectedMember.name;
+                }
+              });
+              
+              try {
+                const modal = new bootstrap.Modal(document.getElementById("logGoalsModal"));
+                modal.show();
+              } catch (error) {
+                console.error("Error showing team goals modal:", error);
+                showNotification("Error showing modal: " + error.message, "danger");
+              }
+            } else {
+              showNotification("No team members found", "warning");
+            }
+          })
+          .catch((error) => {
+            console.error("Error getting team members:", error);
+            showNotification("Error getting team members: " + error.message, "danger");
+          });
+      };
+
+      // This function has been removed and merged with the original viewTeamMembers function above
+
+      // Directly handle member goal clicks from the modal
+      document.addEventListener('click', function(event) {
+        // Delegate click handling for log member goals buttons
+        if (event.target.closest('.log-member-goals-btn')) {
+          const button = event.target.closest('.log-member-goals-btn');
+          const memberId = button.getAttribute('data-member-id');
+          const memberName = button.getAttribute('data-member-name');
+          const teamId = button.getAttribute('data-team-id'); // Store team ID for reference
+          
+          console.log("Log goals for member ID:", memberId, "name:", memberName, "team ID:", teamId, "type:", typeof memberId);
+          
+          if (!memberId) {
+            console.error("Missing member ID from button:", button);
+            showNotification("Error: Missing team member ID", "danger");
+            return;
+          }
+          
+          // Check if goals have already been logged for this player
+          if (participantsWithLoggedGoals.some(p => p.player_id == memberId)) {
+            console.log("Goals already logged for this player");
+            showNotification("Goals have already been logged for " + memberName, "warning");
+            return;
+          }
+          
+          // Get the participantId input element and check if it exists
+          const participantIdInput = document.getElementById("participantId");
+          const playerNameInput = document.getElementById("playerName");
+          const teamIdInput = document.getElementById("teamId");
+          const competitionIdInput = document.getElementById("competitionId");
+          
+          if (!participantIdInput || !playerNameInput || !teamIdInput || !competitionIdInput) {
+            console.error("Missing form input elements");
+            showNotification("Error: Form elements not found", "danger");
+            return;
+          }
+          
+          // Make sure we're setting a numeric value
+          participantIdInput.value = memberId;
+          playerNameInput.value = memberName;
+          
+          // Find the team ID from the current URL
+          // URLs are like /staff/competition-live/123 where 123 is the competition ID
+          const competitionId = window.location.pathname.split('/').pop();
+          
+          // Set competition ID
+          competitionIdInput.value = competitionId;
+          
+          // Get the team ID from the button if available
+          const buttonTeamId = button.getAttribute('data-team-id');
+          // Set teamId based on the button attribute
+          teamIdInput.value = buttonTeamId || "";
+          
+          // Reset form fields to defaults
+          document.getElementById("kicksUsed").value = "5";
+          document.getElementById("goalsScored").value = "0";
+          
+          try {
+            // Close team members modal and open log goals modal
+            const teamModal = bootstrap.Modal.getInstance(document.getElementById("teamMembersModal"));
+            teamModal.hide();
+            
+            setTimeout(() => {
+              const logModal = new bootstrap.Modal(document.getElementById("logGoalsModal"));
+              logModal.show();
+            }, 300);
+          } catch (error) {
+            console.error("Error logging member goals:", error);
+            showNotification("Error: " + error.message, "danger");
+          }
+        }
+      });
+
+      // New submit goals function
+      window.submitGoals = function() {
+        console.log("=== SUBMITTING GOALS ===");
+        
+        const form = document.getElementById("logGoalsForm");
+        const submitButton = document.getElementById("submit-goals-btn");
+        
+        // Show loading state
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging...';
+        submitButton.disabled = true;
+        
+        // Get form data
+        const participantId = document.getElementById("participantId").value;
+        const playerName = document.getElementById("playerName").value;
+        const competitionId = document.getElementById("competitionId").value;
+        const teamId = document.getElementById("teamId").value;
+        const kicksUsed = parseInt(document.getElementById("kicksUsed").value);
+        const goalsScored = parseInt(document.getElementById("goalsScored").value);
+        
+        // Validate data
+        if (!participantId || !competitionId || isNaN(kicksUsed) || isNaN(goalsScored)) {
+          alert("Please fill in all required fields");
+          submitButton.innerHTML = originalButtonText;
+          submitButton.disabled = false;
+          return;
+        }
+        
+        // Create submission data
+        const data = {
+          participantId: parseInt(participantId),
+          competitionId: parseInt(competitionId),
+          teamId: teamId ? parseInt(teamId) : null,
+          kicksUsed: kicksUsed,
+          goals: goalsScored,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log("Submitting goal data:", data);
+        
+        // Submit to server
+        fetch("/staff/competition-setup/log-goals", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(result => {
+          console.log("Goal submission result:", result);
+          
+          if (result.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById("logGoalsModal"));
+            if (modal) modal.hide();
+            
+            // Show success message
+            alert("Goals logged successfully!");
+            
+            try {
+              // Update UI immediately
+              updateParticipantAfterGoals(data);
+              
+              // Update team score and kicks if this is a team member
+              if (data.teamId) {
+                updateTeamAfterGoals(data.teamId, data.goals, data.kicksUsed);
+              }
+            } catch (updateError) {
+              console.error("Error updating UI:", updateError);
+              // Continue with refresh even if immediate UI update fails
+            }
+            
+            // Refresh competition data
+            setTimeout(() => {
+              refreshCompetitionData();
+            }, 500);
+            
+          } else {
+            alert("Error logging goals: " + (result.message || "Unknown error"));
+          }
+        })
+        .catch(error => {
+          console.error("Error submitting goals:", error);
+          alert("Error logging goals. Please try again.");
+        })
+        .finally(() => {
+          // Reset button state
+          submitButton.innerHTML = originalButtonText;
+          submitButton.disabled = false;
+        });
+      };
+      
+      // Update participant UI after goals are logged
+      function updateParticipantAfterGoals(data) {
+        const participantCard = document.querySelector(`[data-participant-id="${data.participantId}"]`);
+        if (participantCard) {
+          // Update progress bar
+          const progressBar = participantCard.querySelector(".progress-bar");
+          if (progressBar) {
+            const currentKicks = parseInt(progressBar.getAttribute("data-kicks-taken") || 0);
+            const newKicks = currentKicks + data.kicksUsed;
+            const totalKicks = parseInt(progressBar.getAttribute("data-total-kicks") || 5);
+            const percentage = Math.round((newKicks / totalKicks) * 100);
+            
+            progressBar.style.width = percentage + "%";
+            progressBar.textContent = `${newKicks}/${totalKicks}`;
+            progressBar.setAttribute("data-kicks-taken", newKicks);
+          }
+          
+          // Update goals badge
+          const goalsBadge = participantCard.querySelector(".badge");
+          if (goalsBadge) {
+            const currentGoals = parseInt(goalsBadge.textContent.match(/\d+/)?.[0] || 0);
+            const newGoals = currentGoals + data.goals;
+            goalsBadge.textContent = `Goals: ${newGoals}`;
+          }
+          
+          // Update accuracy
+          const accuracySpan = participantCard.querySelector(".text-muted.small");
+          if (accuracySpan && progressBar) {
+            const kicks = parseInt(progressBar.getAttribute("data-kicks-taken"));
+            const goals = parseInt(goalsBadge.textContent.match(/\d+/)?.[0] || 0);
+            const accuracy = kicks > 0 ? Math.round((goals / kicks) * 100) : 0;
+            accuracySpan.textContent = `Accuracy: ${accuracy}%`;
+          }
+          
+          // Disable button if participant has used all kicks
+          const logButton = participantCard.querySelector(".log-goals-btn");
+          if (logButton && progressBar) {
+            const kicks = parseInt(progressBar.getAttribute("data-kicks-taken"));
+            const totalKicks = parseInt(progressBar.getAttribute("data-total-kicks") || 5);
+            if (kicks >= totalKicks) {
+              logButton.disabled = true;
+              logButton.classList.remove("btn-primary");
+              logButton.classList.add("btn-secondary");
+              logButton.innerHTML = '<i class="bi bi-check-circle"></i> Complete';
+            }
+          }
+        }
+      }
+
+      // Update team UI after goals are logged by a team member
+      function updateTeamAfterGoals(teamId, goals, kicksUsed) {
+        // Update team score
+        const teamScoreElement = document.getElementById(`team-score-${teamId}`);
+        if (teamScoreElement) {
+          const currentScore = parseInt(teamScoreElement.textContent) || 0;
+          const newScore = currentScore + goals;
+          teamScoreElement.textContent = newScore;
+        }
+        
+        // Update total kicks
+        const teamKicksElement = document.getElementById(`team-kicks-${teamId}`);
+        if (teamKicksElement) {
+          const kicksText = teamKicksElement.textContent;
+          const currentKicks = parseInt(kicksText.split('/')[0]) || 0;
+          const maxKicks = kicksText.split('/')[1];
+          const newKicks = currentKicks + kicksUsed;
+          teamKicksElement.textContent = `${newKicks}/${maxKicks}`;
+        }
+      }
+
+      // Update team's maximum kicks display
+      function updateTeamMaxKicks(teamId, maxKicks) {
+        const teamKicksElement = document.getElementById(`team-kicks-${teamId}`);
+        if (teamKicksElement) {
+          const kicksText = teamKicksElement.textContent;
+          const currentKicks = parseInt(kicksText.split('/')[0]) || 0;
+          teamKicksElement.textContent = `${currentKicks}/${maxKicks}`;
+        }
+      }
+
+      // Function to display team members in the modal
+      function displayTeamMembers(members) {
+        console.log("=== DISPLAYING TEAM MEMBERS ===");
+        console.log("Members:", members);
+        
+        const teamMembersList = document.getElementById("teamMembersList");
+        const teamSelectionInfo = document.getElementById("teamSelectionInfo");
+        
+        if (!teamMembersList) {
+          console.error("Team members list element not found");
+          return;
+        }
+        
+        // Check if team has more than 11 members
+        if (members.length > 11) {
+          // Show selection info
+          teamSelectionInfo.style.display = "block";
+          
+          // Create selectable member list
+          let html = '';
+          members.forEach(member => {
+            const alreadyLogged = participantsWithLoggedGoals.some(p => p.player_id == member.id);
+            html += `
+              <div class="list-group-item border-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center">
+                    <input type="checkbox" class="form-check-input me-3 member-checkbox" 
+                           data-member-id="${member.id}" ${alreadyLogged ? 'disabled' : ''}>
+                    <div>
+                      <strong>${member.name}</strong>
+                      <div class="text-muted small">${member.age_group || 'Unknown'} • ${member.residence || 'Unknown'}</div>
+                    </div>
+                  </div>
+                  <div>
+                    ${alreadyLogged ? 
+                      '<span class="badge bg-success">Logged</span>' : 
+                      '<span class="badge bg-secondary">Available</span>'
+                    }
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          
+          teamMembersList.innerHTML = html;
+          
+          // Add event listeners for checkboxes
+          const checkboxes = teamMembersList.querySelectorAll('.member-checkbox');
+          checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updatePlayerSelection);
+          });
+          
+        } else {
+          // Hide selection info for smaller teams
+          teamSelectionInfo.style.display = "none";
+          
+          // Create simple member list with log goals buttons
+          let html = '';
+          members.forEach(member => {
+            const alreadyLogged = participantsWithLoggedGoals.some(p => p.player_id == member.id);
+            html += `
+              <div class="list-group-item border-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${member.name}</strong>
+                    <div class="text-muted small">${member.age_group || 'Unknown'} • ${member.residence || 'Unknown'}</div>
+                  </div>
+                  <div>
+                    <button class="btn btn-sm ${alreadyLogged ? 'btn-secondary' : 'btn-primary'} log-member-goals-btn" 
+                            data-member-id="${member.id}" 
+                            data-member-name="${member.name}"
+                            data-team-id="${member.team_id || ''}"
+                            ${alreadyLogged ? 'disabled' : ''}>
+                      <i class="bi bi-${alreadyLogged ? 'check-circle' : 'plus-circle'}"></i> 
+                      ${alreadyLogged ? 'Logged' : 'Log Goals'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          
+          teamMembersList.innerHTML = html;
+        }
+      }
+      
+      // Function to update player selection count
+      function updatePlayerSelection() {
+        const checkboxes = document.querySelectorAll('.member-checkbox');
+        const selectedCount = document.querySelectorAll('.member-checkbox:checked').length;
+        const saveButton = document.getElementById('savePlayerSelection');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        
+        if (selectedCountSpan) {
+          selectedCountSpan.textContent = selectedCount;
+        }
+        
+        if (saveButton) {
+          saveButton.disabled = selectedCount !== 11;
+        }
+      }
+      
+      // Function to refresh competition data
+      function refreshCompetitionData() {
+        console.log("=== REFRESHING COMPETITION DATA ===");
+        
+        // Refresh individual leaderboard
+        if (competitionType === 'individual') {
+          refreshIndividualLeaderboard();
+        } else {
+          refreshTeamLeaderboard();
+        }
+        
+        // Reload participants with logged goals
+        loadParticipantsWithLoggedGoals();
+      }
+      
+      // Function to refresh individual leaderboard
+      function refreshIndividualLeaderboard() {
+        const competitionId = window.location.pathname.split('/').pop();
+        const leaderboardList = document.getElementById('leaderboard-list');
+        
+        if (!leaderboardList) return;
+        
+        leaderboardList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        fetch(`/staff/competition-setup/${competitionId}/leaderboard`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.leaderboard) {
+              let html = '';
+              data.leaderboard.forEach((participant, index) => {
+                html += `
+                  <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                    <div>
+                      <span class="badge bg-primary me-2">${index + 1}</span>
+                      <strong>${participant.name}</strong>
+                    </div>
+                    <div class="text-end">
+                      <div class="small text-muted">Goals: ${participant.goals || 0}</div>
+                      <div class="small text-muted">Accuracy: ${participant.accuracy || 0}%</div>
+                    </div>
+                  </div>
+                `;
+              });
+              leaderboardList.innerHTML = html || '<div class="text-muted text-center">No participants yet</div>';
+            } else {
+              leaderboardList.innerHTML = '<div class="text-muted text-center">Error loading leaderboard</div>';
+            }
+          })
+          .catch(error => {
+            console.error('Error refreshing leaderboard:', error);
+            leaderboardList.innerHTML = '<div class="text-muted text-center">Error loading leaderboard</div>';
+          });
+      }
+      
+      // Function to refresh team leaderboard
+      function refreshTeamLeaderboard() {
+        const competitionId = window.location.pathname.split('/').pop();
+        const leaderboardList = document.getElementById('team-leaderboard-list');
+        
+        if (!leaderboardList) return;
+        
+        leaderboardList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        fetch(`/staff/competition-setup/${competitionId}/team-leaderboard`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.leaderboard) {
+              let html = '';
+              data.leaderboard.forEach((team, index) => {
+                html += `
+                  <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                    <div>
+                      <span class="badge bg-success me-2">${index + 1}</span>
+                      <strong>${team.name}</strong>
+                    </div>
+                    <div class="text-end">
+                      <div class="small text-muted">Score: ${team.total_goals || 0}</div>
+                      <div class="small text-muted">Kicks: ${team.total_kicks || 0}</div>
+                    </div>
+                  </div>
+                `;
+              });
+              leaderboardList.innerHTML = html || '<div class="text-muted text-center">No teams yet</div>';
+            } else {
+              leaderboardList.innerHTML = '<div class="text-muted text-center">Error loading leaderboard</div>';
+            }
+          })
+          .catch(error => {
+            console.error('Error refreshing team leaderboard:', error);
+            leaderboardList.innerHTML = '<div class="text-muted text-center">Error loading leaderboard</div>';
+          });
+      }
+
+      // Document ready event listener
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log("=== DOM CONTENT LOADED ===");
+        
+        // Initialize global variables
+        competitionId = parseInt(window.location.pathname.split('/').pop());
+        competitionType = "<%= competition.type %>";
+        
+        console.log("Competition ID:", competitionId);
+        console.log("Competition Type:", competitionType);
+        
+        // Load participants with logged goals
+        loadParticipantsWithLoggedGoals();
+        
+        // Load initial leaderboard
+        refreshCompetitionData();
+        
+        // Add event listener for submit goals button
+        const submitGoalsBtn = document.getElementById('submit-goals-btn');
+        if (submitGoalsBtn) {
+          submitGoalsBtn.addEventListener('click', submitGoals);
+        }
+        
+        // Add event listener for manual refresh button
+        const manualRefreshBtn = document.getElementById('manual-refresh-btn');
+        if (manualRefreshBtn) {
+          manualRefreshBtn.addEventListener('click', function() {
+            refreshCompetitionData();
+            showNotification('Leaderboard refreshed!', 'success');
+          });
+        }
+        
+        // Add event listener for end competition button
+        const endCompetitionBtn = document.getElementById('end-competition-btn');
+        if (endCompetitionBtn) {
+          endCompetitionBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to end this competition? This cannot be undone.')) {
+              try {
+                // Show a loading message
+                showNotification('Ending competition...', 'info');
+                
+                // Make a POST request to end the competition
+                const response = await fetch(`/staff/competition-setup/<%= competition.id %>/end`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                  showNotification('Competition ended successfully!', 'success');
+                  // Redirect to competition setup page after a short delay
+                  setTimeout(() => {
+                    window.location.href = '/staff/competition-setup';
+                  }, 1000);
+                } else {
+                  showNotification(`Failed to end competition: ${result.message}`, 'error');
+                }
+              } catch (error) {
+                console.error('Error ending competition:', error);
+                showNotification('Error ending competition. Please try again.', 'error');
+              }
+            }
+          });
+        }
+        
+        // Add event listener for save player selection (teams with 11+ members)
+        const savePlayerSelectionBtn = document.getElementById('savePlayerSelection');
+        if (savePlayerSelectionBtn) {
+          savePlayerSelectionBtn.addEventListener('click', function() {
+            const selectedCheckboxes = document.querySelectorAll('.member-checkbox:checked');
+            const selectedPlayerIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.memberId));
+            
+            if (selectedPlayerIds.length === 11) {
+              const teamId = document.getElementById('teamMembersModalLabel').getAttribute('data-team-id');
+              if (teamId) {
+                activeTeamPlayers[teamId] = selectedPlayerIds;
+                console.log("Active players set for team", teamId, ":", selectedPlayerIds);
+                
+                // Update the modal to show log goals buttons only for selected players
+                const members = Array.from(document.querySelectorAll('.member-checkbox')).map(cb => ({
+                  id: cb.dataset.memberId,
+                  name: cb.closest('.list-group-item').querySelector('strong').textContent,
+                  selected: selectedPlayerIds.includes(parseInt(cb.dataset.memberId))
+                }));
+                
+                // Re-render the modal with only selected players able to log goals
+                renderSelectedTeamMembers(members, selectedPlayerIds, teamId);
+                
+                // Update team's total kicks to show /55 for 11 selected players
+                updateTeamMaxKicks(teamId, 55);
+                
+                showNotification('Player selection saved! Only selected players can log goals.', 'success');
+              }
+            } else {
+              showNotification('Please select exactly 11 players', 'warning');
+            }
+          });
+        }
+      });
+      
+      // Function to render team members after selection
+      function renderSelectedTeamMembers(members, selectedPlayerIds, teamId) {
+        const teamMembersList = document.getElementById("teamMembersList");
+        const teamSelectionInfo = document.getElementById("teamSelectionInfo");
+        
+        // Hide selection info
+        teamSelectionInfo.style.display = "none";
+        
+        // Show only selected members with log goals buttons
+        let html = `
+          <div class="alert alert-success mb-3">
+            <i class="bi bi-info-circle me-2"></i> 
+            Showing your selected 11 players. <button class="btn btn-sm btn-outline-success ms-2" onclick="resetTeamMemberSelection('${teamId}')">Reset Selection</button>
+          </div>
+        `;
+        members.forEach(member => {
+          if (selectedPlayerIds.includes(parseInt(member.id))) {
+            const alreadyLogged = participantsWithLoggedGoals.some(p => p.player_id == member.id);
+            html += `
+              <div class="list-group-item border-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${member.name}</strong>
+                    <div class="text-muted small">Selected Player</div>
+                  </div>
+                  <div>
+                    <button class="btn btn-sm ${alreadyLogged ? 'btn-secondary' : 'btn-primary'} log-member-goals-btn" 
+                            data-member-id="${member.id}" 
+                            data-member-name="${member.name}"
+                            data-team-id="${teamId}"
+                            ${alreadyLogged ? 'disabled' : ''}>
+                      <i class="bi bi-${alreadyLogged ? 'check-circle' : 'plus-circle'}"></i> 
+                      ${alreadyLogged ? 'Logged' : 'Log Goals'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        });
+        
+        teamMembersList.innerHTML = html;
+      }
+
+      // Function to reset team member selection and show the full list again
+      function resetTeamMemberSelection(teamId) {
+        console.log("Resetting player selection for team", teamId);
+        
+        // Clear the active players for this team
+        if (activeTeamPlayers[teamId]) {
+          delete activeTeamPlayers[teamId];
+        }
+        
+        // Re-fetch team members to show the full selection UI
+        viewTeamMembers(teamId);
+        
+        // Show notification
+        showNotification('Player selection reset. Please select 11 players again.', 'info');
+      }
+      
+      // ...existing code...
+    </script>
+
+    <style>
+      .participant-card,
+      .team-card {
+        transition: all 0.3s ease;
+      }
+      
+      @keyframes highlight-card {
+        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+      }
+      
+      .highlight-success {
+        animation: highlight-card 1.5s ease-out;
+      }
+
+      .participant-card:hover,
+      .team-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress {
+        height: 20px;
+      }
+
+      .badge {
+        font-size: 0.8em;
+      }
+
+      #recent-activity {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .card-header {
+        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+      }
+
+      /* Team member modal styles */
+      .list-group-item.border-0.border-bottom {
+        padding: 12px 16px;
+      }
+
+      .list-group-item.border-0.border-bottom strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #333;
+        font-size: 1rem;
+      }
+
+      .list-group-item.border-0.border-bottom .text-muted {
+        font-size: 0.875rem;
+        color: #6c757d;
+      }
+
+      #teamMembersModal .modal-body {
+        padding: 0 !important;
+      }
+
+      #teamMembersList {
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+
+      /* Fix oversized icons in log goals buttons */
+      .log-goals-btn i.bi,
+      .log-member-goals-btn i.bi {
+        font-size: 0.875rem !important; /* Smaller icon size */
+        margin-right: 0.25rem;
+      }
+
+      /* Fix oversized icon in view team members button */
+      .view-team-members-btn i.bi {
+        font-size: 0.875rem !important; /* Smaller icon size */
+        margin-right: 0.25rem;
+      }
+
+      /* Ensure button heights are consistent */
+      .log-goals-btn,
+      .log-member-goals-btn,
+      .view-team-members-btn {
+        line-height: 1.5;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+      }
+    </style>
+    
+
+  </div>
+</div>

@@ -1,0 +1,239 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item"></li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
+        <h1 class="h2">Player Management</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <form class="d-flex me-2" action="/admin/players" method="GET">
+            <input
+              type="search"
+              name="search"
+              class="form-control form-control-sm"
+              placeholder="Search players..."
+              value="<%= search %>"
+            />
+            <% if (showDeleted) { %>
+            <input type="hidden" name="showDeleted" value="true" />
+            <% } %>
+            <button class="btn btn-sm btn-outline-secondary ms-2" type="submit">
+              Search
+            </button>
+          </form>
+          <div class="form-check form-switch me-2">
+            <input class="form-check-input" type="checkbox"
+            id="showDeletedToggle" <%= showDeleted ? 'checked' : '' %>
+            onchange="toggleDeletedPlayers()">
+            <label class="form-check-label" for="showDeletedToggle">
+              Show Deleted
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if(typeof messages != 'undefined'){ %> <% if(messages.success_msg){ %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% if(messages.error_msg){ %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% } %>
+
+      <!-- Players List -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            Players List <% if (showDeleted) { %><span class="badge bg-warning"
+              >Including Deleted</span
+            ><% } %>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Kicks Balance</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (players && players.length > 0) { %> <%
+                players.forEach(function(player) { %>
+                <tr class="<%= player.deleted_at ? 'table-secondary' : '' %>">
+                  <td>
+                    <div
+                      id="avatar-<%= player.id %>"
+                      class="d-inline-block me-2"
+                    ></div>
+                    <%= player.name %> <% if (player.deleted_at) { %>
+                    <span class="badge bg-danger ms-1">Deleted</span>
+                    <% } %>
+                  </td>
+                  <td><%= player.email || 'N/A' %></td>
+                  <td><%= player.phone || 'N/A' %></td>
+                  <td><%= player.kicks_balance || 0 %></td>
+                  <td>
+                    <% if (player.deleted_at) { %>
+                    <span class="badge bg-danger">Deleted</span><br />
+                    <small class="text-muted">
+                      <%= new Date(player.deleted_at).toLocaleDateString() %>
+                    </small>
+                    <% } else { %>
+                    <span class="badge bg-success">Active</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <%= new Date(player.created_at).toLocaleDateString() %>
+                  </td>
+                  <td>
+                    <a
+                      href="/admin/players/<%= player.id %>"
+                      class="btn btn-sm btn-outline-primary"
+                      >View Details</a
+                    >
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="7" class="text-center">
+                    <% if (search) { %> No players found matching "<%= search
+                    %>". <% } else { %> No players found. <% } %>
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <% if (players && players.length >= 100) { %>
+      <div class="alert alert-info mt-3">
+        <i class="bi bi-info-circle"></i>
+        Showing the first 100 results. Use the search box to find specific
+        players.
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<style>
+  .avatar-sm {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 30px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+  }
+</style>
+
+<script src="/js/avatar.js"></script>
+
+<script>
+  function toggleDeletedPlayers() {
+    const checkbox = document.getElementById("showDeletedToggle");
+    const url = new URL(window.location);
+
+    if (checkbox.checked) {
+      url.searchParams.set("showDeleted", "true");
+    } else {
+      url.searchParams.delete("showDeleted");
+    }
+
+    window.location.href = url.toString();
+  }
+</script>
+
+<% if (players && players.length > 0) { %> <% players.forEach(function(player) {
+%>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const avatarContainer = document.getElementById("avatar-<%= player.id %>");
+    if (avatarContainer) {
+      const avatar = createAvatar(
+        "<%= player.name %>",
+        30,
+        '<%= player.photo_path || "" %>'
+      );
+      avatarContainer.appendChild(avatar);
+    }
+  });
+</script>
+<% }); %> <% } %>

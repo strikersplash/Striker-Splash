@@ -11,9 +11,9 @@ export const getDashboard = async (req: Request, res: Response): Promise<void> =
     const { phone } = req.query;
     
     // If logged in as player, use session data
-    if (req.session.user && req.session.user.role === 'player' && !phone) {
+    if ((req.session as any).user && (req.session as any).user.role === 'player' && !phone) {
       // Make sure we have a valid ID
-      const playerId = parseInt(req.session.user.id);
+      const playerId = parseInt((req.session as any).user.id);
       if (isNaN(playerId)) {
         req.flash('error_msg', 'Invalid player ID');
         return res.redirect('/');
@@ -63,9 +63,9 @@ async function renderDashboard(req: Request, res: Response, player: any): Promis
   const qrCodeBase64 = await generateQRCode(player.id, player.qr_hash);
   
   // Check if player is logged in
-  const isLoggedIn = req.session.user && 
-                    req.session.user.role === 'player' && 
-                    parseInt(req.session.user.id) === player.id;
+  const isLoggedIn = (req.session as any).user && 
+                    (req.session as any).user.role === 'player' && 
+                    parseInt((req.session as any).user.id) === player.id;
   
   // Get active queue tickets
   const activeTickets = await QueueTicket.findActiveByPlayerId(player.id);
@@ -123,13 +123,13 @@ export const downloadQRCode = async (req: Request, res: Response): Promise<void>
 export const getEditProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow logged in players
-    if (!req.session.user || req.session.user.role !== 'player') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'player') {
       req.flash('error_msg', 'Please log in to edit your profile');
       return res.redirect('/auth/login');
     }
     
     // Make sure we have a valid ID
-    const playerId = parseInt(req.session.user.id);
+    const playerId = parseInt((req.session as any).user.id);
     if (isNaN(playerId)) {
       req.flash('error_msg', 'Invalid player ID');
       return res.redirect('/');
@@ -159,13 +159,13 @@ export const getEditProfile = async (req: Request, res: Response): Promise<void>
 export const postEditProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow logged in players
-    if (!req.session.user || req.session.user.role !== 'player') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'player') {
       req.flash('error_msg', 'Please log in to edit your profile');
       return res.redirect('/auth/login');
     }
     
     // Make sure we have a valid ID
-    const playerId = parseInt(req.session.user.id);
+    const playerId = parseInt((req.session as any).user.id);
     if (isNaN(playerId)) {
       req.flash('error_msg', 'Invalid player ID');
       return res.redirect('/');

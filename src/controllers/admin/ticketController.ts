@@ -1,22 +1,28 @@
-import { Request, Response } from 'express';
-import { pool } from '../../config/db';
+import { Request, Response } from "express";
+import { pool } from "../../config/db";
 
 // Display ticket management page
-export const getTicketManagement = async (req: Request, res: Response): Promise<void> => {
+export const getTicketManagement = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Only allow admin to access this page
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      req.flash('error_msg', 'Unauthorized access');
-      return res.redirect('/auth/login');
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      req.flash("error_msg", "Unauthorized access");
+      return res.redirect("/auth/login");
     }
-    
+
     // Get current ticket range
     let ticketRange = {
       min_ticket: 0,
       max_ticket: 0,
-      total_tickets: 0
+      total_tickets: 0,
     };
-    
+
     try {
       const ticketQuery = `
         SELECT 
@@ -26,13 +32,13 @@ export const getTicketManagement = async (req: Request, res: Response): Promise<
         FROM 
           queue_tickets
       `;
-      
+
       const ticketResult = await pool.query(ticketQuery);
       ticketRange = ticketResult.rows[0];
     } catch (e) {
-      console.error('Error getting ticket range:', e);
+      console.error("Error getting ticket range:", e);
     }
-    
+
     // Get next ticket number
     let nextTicket = 1000;
     try {
@@ -41,12 +47,12 @@ export const getTicketManagement = async (req: Request, res: Response): Promise<
         FROM global_counters
         WHERE id = 'next_queue_number'
       `;
-      
+
       const nextTicketResult = await pool.query(nextTicketQuery);
       nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
     } catch (e) {
-      console.error('Error getting next ticket number:', e);
-      
+      console.error("Error getting next ticket number:", e);
+
       // Create global_counters table if it doesn't exist
       try {
         await pool.query(`
@@ -56,7 +62,7 @@ export const getTicketManagement = async (req: Request, res: Response): Promise<
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
-        
+
         // Insert next_queue_number if it doesn't exist
         await pool.query(`
           INSERT INTO global_counters (id, value)
@@ -64,10 +70,10 @@ export const getTicketManagement = async (req: Request, res: Response): Promise<
           ON CONFLICT (id) DO NOTHING
         `);
       } catch (tableError) {
-        console.error('Error creating global_counters table:', tableError);
+        console.error("Error creating global_counters table:", tableError);
       }
     }
-    
+
     // Get ticket range settings
     let ticketRangeSettings = null;
     try {
@@ -81,50 +87,59 @@ export const getTicketManagement = async (req: Request, res: Response): Promise<
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      
+
       const rangeQuery = `
         SELECT * FROM ticket_ranges
         ORDER BY created_at DESC
         LIMIT 1
       `;
-      
+
       const rangeResult = await pool.query(rangeQuery);
       ticketRangeSettings = rangeResult.rows[0];
     } catch (e) {
-      console.error('Error getting ticket range settings:', e);
+      console.error("Error getting ticket range settings:", e);
     }
-    
-    res.render('admin/ticket-management', {
-      title: 'Ticket Management',
+
+    res.render("admin/ticket-management", {
+      title: "Ticket Management",
       ticketRange,
       nextTicket,
       ticketRangeSettings,
-      activePage: 'tickets'
+      activePage: "tickets",
     });
   } catch (error) {
-    console.error('Ticket management error:', error);
-    req.flash('error_msg', 'An error occurred while loading ticket management');
-    res.redirect('/admin/dashboard');
+    console.error("Ticket management error:", error);
+    req.flash("error_msg", "An error occurred while loading ticket management");
+    res.redirect("/admin/dashboard");
   }
 };
 
 // Update next ticket number
-export const updateNextTicket = async (req: Request, res: Response): Promise<void> => {
+export const updateNextTicket = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      res.status(401).json({ success: false, message: 'Unauthorized access' });
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
     }
-    
+
     const { nextTicket } = req.body;
-    
+
     // Validate input
     if (!nextTicket || isNaN(parseInt(nextTicket))) {
-      res.status(400).json({ success: false, message: 'Valid next ticket number is required' });
+      res.status(400).json({
+        success: false,
+        message: "Valid next ticket number is required",
+      });
       return;
     }
-    
+
     // Create global_counters table if it doesn't exist
     try {
       await pool.query(`
@@ -135,48 +150,68 @@ export const updateNextTicket = async (req: Request, res: Response): Promise<voi
         )
       `);
     } catch (e) {
-      console.error('Error creating global_counters table:', e);
+      console.error("Error creating global_counters table:", e);
     }
-    
+
     // Update next ticket number
     await pool.query(
-      'INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2',
-      ['next_queue_number', parseInt(nextTicket)]
+      "INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2",
+      ["next_queue_number", parseInt(nextTicket)]
     );
-    
+
     res.json({
       success: true,
-      message: 'Next ticket number updated successfully',
-      nextTicket: parseInt(nextTicket)
+      message: "Next ticket number updated successfully",
+      nextTicket: parseInt(nextTicket),
     });
   } catch (error) {
-    console.error('Update next ticket error:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while updating next ticket number' });
+    console.error("Update next ticket error:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating next ticket number",
+    });
   }
 };
 
 // Set ticket range
-export const setTicketRange = async (req: Request, res: Response): Promise<void> => {
+export const setTicketRange = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      res.status(401).json({ success: false, message: 'Unauthorized access' });
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
     }
-    
+
     const { startTicket, endTicket } = req.body;
-    
+
     // Validate input
-    if (!startTicket || !endTicket || isNaN(parseInt(startTicket)) || isNaN(parseInt(endTicket))) {
-      res.status(400).json({ success: false, message: 'Valid start and end ticket numbers are required' });
+    if (
+      !startTicket ||
+      !endTicket ||
+      isNaN(parseInt(startTicket)) ||
+      isNaN(parseInt(endTicket))
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Valid start and end ticket numbers are required",
+      });
       return;
     }
-    
+
     if (parseInt(startTicket) >= parseInt(endTicket)) {
-      res.status(400).json({ success: false, message: 'End ticket number must be greater than start ticket number' });
+      res.status(400).json({
+        success: false,
+        message: "End ticket number must be greater than start ticket number",
+      });
       return;
     }
-    
+
     // Create ticket_ranges table if it doesn't exist
     try {
       await pool.query(`
@@ -189,42 +224,82 @@ export const setTicketRange = async (req: Request, res: Response): Promise<void>
         )
       `);
     } catch (e) {
-      console.error('Error creating ticket_ranges table:', e);
+      console.error("Error creating ticket_ranges table:", e);
     }
-    
+
     // Insert new ticket range
     await pool.query(
-      'INSERT INTO ticket_ranges (start_ticket, end_ticket, created_by) VALUES ($1, $2, $3)',
-      [parseInt(startTicket), parseInt(endTicket), req.session.user.id]
+      "INSERT INTO ticket_ranges (start_ticket, end_ticket, created_by) VALUES ($1, $2, $3)",
+      [parseInt(startTicket), parseInt(endTicket), (req.session as any).user.id]
     );
-    
-    // Update next ticket number if it's less than start ticket
+
+    // Update next ticket number properly considering existing tickets
     try {
       const nextTicketQuery = `
         SELECT value as next_ticket
         FROM global_counters
         WHERE id = 'next_queue_number'
       `;
-      
+
       const nextTicketResult = await pool.query(nextTicketQuery);
-      const nextTicket = nextTicketResult.rows[0]?.next_ticket || 0;
-      
-      if (nextTicket < parseInt(startTicket)) {
+      const currentNextTicket = nextTicketResult.rows[0]?.next_ticket || 0;
+
+      // Get the maximum existing ticket number
+      const maxTicketQuery = `
+        SELECT MAX(ticket_number) as max_ticket
+        FROM queue_tickets
+      `;
+      const maxTicketResult = await pool.query(maxTicketQuery);
+      const maxExistingTicket = maxTicketResult.rows[0]?.max_ticket || 0;
+
+      // The next ticket number should be the higher of:
+      // 1. startTicket (if no existing tickets)
+      // 2. maxExistingTicket + 1 (if there are existing tickets with higher numbers)
+      let newNextTicket;
+
+      if (maxExistingTicket === 0) {
+        // No existing tickets, use startTicket
+        newNextTicket = parseInt(startTicket);
+      } else if (maxExistingTicket >= parseInt(startTicket)) {
+        // Existing tickets with higher numbers, continue from max + 1
+        newNextTicket = maxExistingTicket + 1;
+      } else {
+        // Existing tickets but all lower than startTicket
+        newNextTicket = parseInt(startTicket);
+      }
+
+      console.log(
+        `Setting next_queue_number: current=${currentNextTicket}, max_existing=${maxExistingTicket}, start_ticket=${startTicket}, new_next=${newNextTicket}`
+      );
+
+      // Update or insert the counter
+      const updateCounterResult = await pool.query(
+        "UPDATE global_counters SET value = $1 WHERE id = $2",
+        [newNextTicket, "next_queue_number"]
+      );
+
+      if (updateCounterResult.rowCount === 0) {
+        // If no row was updated, insert the counter
         await pool.query(
-          'UPDATE global_counters SET value = $1 WHERE id = $2',
-          [parseInt(startTicket), 'next_queue_number']
+          "INSERT INTO global_counters (id, value) VALUES ($1, $2)",
+          ["next_queue_number", newNextTicket]
         );
       }
     } catch (e) {
-      console.error('Error updating next ticket number:', e);
+      console.error("Error updating next ticket number:", e);
     }
-    
+
     res.json({
       success: true,
-      message: 'Ticket range set successfully'
+      message: "Ticket range set successfully",
+      startTicket: parseInt(startTicket),
+      endTicket: parseInt(endTicket),
     });
   } catch (error) {
-    console.error('Set ticket range error:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while setting ticket range' });
+    console.error("Set ticket range error:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while setting ticket range",
+    });
   }
 };

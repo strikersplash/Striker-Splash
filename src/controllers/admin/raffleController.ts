@@ -1,21 +1,28 @@
-import { Request, Response } from 'express';
-import { pool } from '../../config/db';
-import QueueTicket from '../../models/QueueTicket';
+import { Request, Response } from "express";
+import { pool } from "../../config/db";
+import QueueTicket from "../../models/QueueTicket";
 
 // Display raffle interface
-export const getRaffleInterface = async (req: Request, res: Response): Promise<void> => {
+export const getRaffleInterface = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Only allow admin to access this page
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      req.flash('error_msg', 'Unauthorized access');
-      return res.redirect('/auth/login');
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      req.flash("error_msg", "Unauthorized access");
+      return res.redirect("/auth/login");
     }
-    
-    // Get today's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Get today's tickets
+
+    // Get today's date string (YYYY-MM-DD)
+    const todayString = new Date().toISOString().split("T")[0];
+    console.log("=== RAFFLE DEBUG ===");
+    console.log("Today string:", todayString);
+
+    // Get today's tickets (date-only comparison)
     const ticketsQuery = `
       SELECT 
         MIN(ticket_number) as min_ticket,
@@ -24,92 +31,105 @@ export const getRaffleInterface = async (req: Request, res: Response): Promise<v
       FROM 
         queue_tickets
       WHERE 
-        created_at >= $1
+        DATE(created_at) = $1
         AND status = 'played'
     `;
-    
-    const ticketsResult = await pool.query(ticketsQuery, [today]);
+    const ticketsResult = await pool.query(ticketsQuery, [todayString]);
     const ticketRange = ticketsResult.rows[0];
-    
-    // Check if raffle already drawn today
+
+    console.log("Tickets query result:", ticketRange);
+    console.log("=== END DEBUG ===");
+
+    // Check for existing raffles today
     const raffleQuery = `
       SELECT * FROM daily_raffles
       WHERE raffle_date = $1
+      ORDER BY draw_number DESC
     `;
-    
-    const raffleResult = await pool.query(raffleQuery, [today.toISOString().split('T')[0]]);
-    const existingRaffle = raffleResult.rows[0];
-    
-    // Get winner details if raffle already drawn
-    let winner = null;
-    if (existingRaffle && existingRaffle.winner_id) {
-      const winnerQuery = `
+    const raffleResult = await pool.query(raffleQuery, [todayString]);
+    const existingRaffles = raffleResult.rows;
+    const latestRaffle = existingRaffles[0];
+
+    // Get all winners for today (date-only comparison)
+    let winners = [];
+    if (existingRaffles.length > 0) {
+      const winnersQuery = `
         SELECT 
-          p.id, p.name, p.phone, p.email, p.residence, p.gender, p.age_group,
+          dr.id, dr.draw_number, dr.winning_ticket, dr.drawn_at, dr.notes,
+          p.id as player_id, p.name, p.phone, p.email, p.residence, p.gender, p.age_group,
           qt.ticket_number
         FROM 
-          players p
+          daily_raffles dr
         JOIN
-          queue_tickets qt ON qt.player_id = p.id
+          players p ON dr.winner_id = p.id
+        JOIN
+          queue_tickets qt ON qt.player_id = p.id AND qt.ticket_number = dr.winning_ticket
         WHERE 
-          p.id = $1
-          AND qt.ticket_number = $2
+          dr.raffle_date = $1
+        ORDER BY dr.draw_number DESC
       `;
-      
-      const winnerResult = await pool.query(winnerQuery, [existingRaffle.winner_id, existingRaffle.winning_ticket]);
-      winner = winnerResult.rows[0];
+      const winnersResult = await pool.query(winnersQuery, [todayString]);
+      winners = winnersResult.rows;
     }
-    
-    res.render('admin/raffle', {
-      title: 'Daily Raffle',
+
+    res.render("admin/raffle", {
+      title: "Daily Raffle",
       ticketRange,
-      existingRaffle,
-      winner,
-      today: today.toISOString().split('T')[0]
+      existingRaffles,
+      latestRaffle,
+      winners,
+      today: todayString,
     });
   } catch (error) {
-    console.error('Raffle interface error:', error);
-    req.flash('error_msg', 'An error occurred while loading the raffle interface');
-    res.redirect('/admin/dashboard');
+    console.error("Raffle interface error:", error);
+    req.flash(
+      "error_msg",
+      "An error occurred while loading the raffle interface"
+    );
+    res.redirect("/admin/dashboard");
   }
 };
 
 // Draw raffle winner
-export const drawRaffleWinner = async (req: Request, res: Response): Promise<void> => {
+export const drawRaffleWinner = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      res.status(401).json({ success: false, message: 'Unauthorized access' });
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
     }
-    
+
     const { date } = req.body;
-    
+
     // Validate input
     if (!date) {
-      res.status(400).json({ success: false, message: 'Date is required' });
+      res.status(400).json({ success: false, message: "Date is required" });
       return;
     }
-    
-    // Check if raffle already drawn for this date
-    const existingRaffleQuery = `
-      SELECT * FROM daily_raffles
+
+    // Check existing raffles for this date to get the next draw number
+    const existingRafflesQuery = `
+      SELECT MAX(draw_number) as max_draw_number FROM daily_raffles
       WHERE raffle_date = $1
     `;
-    
-    const existingRaffleResult = await pool.query(existingRaffleQuery, [date]);
-    const existingRaffle = existingRaffleResult.rows[0];
-    
-    if (existingRaffle && existingRaffle.winning_ticket) {
-      res.status(400).json({ success: false, message: 'Raffle already drawn for this date' });
-      return;
-    }
-    
+
+    const existingRafflesResult = await pool.query(existingRafflesQuery, [
+      date,
+    ]);
+    const nextDrawNumber =
+      (existingRafflesResult.rows[0].max_draw_number || 0) + 1;
+
     // Get tickets for the date
     const targetDate = new Date(date);
     const nextDate = new Date(date);
     nextDate.setDate(nextDate.getDate() + 1);
-    
+
     const ticketsQuery = `
       SELECT 
         qt.id, qt.ticket_number, qt.player_id,
@@ -123,49 +143,50 @@ export const drawRaffleWinner = async (req: Request, res: Response): Promise<voi
         AND qt.created_at < $2
         AND qt.status = 'played'
     `;
-    
-    const ticketsResult = await pool.query(ticketsQuery, [targetDate, nextDate]);
+
+    const ticketsResult = await pool.query(ticketsQuery, [
+      targetDate,
+      nextDate,
+    ]);
     const eligibleTickets = ticketsResult.rows;
-    
+
     if (eligibleTickets.length === 0) {
-      res.status(400).json({ success: false, message: 'No eligible tickets for this date' });
+      res
+        .status(400)
+        .json({ success: false, message: "No eligible tickets for this date" });
       return;
     }
-    
+
     // Select random winner
     const randomIndex = Math.floor(Math.random() * eligibleTickets.length);
     const winningTicket = eligibleTickets[randomIndex];
-    
+
     // Record raffle result
-    let raffleId;
-    if (existingRaffle) {
-      // Update existing raffle
-      await pool.query(
-        `UPDATE daily_raffles 
-         SET winning_ticket = $1, winner_id = $2, drawn_at = NOW(), drawn_by = $3
-         WHERE id = $4`,
-        [winningTicket.ticket_number, winningTicket.player_id, req.session.user.id, existingRaffle.id]
-      );
-      raffleId = existingRaffle.id;
-    } else {
-      // Create new raffle record
-      const minTicket = Math.min(...eligibleTickets.map(t => t.ticket_number));
-      const maxTicket = Math.max(...eligibleTickets.map(t => t.ticket_number));
-      
-      const insertResult = await pool.query(
-        `INSERT INTO daily_raffles 
-         (raffle_date, start_ticket, end_ticket, winning_ticket, winner_id, drawn_at, drawn_by)
-         VALUES ($1, $2, $3, $4, $5, NOW(), $6)
-         RETURNING id`,
-        [date, minTicket, maxTicket, winningTicket.ticket_number, winningTicket.player_id, req.session.user.id]
-      );
-      
-      raffleId = insertResult.rows[0].id;
-    }
-    
+    const minTicket = Math.min(...eligibleTickets.map((t) => t.ticket_number));
+    const maxTicket = Math.max(...eligibleTickets.map((t) => t.ticket_number));
+
+    const insertResult = await pool.query(
+      `INSERT INTO daily_raffles 
+       (raffle_date, start_ticket, end_ticket, winning_ticket, winner_id, drawn_at, drawn_by, draw_number)
+       VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7)
+       RETURNING id`,
+      [
+        date,
+        minTicket,
+        maxTicket,
+        winningTicket.ticket_number,
+        winningTicket.player_id,
+        (req.session as any).user.id,
+        nextDrawNumber,
+      ]
+    );
+
+    const raffleId = insertResult.rows[0].id;
+
     res.json({
       success: true,
       raffleId,
+      drawNumber: nextDrawNumber,
       winner: {
         id: winningTicket.player_id,
         name: winningTicket.name,
@@ -174,11 +195,14 @@ export const drawRaffleWinner = async (req: Request, res: Response): Promise<voi
         residence: winningTicket.residence,
         gender: winningTicket.gender,
         age_group: winningTicket.age_group,
-        ticket_number: winningTicket.ticket_number
-      }
+        ticket_number: winningTicket.ticket_number,
+      },
     });
   } catch (error) {
-    console.error('Draw raffle error:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while drawing raffle winner' });
+    console.error("Draw raffle error:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while drawing raffle winner",
+    });
   }
 };

@@ -1,4 +1,44 @@
-<div class="container mt-4">
+<style>
+  /* Make button icons smaller */
+  .btn .bi {
+    fon          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+        </ul>: 0.85rem;
+  }
+  
+  .btn-lg .bi {
+    font-size: 0.95rem;
+  }
+  
+  .btn-sm .bi {
+    font-size: 0.75rem;
+  }
+
+  /* Specific fix for raffle draw button */
+  #draw-raffle .bi-shuffle {
+    font-size: 0.9rem;
+  }
+
+  /* Make notify button icon normal size */
+  .notify-winner .bi-bell {
+    font-size: 0.75rem !important;
+  }
+
+  /* Make sent button icon smaller too */
+  .notify-winner .bi-check-circle {
+    font-size: 0.75rem !important;
+  }
+</style>
+
+<div class="container-fluid mt-4">
   <div class="row">
     <!-- Sidebar -->
     <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
@@ -15,157 +55,226 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/admin/staff-duty">
-              <i class="bi bi-calendar-check"></i> Staff on Duty
+            <a class="nav-link" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link active" href="/admin/raffle">
-              <i class="bi bi-ticket-perforated"></i> Daily Raffle
+              <i class="bi bi-trophy"></i> Daily Raffle
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/admin/reports">
-              <i class="bi bi-graph-up"></i> Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/settings">
-              <i class="bi bi-gear"></i> Settings
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
             </a>
           </li>
         </ul>
       </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Daily Raffle</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="input-group">
-            <input type="date" class="form-control" id="raffle-date" value="<%= today %>">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="load-date">
-              <i class="bi bi-calendar"></i> Load Date
-            </button>
-          </div>
+      <!-- Main Content -->
+      <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div
+          class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+        >
+          <h1 class="h2">Daily Raffle</h1>
         </div>
-      </div>
 
-      <!-- Raffle Information -->
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="mb-0">Ticket Information</h5>
-            </div>
-            <div class="card-body">
-              <% if (ticketRange && ticketRange.total_tickets > 0) { %>
-                <p><strong>Ticket Range:</strong> <%= ticketRange.min_ticket %> - <%= ticketRange.max_ticket %></p>
-                <p><strong>Total Eligible Tickets:</strong> <%= ticketRange.total_tickets %></p>
+        <!-- Raffle Information -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Ticket Information</h5>
+              </div>
+              <div class="card-body">
+                <% if (ticketRange && ticketRange.total_tickets > 0) { %>
+                <p>
+                  <strong>Ticket Range:</strong> <%= ticketRange.min_ticket %> -
+                  <%= ticketRange.max_ticket %>
+                </p>
+                <p>
+                  <strong>Total Eligible Tickets:</strong> <%=
+                  ticketRange.total_tickets %>
+                </p>
                 <div class="alert alert-info">
-                  <p class="mb-0">Only tickets that were played today are eligible for the raffle.</p>
+                  <p class="mb-0">
+                    Only tickets that were played today are eligible for the
+                    raffle.
+                  </p>
                 </div>
-              <% } else { %>
+                <% } else { %>
                 <div class="alert alert-warning">
                   <p class="mb-0">No eligible tickets found for today.</p>
                 </div>
-              <% } %>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="mb-0">Raffle Status</h5>
-            </div>
-            <div class="card-body">
-              <% if (existingRaffle && existingRaffle.winning_ticket) { %>
-                <div class="alert alert-success">
-                  <h4>Raffle Already Drawn!</h4>
-                  <p><strong>Winning Ticket:</strong> #<%= existingRaffle.winning_ticket %></p>
-                  <p><strong>Drawn At:</strong> <%= new Date(existingRaffle.drawn_at).toLocaleString() %></p>
-                </div>
-              <% } else { %>
-                <div class="alert alert-warning">
-                  <h4>Raffle Not Yet Drawn</h4>
-                  <p>Click the button below to draw a winner.</p>
-                </div>
-                <% if (ticketRange && ticketRange.total_tickets > 0) { %>
-                  <button type="button" class="btn btn-primary" id="draw-raffle">
-                    <i class="bi bi-shuffle"></i> Draw Winner
-                  </button>
-                <% } else { %>
-                  <button type="button" class="btn btn-primary" disabled>
-                    <i class="bi bi-shuffle"></i> Draw Winner
-                  </button>
-                  <small class="text-muted">No eligible tickets available</small>
                 <% } %>
-              <% } %>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Winner Information -->
-      <div class="card mb-4" id="winner-card" style="<%= winner ? '' : 'display: none;' %>">
-        <div class="card-header bg-success text-white">
-          <h5 class="mb-0">Winner Information</h5>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-2 text-center">
-              <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
-                <i class="bi bi-trophy" style="font-size: 3rem;"></i>
               </div>
             </div>
-            <div class="col-md-10">
-              <h3 id="winner-name"><%= winner ? winner.name : '' %></h3>
-              <p id="winner-details">
-                <% if (winner) { %>
-                  <strong>Ticket #:</strong> <%= winner.ticket_number %><br>
-                  <strong>Phone:</strong> <%= winner.phone %><br>
-                  <% if (winner.email) { %>
-                    <strong>Email:</strong> <%= winner.email %><br>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Raffle Actions</h5>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-info">
+                  <h4>Multiple Daily Draws Enabled</h4>
+                  <p>
+                    You can draw multiple winners throughout the day. All tickets
+                    remain in the pool for each draw.
+                  </p>
+                  <% if (winners && winners.length > 0) { %>
+                  <p><strong>Today's Draws:</strong> <%= winners.length %></p>
+                  <% } else { %>
+                  <p><strong>No draws yet today</strong></p>
                   <% } %>
-                  <strong>District:</strong> <%= winner.residence %>
+                </div>
+
+                <% if (ticketRange && ticketRange.total_tickets > 0) { %>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="draw-raffle"
+                  style="padding: 0.5rem 1rem;"
+                >
+                  <i class="bi bi-shuffle me-1"></i> Draw Another Winner
+                </button>
+                <% } else { %>
+                <button type="button" class="btn btn-primary" disabled style="padding: 0.5rem 1rem;">
+                  <i class="bi bi-shuffle me-1"></i> Draw Winner
+                </button>
+                <small class="text-muted d-block mt-2"
+                  >No eligible tickets available for today</small
+                >
                 <% } %>
-              </p>
-              <div class="mt-3">
-                <button type="button" class="btn btn-outline-primary" id="notify-winner">
-                  <i class="bi bi-envelope"></i> Notify Winner
-                </button>
-                <button type="button" class="btn btn-outline-secondary" id="print-winner">
-                  <i class="bi bi-printer"></i> Print Details
-                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Previous Raffles -->
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">Previous Raffles</h5>
+        <!-- Today's Winners -->
+        <% if (winners && winners.length > 0) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Today's Winners</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Draw #</th>
+                    <th>Time Drawn</th>
+                    <th>Winning Ticket</th>
+                    <th>Winner</th>
+                    <th>Contact</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="todays-winners-table">
+                  <% winners.forEach(function(winner) { %>
+                  <tr data-player-id="<%= winner.player_id %>">
+                    <td>
+                      <span class="badge bg-primary"
+                        >#<%= winner.draw_number %></span
+                      >
+                    </td>
+                    <td><%= new Date(winner.drawn_at).toLocaleTimeString() %></td>
+                    <td><strong>#<%= winner.winning_ticket %></strong></td>
+                    <td>
+                      <strong><%= winner.name %></strong><br />
+                      <small class="text-muted"><%= winner.residence %></small>
+                    </td>
+                    <td>
+                      <%= winner.phone %><br />
+                      <% if (winner.email) { %>
+                      <small class="text-muted"><%= winner.email %></small>
+                      <% } %>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary notify-winner"
+                        data-player-id="<%= winner.player_id %>"
+                        data-ticket-number="<%= winner.winning_ticket %>"
+                        data-player-name="<%= winner.name %>"
+                        data-draw-number="<%= winner.draw_number %>"
+                      >
+                        <i class="bi bi-bell"></i> Notify
+                      </button>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover" id="previous-raffles-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Ticket Range</th>
-                  <th>Winning Ticket</th>
-                  <th>Winner</th>
-                  <th>Drawn By</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- This will be populated dynamically -->
-              </tbody>
-            </table>
+        <% } else { %>
+        <div class="card mb-4" id="no-winners-card">
+          <div class="card-body text-center text-muted">
+            <i class="bi bi-trophy" style="font-size: 3rem; opacity: 0.3"></i>
+            <h5 class="mt-3">No Winners Yet Today</h5>
+            <p>Draw your first winner to get started!</p>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Prize Notification Modal -->
+        <div class="modal fade" id="prizeNotificationModal" tabindex="-1" aria-labelledby="prizeNotificationModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="prizeNotificationModalLabel">Send Winner Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>            <div class="modal-body">
+              <div class="mb-3">
+                <h6 id="modal-winner-name"></h6>
+                <p class="text-muted mb-1">Daily Raffle #<span id="modal-draw-number"></span></p>
+                <p class="text-muted mb-3">Ticket #<span id="modal-ticket-number"></span></p>
+              </div>
+                
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="customPrizeCheck">
+                    <label class="form-check-label" for="customPrizeCheck">
+                      <strong>Specify Custom Prize</strong>
+                    </label>
+                  </div>
+                  <small class="text-muted">Check this box to specify what prize the winner won</small>
+                </div>
+                
+                <div class="mb-3" id="prizeInputSection" style="display: none;">
+                  <label for="prizeInput" class="form-label">Prize Description</label>
+                  <input type="text" class="form-control" id="prizeInput" placeholder="e.g., $50 Cash Prize, Free Meal Voucher, etc.">
+                  <small class="text-muted">This will be included in the notification message</small>
+                </div>
+                   <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> Message Preview:</h6>
+                <p class="mb-0" id="messagePreview">
+                  Great news <strong id="preview-name"></strong>! Your ticket #<span id="preview-ticket"></span> won daily raffle #<span id="preview-draw-number"></span> drawn on <span id="preview-date"></span>. Please contact staff to claim your prize!
+                </p>
+              </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendNotificationBtn">
+                  <i class="bi bi-bell"></i> Send Notification
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -174,131 +283,403 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Load previous raffles
-    loadPreviousRaffles();
-    
-    // Load date button
-    document.getElementById('load-date').addEventListener('click', function() {
-      const date = document.getElementById('raffle-date').value;
-      window.location.href = `/admin/raffle?date=${date}`;
-    });
-    
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get today's date for raffle operations
+    const today = new Date().toISOString().split('T')[0];
+
     // Draw raffle button
-    const drawRaffleBtn = document.getElementById('draw-raffle');
+    const drawRaffleBtn = document.getElementById("draw-raffle");
     if (drawRaffleBtn) {
-      drawRaffleBtn.addEventListener('click', function() {
-        if (!confirm('Are you sure you want to draw the raffle winner? This action cannot be undone.')) {
+      drawRaffleBtn.addEventListener("click", function () {
+        console.log("Draw raffle button clicked"); // Debug log
+        
+        const confirmMessage = document.querySelector('#todays-winners-table') && document.querySelector('#todays-winners-table').children.length > 0
+          ? "Are you sure you want to draw another winner? All tickets remain in the pool for each draw."
+          : "Are you sure you want to draw the first winner of the day?";
+
+        if (!confirm(confirmMessage)) {
           return;
         }
-        
+
         // Show loading indicator
         this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Drawing...';
-        
+        this.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Drawing...';
+
+        console.log("Sending draw request for date:", today); // Debug log
+
         // Send draw request to server
-        fetch('/admin/raffle/draw', {
-          method: 'POST',
+        fetch("/admin/raffle/draw", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ date: document.getElementById('raffle-date').value })
+          body: JSON.stringify({
+            date: today,
+          }),
         })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            // Show winner information
-            document.getElementById('winner-card').style.display = '';
-            document.getElementById('winner-name').textContent = data.winner.name;
+          .then((response) => {
+            console.log("Response status:", response.status); // Debug log
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Response data:", data); // Debug log
             
-            let detailsHtml = `
-              <strong>Ticket #:</strong> ${data.winner.ticket_number}<br>
-              <strong>Phone:</strong> ${data.winner.phone}<br>
-            `;
-            
-            if (data.winner.email) {
-              detailsHtml += `<strong>Email:</strong> ${data.winner.email}<br>`;
+            if (data.success) {
+              // Hide no-winners card if it exists
+              const noWinnersCard = document.getElementById("no-winners-card");
+              if (noWinnersCard) {
+                noWinnersCard.style.display = "none";
+              }
+
+              // Add new winner to the table
+              addWinnerToTable(data.winner, data.drawNumber);
+
+              // Update the draw count in the raffle actions card
+              updateDrawCount();
+
+              // Show success message
+              alert(`🎉 Winner drawn! ${data.winner.name} won with ticket #${data.winner.ticket_number}`);
+            } else {
+              alert("Error: " + (data.message || "Could not draw winner"));
             }
-            
-            detailsHtml += `<strong>District:</strong> ${data.winner.residence}`;
-            
-            document.getElementById('winner-details').innerHTML = detailsHtml;
-            
-            // Update raffle status
-            const raffleStatusCard = document.querySelector('.card:nth-child(2) .card-body');
-            raffleStatusCard.innerHTML = `
-              <div class="alert alert-success">
-                <h4>Raffle Already Drawn!</h4>
-                <p><strong>Winning Ticket:</strong> #${data.winner.ticket_number}</p>
-                <p><strong>Drawn At:</strong> ${new Date().toLocaleString()}</p>
-              </div>
-            `;
-            
-            // Reload previous raffles
-            loadPreviousRaffles();
-          } else {
-            alert(`Error: ${data.message}`);
+
+            // Reset button
             this.disabled = false;
-            this.innerHTML = '<i class="bi bi-shuffle"></i> Draw Winner';
+            this.innerHTML = '<i class="bi bi-shuffle me-1"></i> Draw Another Winner';
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Network error occurred while drawing winner");
+
+            // Reset button
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-shuffle me-1"></i> Draw Another Winner';
+          });
+      });
+    } else {
+      console.log("Draw raffle button not found"); // Debug log
+    }
+
+
+    // Helper function to add winner to the table
+    function addWinnerToTable(winner, drawNumber) {
+      // Check if we need to create the winners table section
+      let winnersTable = document.getElementById("todays-winners-table");
+
+      if (!winnersTable) {
+        // Create the winners section if it doesn't exist
+        const noWinnersCard = document.getElementById("no-winners-card");
+        if (noWinnersCard) {
+          const winnersHtml = `
+            <div class="card mb-4">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Today's Winners</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Draw #</th>
+                        <th>Time Drawn</th>
+                        <th>Winning Ticket</th>
+                        <th>Winner</th>
+                        <th>Contact</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="todays-winners-table">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+          noWinnersCard.outerHTML = winnersHtml;
+          winnersTable = document.getElementById("todays-winners-table");
+        }
+      }
+
+      if (winnersTable) {
+        const currentTime = new Date().toLocaleTimeString();
+        const newRow = `
+          <tr data-player-id="${winner.id}">
+            <td><span class="badge bg-primary">#${drawNumber}</span></td>
+            <td>${currentTime}</td>
+            <td><strong>#${winner.ticket_number}</strong></td>
+            <td>
+              <strong>${winner.name}</strong><br>
+              <small class="text-muted">${winner.residence}</small>
+            </td>
+            <td>
+              ${winner.phone}<br>
+              ${winner.email ? '<small class="text-muted">' + winner.email + '</small>' : ''}
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-outline-primary notify-winner"
+                data-player-id="${winner.id}"
+                data-ticket-number="${winner.ticket_number}"
+                data-player-name="${winner.name}"
+                data-draw-number="${drawNumber}"
+              >
+                <i class="bi bi-bell"></i> Notify
+              </button>
+            </td>
+          </tr>
+        `;
+
+        // Add to the top of the table (most recent first)
+        winnersTable.insertAdjacentHTML('afterbegin', newRow);
+
+        // Add event listener to the new notify button
+        const newNotifyBtn = winnersTable.querySelector('tr:first-child .notify-winner');
+        if (newNotifyBtn) {
+          newNotifyBtn.addEventListener('click', handleNotifyWinner);
+        }
+      }
+    }
+
+    // Helper function to update draw count
+    function updateDrawCount() {
+      const winnersTable = document.getElementById("todays-winners-table");
+      if (winnersTable) {
+        const drawCount = winnersTable.children.length;
+        // Update the info in the raffle actions card if needed
+        const alertInfo = document.querySelector('.alert-info p');
+        if (alertInfo && alertInfo.innerHTML.includes("Today's Draws:")) {
+          alertInfo.innerHTML = `<strong>Today's Draws:</strong> ${drawCount}`;
+        } else if (alertInfo && alertInfo.innerHTML.includes("No draws yet today")) {
+          alertInfo.innerHTML = `<strong>Today's Draws:</strong> ${drawCount}`;
+        }
+      }
+    }
+
+    // Function to handle notification for any winner
+    function handleNotifyWinner() {
+      const button = this;
+      const playerId = button.getAttribute('data-player-id');
+      const ticketNumber = button.getAttribute('data-ticket-number');
+      const winnerName = button.getAttribute('data-player-name');
+      const drawNumber = button.getAttribute('data-draw-number');
+      const raffleDate = today;
+      
+      // Store data in modal
+      document.getElementById('modal-winner-name').textContent = winnerName;
+      document.getElementById('modal-ticket-number').textContent = ticketNumber;
+      document.getElementById('modal-draw-number').textContent = drawNumber;
+      document.getElementById('preview-name').textContent = winnerName;
+      document.getElementById('preview-ticket').textContent = ticketNumber;
+      document.getElementById('preview-draw-number').textContent = drawNumber;
+      document.getElementById('preview-date').textContent = new Date(raffleDate).toLocaleDateString();
+      
+      // Store button reference and data for later use
+      const modal = document.getElementById('prizeNotificationModal');
+      modal.setAttribute('data-player-id', playerId);
+      modal.setAttribute('data-ticket-number', ticketNumber);
+      modal.setAttribute('data-player-name', winnerName);
+      modal.setAttribute('data-draw-number', drawNumber);
+      modal.setAttribute('data-raffle-date', raffleDate);
+      modal.setAttribute('data-source-button', button.outerHTML);
+      
+      // Reset modal state
+      document.getElementById('customPrizeCheck').checked = false;
+      document.getElementById('prizeInput').value = '';
+      document.getElementById('prizeInputSection').style.display = 'none';
+      updateMessagePreview();
+      
+      // Show modal
+      const bootstrapModal = new bootstrap.Modal(modal);
+      bootstrapModal.show();
+    }
+
+    // Function to update message preview
+    function updateMessagePreview() {
+      const customPrizeCheck = document.getElementById('customPrizeCheck');
+      const prizeInput = document.getElementById('prizeInput');
+      const messagePreview = document.getElementById('messagePreview');
+      const winnerName = document.getElementById('preview-name').textContent;
+      const ticketNumber = document.getElementById('preview-ticket').textContent;
+      const drawNumber = document.getElementById('preview-draw-number').textContent;
+      const raffleDate = document.getElementById('preview-date').textContent;
+      
+      let message;
+      if (customPrizeCheck.checked && prizeInput.value.trim()) {
+        message = `Great news ${winnerName}! Your ticket #${ticketNumber} won daily raffle #${drawNumber} drawn on ${raffleDate}. You won: <strong>${prizeInput.value.trim()}</strong>! Please contact staff to claim your prize!`;
+      } else {
+        message = `Great news ${winnerName}! Your ticket #${ticketNumber} won daily raffle #${drawNumber} drawn on ${raffleDate}. Please contact staff to claim your prize!`;
+      }
+      
+      messagePreview.innerHTML = message;
+    }
+    
+    // Function to send the actual notification
+    function sendPrizeNotification() {
+      const modal = document.getElementById('prizeNotificationModal');
+      const playerId = modal.getAttribute('data-player-id');
+      const ticketNumber = modal.getAttribute('data-ticket-number');
+      const winnerName = modal.getAttribute('data-player-name');
+      const drawNumber = modal.getAttribute('data-draw-number');
+      const raffleDate = modal.getAttribute('data-raffle-date');
+      const customPrizeCheck = document.getElementById('customPrizeCheck');
+      const prizeInput = document.getElementById('prizeInput');
+      const sendBtn = document.getElementById('sendNotificationBtn');
+      
+      // Get custom prize if specified
+      const customPrize = customPrizeCheck.checked ? prizeInput.value.trim() : null;
+      
+      // Validate required data
+      if (!playerId || !ticketNumber || !raffleDate || !drawNumber) {
+        console.error("Missing notification data:", { playerId, ticketNumber, raffleDate, drawNumber });
+        alert("Missing required data for notification");
+        return;
+      }
+      
+      const playerIdInt = parseInt(playerId, 10);
+      if (isNaN(playerIdInt)) {
+        console.error("Invalid player ID:", playerId);
+        alert("Invalid player ID format");
+        return;
+      }
+      
+      // Show loading state
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+      
+      // Prepare request data
+      const requestData = {
+        playerId: playerIdInt,
+        ticketNumber: ticketNumber,
+        raffleDate: raffleDate,
+        drawNumber: parseInt(drawNumber, 10)
+      };
+      
+      // Add custom prize if specified
+      if (customPrize) {
+        requestData.customPrize = customPrize;
+      }
+      
+      console.log("Sending notification with data:", requestData);
+      
+      // Send notification
+      fetch("/api/notifications/raffle-win", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      })
+      .then(response => response.json())
+      .then(data => {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-bell"></i> Send Notification';
+        
+        if (data.success) {
+          // Find and update the original button
+          const originalButton = document.querySelector(`[data-player-id="${playerId}"][data-ticket-number="${ticketNumber}"]`);
+          if (originalButton) {
+            originalButton.innerHTML = '<i class="bi bi-check-circle"></i> Sent!';
+            originalButton.classList.remove('btn-outline-primary');
+            originalButton.classList.add('btn-success');
+            originalButton.disabled = true; // Disable the button so it can't be clicked again
           }
-        })
-        .catch(error => {
-          console.error('Error drawing raffle:', error);
-          alert('Error drawing raffle. Please try again.');
-          this.disabled = false;
-          this.innerHTML = '<i class="bi bi-shuffle"></i> Draw Winner';
-        });
+          
+          // Close modal
+          const bootstrapModal = bootstrap.Modal.getInstance(modal);
+          bootstrapModal.hide();
+          
+          // Show success message
+          const prizeText = customPrize ? ` for ${customPrize}` : '';
+          alert(`Notification sent to ${winnerName}${prizeText}! They will see it when they next log in.`);
+        } else {
+          alert(`Error: ${data.message || 'Could not send notification'}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error sending notification:', error);
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-bell"></i> Send Notification';
+        alert('Network error. Please try again.');
       });
     }
     
-    // Notify winner button
-    document.getElementById('notify-winner').addEventListener('click', function() {
-      alert('Winner notification feature will be implemented in a future update.');
-    });
-    
-    // Print winner button
-    document.getElementById('print-winner').addEventListener('click', function() {
-      window.print();
-    });
-    
-    // Load previous raffles
-    function loadPreviousRaffles() {
-      fetch('/api/raffles/previous')
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const table = document.getElementById('previous-raffles-table').getElementsByTagName('tbody')[0];
-            table.innerHTML = '';
-            
-            if (data.raffles.length === 0) {
-              const row = table.insertRow();
-              const cell = row.insertCell(0);
-              cell.colSpan = 5;
-              cell.className = 'text-center';
-              cell.textContent = 'No previous raffles found';
-              return;
-            }
-            
-            data.raffles.forEach(raffle => {
-              const row = table.insertRow();
-              
-              const dateCell = row.insertCell(0);
-              const rangeCell = row.insertCell(1);
-              const ticketCell = row.insertCell(2);
-              const winnerCell = row.insertCell(3);
-              const drawnByCell = row.insertCell(4);
-              
-              dateCell.textContent = new Date(raffle.raffle_date).toLocaleDateString();
-              rangeCell.textContent = `${raffle.start_ticket} - ${raffle.end_ticket}`;
-              ticketCell.textContent = raffle.winning_ticket || 'Not drawn';
-              winnerCell.textContent = raffle.winner_name || 'N/A';
-              drawnByCell.textContent = raffle.drawn_by_name || 'N/A';
-            });
-          }
-        })
-        .catch(error => {
-          console.error('Error loading previous raffles:', error);
-        });
+    // Function to reload today's winners from server (persistence fix)
+    function loadTodaysWinners() {
+      fetch('/admin/raffle', {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      .then(response => response.text())
+      .then(html => {
+        // Parse the response HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Find the winners table in the response
+        const newTableBody = doc.querySelector('#todays-winners-table tbody');
+        const currentTableBody = document.querySelector('#todays-winners-table tbody');
+        
+        if (newTableBody && currentTableBody) {
+          // Replace the table body content
+          currentTableBody.innerHTML = newTableBody.innerHTML;
+          
+          // Re-attach event listeners to new notify buttons
+          currentTableBody.querySelectorAll('.notify-winner').forEach(button => {
+            button.addEventListener('click', handleNotifyWinner);
+          });
+          
+          console.log('Winners table refreshed from server');
+        }
+        
+        // Also update the raffle actions card
+        const newRaffleActions = doc.querySelector('.card .alert-info');
+        const currentRaffleActions = document.querySelector('.card .alert-info');
+        
+        if (newRaffleActions && currentRaffleActions) {
+          currentRaffleActions.innerHTML = newRaffleActions.innerHTML;
+        }
+      })
+      .catch(error => {
+        console.error('Error loading today\'s winners:', error);
+      });
     }
+    
+    // Load winners on page load and periodically
+    loadTodaysWinners();
+    setInterval(loadTodaysWinners, 30000); // Refresh every 30 seconds
+    
+    // Add event listeners to existing notify buttons
+    document.querySelectorAll('.notify-winner').forEach(button => {
+      button.addEventListener('click', handleNotifyWinner);
+    });
+    
+    // Modal event listeners
+    const customPrizeCheck = document.getElementById('customPrizeCheck');
+    const prizeInputSection = document.getElementById('prizeInputSection');
+    const prizeInput = document.getElementById('prizeInput');
+    const sendNotificationBtn = document.getElementById('sendNotificationBtn');
+    
+    // Toggle prize input section
+    customPrizeCheck.addEventListener('change', function() {
+      if (this.checked) {
+        prizeInputSection.style.display = 'block';
+        prizeInput.focus();
+      } else {
+        prizeInputSection.style.display = 'none';
+        prizeInput.value = '';
+      }
+      updateMessagePreview();
+    });
+    
+    // Update preview when typing
+    prizeInput.addEventListener('input', updateMessagePreview);
+    
+    // Send notification button
+    sendNotificationBtn.addEventListener('click', sendPrizeNotification);
   });
 </script>

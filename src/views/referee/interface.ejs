@@ -1,57 +1,202 @@
-<div class="container mt-5">
+<style>
+  .alert-floating {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease-out;
+    padding: 15px;
+  }
+
+  /* Mobile adjustments for floating alerts */
+  @media (max-width: 767px) {
+    .alert-floating {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      min-width: auto;
+      max-width: none;
+      padding: 12px;
+    }
+  }
+
+  .alert-floating .alert-message {
+    line-height: 1.5;
+  }
+
+  .alert-floating strong {
+    font-weight: 600;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Mobile responsive enhancements */
+  @media (max-width: 767px) {
+    @keyframes slideInRight {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  }
+
+  /* Fix icon sizes in referee interface */
+  .btn .bi {
+    font-size: 1rem !important;
+  }
+
+  /* Fix icon sizes in active queue tickets */
+  .list-group-item .bi {
+    font-size: 1rem !important;
+  }
+
+  /* Fix icon sizes in ticket displays */
+  small .bi {
+    font-size: 1rem !important;
+  }
+
+  /* Make child account badge icon smaller */
+  .badge .bi-person-hearts {
+    font-size: 0.875rem !important;
+  }
+
+  /* Queue Module Styles */
+  #queue-list-module .card-header {
+    cursor: pointer;
+  }
+
+  #queue-list-content {
+    transition: all 0.3s ease-in-out;
+  }
+
+  .queue-item {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s ease;
+  }
+
+  .queue-item:last-child {
+    border-bottom: none;
+  }
+
+  .queue-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .queue-item.now-serving {
+    background-color: #d1ecf1;
+    border-left: 4px solid #0dcaf0;
+  }
+
+  #queue-toggle-icon {
+    transition: transform 0.3s ease;
+  }
+
+  #queue-toggle-icon.rotated {
+    transform: rotate(180deg);
+  }
+</style>
+
+<div class="container-fluid mt-3">
   <div class="row">
-    <div class="col-md-10 offset-md-1">
+    <div class="col-12">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Referee Interface</h3>
+          <h4 class="mb-0">Referee Interface</h4>
         </div>
         <div class="card-body">
           <div class="row">
-            <div class="col-md-6">
+            <div class="col-lg-6 mb-4">
               <!-- QR Scanner -->
               <div class="scan-container">
-                <h4>Scan Player QR Code</h4>
-                <p>Scan a player's QR code to log their goals.</p>
-                
-                <div id="qr-reader-container" class="mb-3" style="width: 100%; height: 300px; border: 1px solid #ddd; position: relative;">
+                <h5>Scan Player QR Code</h5>
+                <p class="small">Scan a player's QR code to log their goals.</p>
+
+                <div
+                  id="qr-reader-container"
+                  class="mb-3"
+                  style="
+                    width: 100%;
+                    height: 300px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    position: relative;
+                  "
+                >
                   <!-- Scanner will be inserted here -->
                 </div>
-                
+
                 <div class="d-grid gap-2">
-                  <button id="start-scan" class="btn btn-primary">Start Scanner</button>
+                  <button id="start-scan" class="btn btn-primary">
+                    Start Scanner
+                  </button>
                   <div id="scanner-controls" class="d-none">
-                    <button id="stop-scan" class="btn btn-danger">Stop Scanner</button>
+                    <button id="stop-scan" class="btn btn-danger">
+                      Stop Scanner
+                    </button>
                   </div>
                 </div>
               </div>
-              
+
               <!-- Player Search -->
               <div class="mt-4">
                 <h5>Search Player by Name</h5>
                 <div class="input-group mb-3">
-                  <input type="text" id="name-search" class="form-control" placeholder="Enter player name">
-                  <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
+                  <input
+                    type="text"
+                    id="name-search"
+                    class="form-control"
+                    placeholder="Enter player name"
+                  />
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    id="search-button"
+                  >
+                    Search
+                  </button>
                 </div>
                 <div id="search-results" class="list-group mt-2"></div>
               </div>
             </div>
-            
+
             <div class="col-md-6">
               <!-- Player Info and Actions -->
               <div id="player-info" class="player-info">
                 <!-- Content will be populated by JavaScript when QR is scanned -->
                 <div class="text-center">
                   <p>Scan a player's QR code or search to get started</p>
-                  <i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i>
+                  <i
+                    class="bi bi-person-circle"
+                    style="font-size: 5rem; color: #ccc"
+                  ></i>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Queue Status -->
-      <div class="card mb-4">
+      <div class="card mb-4 queue-status-card">
         <div class="card-header bg-warning text-dark">
           <h5 class="mb-0">Queue Status</h5>
         </div>
@@ -60,12 +205,18 @@
             <div class="col-md-6">
               <div class="alert alert-info">
                 <h5>Now Serving</h5>
-                <h2 id="current-queue-number"><%= currentQueuePosition || 'No active tickets' %></h2>
+                <h2 id="current-queue-number">
+                  <%= currentQueuePosition || 'No active tickets' %>
+                </h2>
               </div>
             </div>
             <div class="col-md-6">
               <div class="d-grid gap-2">
-                <button type="button" class="btn btn-warning" id="skip-queue-btn">
+                <button
+                  type="button"
+                  class="btn btn-warning"
+                  id="skip-queue-btn"
+                >
                   <i class="bi bi-skip-forward"></i> Skip Current Queue
                 </button>
               </div>
@@ -73,7 +224,38 @@
           </div>
         </div>
       </div>
-      
+
+      <!-- Queue List Module -->
+      <div class="card mb-4" id="queue-list-module">
+        <div
+          class="card-header bg-info text-white d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0">Current Queue List</h5>
+          <button
+            class="btn btn-light btn-sm"
+            type="button"
+            id="queue-toggle-btn"
+            onclick="toggleQueueModule()"
+            aria-expanded="false"
+          >
+            <span id="queue-status-text">Loading queue...</span>
+            <span class="badge bg-primary ms-2" id="queue-count-badge">0</span>
+            <i class="bi bi-chevron-down ms-2" id="queue-toggle-icon"></i>
+          </button>
+        </div>
+        <div class="card-body" id="queue-list-content" style="display: none">
+          <div id="queue-items-container">
+            <div class="text-center text-muted py-3">
+              <div
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              ></div>
+              Loading queue data...
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Recent Activity -->
       <div class="card">
         <div class="card-header bg-secondary text-white">
@@ -87,12 +269,16 @@
                   <th>Time</th>
                   <th>Player</th>
                   <th>Goals</th>
+                  <th>Location</th>
+                  <th>Staff</th>
                 </tr>
               </thead>
               <tbody id="activity-table">
                 <!-- This will be populated dynamically -->
                 <tr id="no-activity-row">
-                  <td colspan="3" class="text-center">No activity recorded today</td>
+                  <td colspan="6" class="text-center">
+                    No activity recorded today
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -104,82 +290,201 @@
 </div>
 
 <!-- Goal Logging Modal -->
-<div class="modal fade" id="goalModal" tabindex="-1" aria-labelledby="goalModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="goalModal"
+  tabindex="-1"
+  aria-labelledby="goalModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="goalModalLabel">Log Goals</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <form id="goal-form">
-          <input type="hidden" id="player-id" name="playerId">
-          <input type="hidden" id="ticket-id" name="ticketId">
-          
+          <input type="hidden" id="player-id" name="playerId" />
+          <input type="hidden" id="ticket-id" name="ticketId" />
+
           <div class="mb-3">
             <label for="player-name" class="form-label">Player Name</label>
             <div class="input-group">
-              <input type="text" class="form-control" id="player-name" readonly>
-              <button type="button" class="btn btn-outline-secondary" id="edit-name-btn">Edit</button>
+              <input
+                type="text"
+                class="form-control"
+                id="player-name"
+                readonly
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="edit-name-btn"
+              >
+                Edit
+              </button>
             </div>
-            <div class="form-text">Name can be changed up to 2 times by a referee.</div>
+            <div class="form-text">
+              Name can be changed up to 2 times by a referee.
+            </div>
           </div>
-          
+
+          <div class="mb-3">
+            <label for="kicks-used" class="form-label">Kicks Used</label>
+            <input
+              type="number"
+              class="form-control"
+              id="kicks-used"
+              name="kicksUsed"
+              value="5"
+              min="1"
+              max="5"
+              required
+            />
+            <div class="form-text">
+              How many kicks did the player use? (1-5)
+            </div>
+          </div>
+
           <div class="mb-3">
             <label for="goals" class="form-label">Goals Scored</label>
-            <input type="number" class="form-control" id="goals" name="goals" value="0" min="0" max="5" required>
-            <div class="form-text">Maximum 5 goals per turn.</div>
+            <input
+              type="number"
+              class="form-control"
+              id="goals"
+              name="goals"
+              value="0"
+              min="0"
+              max="5"
+              required
+            />
+            <div class="form-text">
+              How many goals did the player score? (0-5)
+            </div>
           </div>
-          
-          <div class="mb-3">
-            <label for="location" class="form-label">Location</label>
-            <input type="text" class="form-control" id="location" name="location" required>
-          </div>
-          
+
           <div class="mb-3">
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="team-play" name="teamPlay">
-              <label class="form-check-label" for="team-play">
-                Team Play
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="track-consecutive"
+                name="trackConsecutive"
+              />
+              <label class="form-check-label" for="track-consecutive">
+                Track consecutive kicks made
               </label>
             </div>
-            <div class="form-text">Check this if the player is playing as part of their team.</div>
+            <div class="form-text">
+              Track player's current consecutive kick streak (requires at least
+              2 goals scored, can span multiple sessions)
+            </div>
+          </div>
+
+          <div class="mb-3" id="consecutive-container" style="display: none">
+            <label for="consecutive-kicks" class="form-label"
+              >Consecutive Kicks Made</label
+            >
+            <input
+              type="number"
+              class="form-control"
+              id="consecutive-kicks"
+              name="consecutiveKicks"
+              value=""
+              min="2"
+            />
+            <div class="form-text">
+              Total consecutive kicks in their current streak (minimum 2, can
+              exceed goals in this session)
+            </div>
+            <div
+              id="consecutive-error"
+              class="text-danger"
+              style="display: none"
+            >
+              Consecutive kicks must be at least 2.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input
+              type="text"
+              class="form-control"
+              id="location"
+              name="location"
+              required
+            />
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="submit-goals">Log Goals</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="submit-goals">
+          Log Goals
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Edit Name Modal -->
-<div class="modal fade" id="editNameModal" tabindex="-1" aria-labelledby="editNameModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="editNameModal"
+  tabindex="-1"
+  aria-labelledby="editNameModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="editNameModalLabel">Edit Player Name</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <form id="edit-name-form">
-          <input type="hidden" id="edit-player-id" name="playerId">
-          
+          <input type="hidden" id="edit-player-id" name="playerId" />
+
           <div class="mb-3">
             <label for="new-name" class="form-label">New Name</label>
-            <input type="text" class="form-control" id="new-name" name="name" required>
+            <input
+              type="text"
+              class="form-control"
+              id="new-name"
+              name="name"
+              required
+            />
           </div>
-          
+
           <div class="alert alert-warning">
-            <p class="mb-0"><strong>Important:</strong> Player names can be changed up to 2 times. <span id="changes-remaining"></span></p>
+            <p class="mb-0">
+              <strong>Important:</strong> Player names can be changed up to 2
+              times. <span id="changes-remaining"></span>
+            </p>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="submit-name">Save Name</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="submit-name">
+          Save Name
+        </button>
       </div>
     </div>
   </div>
@@ -187,591 +492,1986 @@
 
 <!-- Include HTML5-QRCode library -->
 <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+<script src="/js/avatar.js"></script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  // User information for activity persistence
+  const userId = <%= user ? user.id : 'null' %>;
+  const userRole = '<%= user ? user.role : '' %>';
+  const userName = '<%= user ? (user.name || user.username || '') : '' %>';
+
+  // Activity storage key
+  const ACTIVITY_STORAGE_KEY = `refereeActivity_${userRole}_${userId}`;
+
+  // Global activity cache
+  window.cachedActivity = null;
+  window.lastActivityLoad = 0;
+  window.pageLoadTime = Date.now();
+
+  // Define global variables and functions
+  const safeGetElement = function (id) {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.warn(`Element with ID "${id}" not found`);
+    }
+    return element;
+  };
+
+  // Wait for DOM to be ready
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("Referee interface loaded");
+
+    // Add a showAlert function for better error feedback
+    function showAlert(type, message, title = null) {
+      // Remove existing alerts
+      const existingAlerts = document.querySelectorAll(".alert-floating");
+      existingAlerts.forEach((alert) => alert.remove());
+
+      // Create new alert
+      const alertDiv = document.createElement("div");
+      alertDiv.className = `alert alert-${type} alert-floating position-fixed`;
+      alertDiv.style.cssText =
+        "top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);";
+
+      let alertContent = "";
+      if (title) {
+        alertContent = `<div class="alert-heading h5 mb-2">${title}</div>${message}`;
+      } else {
+        alertContent = message;
+      }
+
+      alertDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="alert-message" style="line-height: 1.5;">${alertContent}</div>
+          <button type="button" class="btn-close ms-2" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+
+      document.body.appendChild(alertDiv);
+
+      // Auto-remove after 12 seconds for detailed messages, 7 seconds for others
+      const timeoutDuration = message.length > 100 ? 12000 : 7000;
+      setTimeout(() => {
+        if (alertDiv.parentNode) {
+          alertDiv.remove();
+        }
+      }, timeoutDuration);
+    }
+
     // Load today's activity
     loadTodaysActivity();
-    
+
+    // Set up periodic refresh of activity data (every 60 seconds)
+    setInterval(() => {
+      console.log("Auto-refreshing activity data...");
+      loadTodaysActivity(true);
+    }, 60000); // 60 seconds
+
     // Start polling for queue updates
-    setInterval(updateQueuePosition, 5000);
-    
-    // QR Code Scanner
+    setInterval(updateQueuePosition, 5000);    // Start polling for queue list updates
+    updateQueueList(); // Initial load
+    setInterval(updateQueueList, 10000); // Update every 10 seconds    // Global function for dropdown toggle (called by onclick)    // Global function for queue module toggle
+    window.toggleQueueModule = function() {
+      console.log('Queue module toggle called');
+
+      const content = document.getElementById('queue-list-content');
+      const button = document.getElementById('queue-toggle-btn');
+      const icon = document.getElementById('queue-toggle-icon');
+
+      if (content && button && icon) {
+        const isHidden = content.style.display === 'none';
+
+        if (isHidden) {
+          content.style.display = 'block';
+          button.setAttribute('aria-expanded', 'true');
+          icon.classList.add('rotated');
+        } else {
+          content.style.display = 'none';
+          button.setAttribute('aria-expanded', 'false');
+          icon.classList.remove('rotated');
+        }
+
+        console.log('Queue module toggled. Expanded:', isHidden);
+      }
+    };    // QR Code Scanner
     let html5QrCode = null;
-    const qrContainer = document.getElementById('qr-reader-container');
+    const qrContainer = document.getElementById("qr-reader-container");
     let currentPlayerId = null;
     let currentPlayerData = null;
     let selectedTicket = null;
-    
+
     // Start scanning button
-    document.getElementById('start-scan').addEventListener('click', function() {
-      // Clean up any existing scanner
-      if (html5QrCode) {
-        try {
-          html5QrCode.stop();
-          html5QrCode.clear();
-        } catch (e) {
-          console.error("Error stopping scanner:", e);
+    document
+      .getElementById("start-scan")
+      .addEventListener("click", function () {
+        // Clean up any existing scanner
+        if (html5QrCode) {
+          try {
+            html5QrCode.stop();
+            html5QrCode.clear();
+          } catch (e) {
+            console.error("Error stopping scanner:", e);
+          }
+          html5QrCode = null;
         }
-        html5QrCode = null;
-      }
-      
-      // Clear the container
-      qrContainer.innerHTML = '';
-      
-      // Create a new scanner div
-      const scannerDiv = document.createElement('div');
-      scannerDiv.id = 'qr-scanner';
-      scannerDiv.style.width = '100%';
-      scannerDiv.style.height = '100%';
-      qrContainer.appendChild(scannerDiv);
-      
-      // Create new scanner instance
-      html5QrCode = new Html5Qrcode("qr-scanner");
-      
-      // Start scanning
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        onScanSuccess,
-        onScanError
-      )
-      .then(() => {
-        document.getElementById('scanner-controls').classList.remove('d-none');
-        this.classList.add('d-none');
-      })
-      .catch(err => {
-        console.error('Failed to start scanner:', err);
-        alert('Failed to start camera. Please check camera permissions.');
+
+        // Clear the container
+        qrContainer.innerHTML = "";
+
+        // Create a new scanner div
+        const scannerDiv = document.createElement("div");
+        scannerDiv.id = "qr-scanner";
+        scannerDiv.style.width = "100%";
+        scannerDiv.style.height = "100%";
+        qrContainer.appendChild(scannerDiv);
+
+        // Create new scanner instance
+        html5QrCode = new Html5Qrcode("qr-scanner");
+
+        // Start scanning
+        html5QrCode
+          .start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess,
+            onScanError
+          )
+          .then(() => {
+            document
+              .getElementById("scanner-controls")
+              .classList.remove("d-none");
+            this.classList.add("d-none");
+          })
+          .catch((err) => {
+            console.error("Failed to start scanner:", err);
+            alert("Failed to start camera. Please check camera permissions.");
+          });
       });
-    });
-    
+
     // Stop scanning button
-    document.getElementById('stop-scan').addEventListener('click', function() {
-      stopScanner();
-    });
-    
+    const stopScanBtn = document.getElementById("stop-scan");
+    if (stopScanBtn) {
+      stopScanBtn.addEventListener("click", function () {
+        stopScanner();
+      });
+    }
+
     // QR scan success handler
     function onScanSuccess(qrCodeMessage) {
       // Stop scanning
       stopScanner();
-      
+
       // Process QR code data
       processQRCode(qrCodeMessage);
     }
-    
+
     // QR scan error handler
     function onScanError(error) {
       console.warn(`QR scan error: ${error}`);
     }
-    
+
     // Helper function to stop scanner
     function stopScanner() {
       if (html5QrCode) {
-        html5QrCode.stop()
+        html5QrCode
+          .stop()
           .then(() => {
             html5QrCode.clear();
             html5QrCode = null;
-            qrContainer.innerHTML = '';
-            document.getElementById('scanner-controls').classList.add('d-none');
-            document.getElementById('start-scan').classList.remove('d-none');
+            qrContainer.innerHTML = "";
+            const scannerControlsEl =
+              document.getElementById("scanner-controls");
+            const startScanEl = document.getElementById("start-scan");
+            if (scannerControlsEl) scannerControlsEl.classList.add("d-none");
+            if (startScanEl) startScanEl.classList.remove("d-none");
           })
-          .catch(err => {
-            console.error('Failed to stop scanner:', err);
+          .catch((err) => {
+            console.error("Failed to stop scanner:", err);
           });
       }
     }
-    
+
     // Process QR code data
     function processQRCode(qrData) {
       // Show loading indicator
-      document.getElementById('player-info').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-      
-      // Send QR data to server
-      fetch('/staff/scan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ qrData })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          currentPlayerData = data;
-          displayPlayerInfo(data.player, data.activeTickets, data.todayKicks);
-        } else {
-          // Display error
-          document.getElementById('player-info').innerHTML = `
-            <div class="alert alert-danger">${data.message}</div>
-          `;
-        }
-      })
-      .catch(error => {
-        console.error('Error processing QR code:', error);
-        document.getElementById('player-info').innerHTML = `
-          <div class="alert alert-danger">Error processing QR code. Please try again.</div>
-        `;
-      });
-    }
-    
-    // Player search by name
-    document.getElementById('search-button').addEventListener('click', function() {
-      const name = document.getElementById('name-search').value.trim();
-      
-      if (!name) {
-        alert('Please enter a name');
-        return;
+      const playerInfoElement = document.getElementById("player-info");
+      if (playerInfoElement) {
+        playerInfoElement.innerHTML =
+          '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
       }
-      
-      // Show loading indicator
-      document.getElementById('search-results').innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-      
-      // Send search query to server
-      fetch(`/staff/search-by-name?name=${encodeURIComponent(name)}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success && data.players.length > 0) {
-            // Display search results
-            const resultsContainer = document.getElementById('search-results');
-            resultsContainer.innerHTML = '';
-            
-            data.players.forEach(player => {
-              const item = document.createElement('button');
-              item.className = 'list-group-item list-group-item-action';
-              item.innerHTML = `
-                <div class="d-flex w-100 justify-content-between">
-                  <h5 class="mb-1">${player.name}</h5>
-                  <small>${player.age_group}</small>
-                </div>
-                <p class="mb-1">${player.phone}${player.email ? ' | ' + player.email : ''}</p>
-                <small>${player.residence}</small>
-              `;
-              
-              item.addEventListener('click', function() {
-                // Get player details
-                fetch(`/staff/scan`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ qrData: JSON.stringify({ playerId: player.id }) })
-                })
-                .then(response => response.json())
-                .then(playerData => {
-                  if (playerData.success) {
-                    currentPlayerData = playerData;
-                    displayPlayerInfo(playerData.player, playerData.activeTickets, playerData.todayKicks);
-                  } else {
-                    document.getElementById('player-info').innerHTML = `
-                      <div class="alert alert-danger">${playerData.message}</div>
-                    `;
-                  }
-                });
-              });
-              
-              resultsContainer.appendChild(item);
-            });
+
+      // Send QR data to server
+      fetch("/staff/scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ qrData }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            currentPlayerData = data;
+            displayPlayerInfo(data.player, data.activeTickets, data.todayKicks);
           } else {
             // Display error
-            document.getElementById('search-results').innerHTML = `
-              <div class="alert alert-danger">No player found with that name</div>
+            const playerInfoElement = document.getElementById("player-info");
+            if (playerInfoElement) {
+              playerInfoElement.innerHTML = `
+              <div class="alert alert-danger">${data.message}</div>
             `;
+            }
           }
         })
-        .catch(error => {
-          console.error('Error searching player:', error);
-          document.getElementById('search-results').innerHTML = `
-            <div class="alert alert-danger">Error searching player. Please try again.</div>
+        .catch((error) => {
+          console.error("Error processing QR code:", error);
+          const playerInfoElement = document.getElementById("player-info");
+          if (playerInfoElement) {
+            playerInfoElement.innerHTML = `
+            <div class="alert alert-danger">Error processing QR code. Please try again.</div>
           `;
+          }
         });
-    });
-    
+    }
+
+    // Player search by name - simple implementation
+    document
+      .getElementById("search-button")
+      .addEventListener("click", function () {
+        const nameSearchElement = document.getElementById("name-search");
+        const name = nameSearchElement.value.trim();
+
+        if (!name) {
+          showAlert(
+            "warning",
+            "Please enter a player's name to search",
+            "Empty Search"
+          );
+          return;
+        }
+
+        // Show loading indicator
+        const searchResultsElement = document.getElementById("search-results");
+        if (searchResultsElement) {
+          searchResultsElement.innerHTML =
+            '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        }
+
+        // Send search query to server
+        fetch(`/staff/search-by-name?name=${encodeURIComponent(name)}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success && data.players.length > 0) {
+              // Display search results
+              const resultsContainer =
+                document.getElementById("search-results");
+              if (!resultsContainer) {
+                showAlert(
+                  "danger",
+                  "The search results container could not be found. Please refresh the page.",
+                  "System Error"
+                );
+                return;
+              }
+              resultsContainer.innerHTML = "";
+
+              data.players.forEach((player) => {
+                const item = document.createElement("button");
+                item.className =
+                  "list-group-item list-group-item-action d-flex align-items-center";
+
+                // Create avatar element with photo support
+                const avatar = createAvatar(player.name, 40, player.photo_path);
+                avatar.classList.add("me-3");
+
+                // Create text content
+                const textDiv = document.createElement("div");
+                textDiv.innerHTML = `<strong>${player.name}</strong><br>${
+                  player.phone || "No phone"
+                } | ${player.city_village ? player.city_village + ", " : ""}${
+                  player.residence || "No residence"
+                }`;
+
+                // Add elements to item
+                item.appendChild(avatar);
+                item.appendChild(textDiv);
+
+                item.addEventListener("click", function () {
+                  // Remove selected class from all results
+                  document.querySelectorAll(".player-result").forEach((el) => {
+                    el.classList.remove("selected");
+                  });
+                  // Add selected class and player-result class to this item
+                  this.classList.add("selected", "player-result");
+                  this.dataset.playerId = player.id;
+
+                  // Get detailed player information using the QR scan endpoint
+                  fetch(`/staff/scan`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      qrData: JSON.stringify({ playerId: player.id }),
+                    }),
+                  })
+                    .then((response) => response.json())
+                    .then((playerData) => {
+                      if (playerData.success) {
+                        currentPlayerData = playerData;
+                        // Display player info without team info
+                        displayPlayerInfo(
+                          playerData.player,
+                          playerData.activeTickets,
+                          playerData.todayKicks
+                        );
+                      } else {
+                        const playerInfoEl =
+                          document.getElementById("player-info");
+                        if (playerInfoEl) {
+                          playerInfoEl.innerHTML = `
+                      <div class="alert alert-danger">${playerData.message}</div>
+                    `;
+                        }
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("Error loading player details:", error);
+                      const playerInfoEl =
+                        document.getElementById("player-info");
+                      if (playerInfoEl) {
+                        playerInfoEl.innerHTML = `
+                      <div class="alert alert-danger">Error loading player details. Please try again.</div>
+                    `;
+                      }
+                    });
+                });
+
+                resultsContainer.appendChild(item);
+              });
+            } else {
+              // Display error
+              const searchResultsElement =
+                document.getElementById("search-results");
+              if (searchResultsElement) {
+                searchResultsElement.innerHTML = `
+                <div class="alert alert-warning">No players found matching your search</div>
+              `;
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Error searching player:", error);
+            const searchResultsElement =
+              document.getElementById("search-results");
+            if (searchResultsElement) {
+              searchResultsElement.innerHTML = `
+              <div class="alert alert-danger">Error searching player. Please try again.</div>
+            `;
+            }
+          });
+      });
+
+    // Team search functionality removed
+    // Function to safely get DOM element
+    function safeGetElement(id) {
+      const element = document.getElementById(id);
+      if (!element) {
+        console.warn(`Element with ID "${id}" not found`);
+      }
+      return element;
+    } // Team functionality removed
+
+    // Team ticket functionality removed
+
     // Display player info
     function displayPlayerInfo(player, activeTickets = [], todayKicks = 0) {
       currentPlayerId = player.id;
-      
-      // Update player info
-      const playerInfo = document.getElementById('player-info');
-      playerInfo.innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-              ${player.photo_path ? 
-                `<img src="${player.photo_path}" alt="Profile Photo" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">` : 
-                `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                  <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
-                </div>`
-              }
-              <div>
-                <h4 class="mb-0">${player.name}</h4>
-                <p class="text-muted mb-0">${player.phone}${player.email ? ' | ' + player.email : ''}</p>
-              </div>
+
+      // Debug: Check active tickets for competition types
+      console.log("Active tickets:", activeTickets);
+      if (activeTickets && activeTickets.length > 0) {
+        activeTickets.forEach((ticket, idx) => {
+          console.log(
+            `Ticket ${idx} competition_type:`,
+            ticket.competition_type
+          );
+        });
+      }
+
+      const infoDiv = document.getElementById("player-info");
+
+      // Clear previous content
+      infoDiv.innerHTML = "";
+
+      // Store current player data globally
+      window.currentPlayer = player;
+
+      // Create container for profile info
+      const profileContainer = document.createElement("div");
+      profileContainer.className = "text-center mb-3";
+
+      // Create avatar with photo support
+      const avatar = createAvatar(player.name, 100, player.photo_path);
+      avatar.classList.add("mx-auto", "mb-3", "d-block");
+
+      // Create name and details (simplified for individual player search)
+      const nameEl = document.createElement("h4");
+      nameEl.innerHTML =
+        player.name +
+        (player.is_child_account
+          ? ' <span class="badge bg-info ms-2"><i class="bi bi-person-hearts"></i> Child Account</span>'
+          : "");
+
+      const detailsEl = document.createElement("p");
+      detailsEl.className = "text-muted";
+      const phoneDisplay =
+        player.is_child_account && player.parent_phone
+          ? `Parent: ${player.parent_phone} | Child ID: ${player.phone}`
+          : player.phone;
+      detailsEl.textContent = `${phoneDisplay} | ${
+        player.city_village ? player.city_village + ", " : ""
+      }${player.residence}`;
+
+      // Add elements to container
+      profileContainer.appendChild(avatar);
+      profileContainer.appendChild(nameEl);
+      profileContainer.appendChild(detailsEl);
+
+      // Add container to info div
+      infoDiv.appendChild(profileContainer);
+
+      // Team info card removed
+
+      // Add stats card with real data
+      const statsCard = document.createElement("div");
+      statsCard.className = "card mb-3";
+      statsCard.innerHTML = `
+        <div class="card-body">
+          <h5>Player Stats</h5>
+          <div class="row">
+            <div class="col-6">
+              <p><strong>Kicks Balance:</strong> ${
+                player.kicks_balance || 0
+              }</p>
             </div>
-            
-            <div class="row mb-3">
-              <div class="col-6">
-                <p><strong>Age Group:</strong> ${player.age_group}</p>
-              </div>
-              <div class="col-6">
-                <p><strong>District:</strong> ${player.residence}</p>
-              </div>
+            <div class="col-6">
+              <p><strong>Age Group:</strong> ${player.age_group || "Adult"}</p>
             </div>
-            
-            <div class="row mb-3">
-              <div class="col-6">
-                <div class="alert alert-primary mb-0">
-                  <h5 class="mb-0">Kicks Balance: <strong>${player.kicks_balance || 0}</strong></h5>
-                </div>
-              </div>
-              <div class="col-6">
-                <div class="alert alert-info mb-0">
-                  <h5 class="mb-0">Today's Kicks: <strong>${todayKicks || 0}</strong></h5>
-                </div>
-              </div>
+            <div class="col-6">
+              <p><strong>Today's Kicks:</strong> ${todayKicks || 0}</p>
             </div>
-            
-            ${activeTickets && activeTickets.length > 0 ? `
-              <div class="alert alert-success">
-                <h5>Active Queue Tickets</h5>
-                <div class="list-group">
-                  ${activeTickets.map(ticket => `
-                    <button type="button" class="list-group-item list-group-item-action ticket-item" data-ticket-id="${ticket.id}" data-ticket-number="${ticket.ticket_number}">
-                      Ticket #${ticket.ticket_number}
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-              
-              <div class="d-grid gap-2">
-                <button type="button" class="btn btn-primary" id="log-goals-btn" disabled>Select a ticket to log goals</button>
-              </div>
-            ` : `
-              <div class="alert alert-warning">
-                <h5>No Active Queue Tickets</h5>
-                <p>Player needs to purchase kicks and get a queue ticket at the cashier.</p>
-              </div>
-            `}
+            <div class="col-6">
+              <p><strong>Location:</strong> ${
+                player.city_village ? player.city_village + ", " : ""
+              }${player.residence}</p>
+            </div>
           </div>
         </div>
       `;
-      
-      // Add event listeners for ticket selection
+      infoDiv.appendChild(statsCard);
+
+      // Add queue tickets section
       if (activeTickets && activeTickets.length > 0) {
-        document.querySelectorAll('.ticket-item').forEach(item => {
-          item.addEventListener('click', function() {
-            // Remove active class from all tickets
-            document.querySelectorAll('.ticket-item').forEach(t => t.classList.remove('active'));
-            
-            // Add active class to selected ticket
-            this.classList.add('active');
-            
-            // Store selected ticket
-            selectedTicket = {
-              id: this.dataset.ticketId,
-              number: this.dataset.ticketNumber
-            };
-            
-            // Enable log goals button
-            document.getElementById('log-goals-btn').disabled = false;
-            document.getElementById('log-goals-btn').textContent = `Log Goals for Ticket #${selectedTicket.number}`;
+        const ticketsCard = document.createElement("div");
+        ticketsCard.className = "card mb-3";
+        ticketsCard.innerHTML = `
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Active Queue Tickets</h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group">
+              ${activeTickets
+                .map(
+                  (ticket) => `
+                <button type="button" class="list-group-item list-group-item-action ticket-item" data-ticket-id="${
+                  ticket.id
+                }" data-ticket-number="${ticket.ticket_number}">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">Ticket #${ticket.ticket_number}</h6>
+                    <small class="${
+                      // First, normalize the ticket type to identify if it's practice
+                      ticket.competition_type === "practice" ||
+                      ticket.competition_type === "Practice" ||
+                      ticket.competition_type === "no-competition" ||
+                      String(ticket.competition_type)
+                        .toLowerCase()
+                        .includes("practice") ||
+                      String(ticket.competition_type)
+                        .toLowerCase()
+                        .includes("no comp")
+                        ? "text-info"
+                        : "text-warning fw-bold"
+                    }">${
+                    // Explicit display based on normalized type
+                    ticket.competition_type === "practice" ||
+                    ticket.competition_type === "Practice" ||
+                    ticket.competition_type === "no-competition" ||
+                    String(ticket.competition_type)
+                      .toLowerCase()
+                      .includes("practice") ||
+                    String(ticket.competition_type)
+                      .toLowerCase()
+                      .includes("no comp")
+                      ? "<i class='bi bi-people'></i> Practice"
+                      : "<i class='bi bi-trophy'></i> Competition"
+                  }</small>
+                  </div>
+                </button>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+        infoDiv.appendChild(ticketsCard);
+
+        // Add action buttons
+        const actionButtons = document.createElement("div");
+        actionButtons.className = "d-grid gap-2";
+        actionButtons.innerHTML = `
+          <button type="button" class="btn btn-primary" id="log-goals-btn-individual" disabled>Select a ticket to log goals</button>
+        `;
+        infoDiv.appendChild(actionButtons);
+      } else {
+        const noTicketsCard = document.createElement("div");
+        noTicketsCard.className = "card mb-3";
+        noTicketsCard.innerHTML = `
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">No Active Queue Tickets</h5>
+          </div>
+          <div class="card-body">
+            <p class="mb-0">Player needs to purchase kicks and get a queue ticket at the cashier.</p>
+          </div>
+        `;
+        infoDiv.appendChild(noTicketsCard);
+      }
+
+      // Add event listeners for ticket selection (only for individual player tickets)
+      if (activeTickets && activeTickets.length > 0) {
+        console.log(
+          "Setting up individual ticket listeners for",
+          activeTickets.length,
+          "tickets"
+        );
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+          const ticketItems = document.querySelectorAll(".ticket-item");
+          console.log("Found", ticketItems.length, "ticket items");
+          ticketItems.forEach((item, index) => {
+            console.log(`Ticket ${index}:`, item.dataset.ticketId);
+            item.addEventListener("click", function () {
+              console.log("Ticket clicked:", this.dataset.ticketId);
+              // Remove active class from all tickets
+              document
+                .querySelectorAll(".ticket-item")
+                .forEach((t) => t.classList.remove("active"));
+
+              // Add active class to selected ticket
+              this.classList.add("active");
+
+              // Get the ticket from activeTickets
+              const ticketId = this.dataset.ticketId;
+              // Find the full ticket object from activeTickets array to get competition type
+              const fullTicketData = activeTickets.find(
+                (ticket) => ticket.id == ticketId
+              );
+              console.log("Full ticket data:", fullTicketData);
+              console.log("Complete activeTickets array:", activeTickets);
+
+              // IMPORTANT - Make sure competition type is properly set
+              // Add an explicit check and debug logging
+              let computedType = "unknown";
+              if (fullTicketData) {
+                // Log all relevant properties that might be related to competition type
+                console.log("Ticket data inspection:", {
+                  id: fullTicketData.id,
+                  ticket_number: fullTicketData.ticket_number,
+                  competition_type: fullTicketData.competition_type,
+                  type: fullTicketData.type,
+                  ticket_type: fullTicketData.ticket_type,
+                  "all properties": fullTicketData,
+                });
+
+                // Try to get competition type from multiple possible places
+                computedType =
+                  fullTicketData.competition_type ||
+                  fullTicketData.type ||
+                  fullTicketData.ticket_type ||
+                  "unknown";
+
+                // Force to lowercase for consistent comparison
+                if (typeof computedType === "string") {
+                  computedType = computedType.toLowerCase();
+                }
+
+                // If we see anything practice related, set it to practice
+                if (
+                  computedType.includes("practice") ||
+                  computedType.includes("no comp")
+                ) {
+                  computedType = "practice";
+                } else if (computedType.includes("comp")) {
+                  computedType = "for-competition";
+                }
+              }
+
+              console.log("Computed ticket type:", computedType);
+
+              // Store selected ticket globally with complete information
+              window.selectedTicket = {
+                id: this.dataset.ticketId,
+                number: this.dataset.ticketNumber,
+                team_play: false,
+                // Use our carefully computed type
+                competition_type: computedType,
+                // Also store the raw data for debugging
+                raw_ticket_data: fullTicketData,
+              };
+
+              console.log(
+                "Set selectedTicket with competition_type:",
+                window.selectedTicket.competition_type
+              );
+
+              console.log("Selected ticket:", window.selectedTicket);
+
+              // Enable log goals button
+              const logGoalsBtn = document.getElementById(
+                "log-goals-btn-individual"
+              );
+              console.log("Log goals button found:", !!logGoalsBtn);
+              if (logGoalsBtn) {
+                logGoalsBtn.disabled = false;
+                logGoalsBtn.textContent = `Log Goals for Ticket #${window.selectedTicket.number}`;
+                console.log(
+                  "Button enabled with text:",
+                  logGoalsBtn.textContent
+                );
+              }
+            });
           });
-        });
-        
-        // Add event listener for log goals button
-        document.getElementById('log-goals-btn').addEventListener('click', function() {
-          if (!selectedTicket) {
-            alert('Please select a ticket first');
+        }, 100);
+      }
+    }
+
+    // Edit name button
+    document
+      .getElementById("edit-name-btn")
+      .addEventListener("click", function () {
+        if (!currentPlayerId) {
+          showAlert(
+            "warning",
+            "You must select a player before editing their name",
+            "No Player Selected"
+          );
+          return;
+        }
+
+        // Set player ID and current name
+        const editPlayerIdElement = document.getElementById("edit-player-id");
+        const newNameElement = document.getElementById("new-name");
+        const playerNameElement = document.getElementById("player-name");
+
+        if (editPlayerIdElement) editPlayerIdElement.value = currentPlayerId;
+        if (newNameElement && playerNameElement) {
+          newNameElement.value = playerNameElement.value;
+        }
+
+        // Get name change count
+        const nameChanges = currentPlayerData?.player?.name_change_count || 0;
+        const remainingChanges = 2 - nameChanges;
+
+        // Update changes remaining text
+        const changesRemainingEl = document.getElementById("changes-remaining");
+        if (changesRemainingEl) {
+          changesRemainingEl.textContent =
+            remainingChanges === 0
+              ? "No more name changes allowed."
+              : remainingChanges === 1
+              ? "This is the last name change allowed."
+              : "After this change, you will have 1 more change available.";
+        }
+
+        // Disable button if no changes remaining
+        const submitNameBtnEl = document.getElementById("submit-name");
+        if (submitNameBtnEl) {
+          submitNameBtnEl.disabled = remainingChanges === 0;
+        }
+
+        // Show edit name modal
+        const editNameModal = new bootstrap.Modal(
+          document.getElementById("editNameModal")
+        );
+        editNameModal.show();
+      });
+
+    // Submit name change
+    const submitNameBtn = document.getElementById("submit-name");
+    if (submitNameBtn) {
+      submitNameBtn.addEventListener("click", function () {
+        const playerIdEl = document.getElementById("edit-player-id");
+        const nameEl = document.getElementById("new-name");
+
+        if (!playerIdEl || !nameEl) {
+          console.error("Name edit form elements not found");
+          alert("Form elements not found. Please refresh the page.");
+          return;
+        }
+
+        const playerId = playerIdEl.value;
+        const name = nameEl.value;
+
+        if (!name) {
+          alert("Please enter a name");
+          return;
+        }
+
+        // Show loading indicator
+        this.disabled = true;
+        this.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        // Send name update to server
+        fetch("/staff/api/update-name", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ playerId, name }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Update player name in goal modal
+              const playerNameEl = document.getElementById("player-name");
+              if (playerNameEl) {
+                playerNameEl.value = name;
+              }
+
+              // Close edit name modal
+              const editNameModalEl = document.getElementById("editNameModal");
+              if (editNameModalEl) {
+                const modalInstance =
+                  bootstrap.Modal.getInstance(editNameModalEl);
+                if (modalInstance) {
+                  modalInstance.hide();
+                }
+              }
+
+              // Show success message
+              alert(
+                `Player name updated successfully. ${
+                  data.remainingChanges > 0
+                    ? data.remainingChanges + " name changes remaining."
+                    : "No more name changes allowed."
+                }`
+              );
+
+              // Update player data
+              if (currentPlayerData && currentPlayerData.player) {
+                currentPlayerData.player.name = name;
+                currentPlayerData.player.name_change_count =
+                  2 - data.remainingChanges;
+              }
+            } else {
+              // Show error message
+              alert(`Error: ${data.message}`);
+            }
+
+            // Reset button
+            this.disabled = false;
+            this.innerHTML = "Save Name";
+          })
+          .catch((error) => {
+            console.error("Error updating name:", error);
+            alert("Error updating name. Please try again.");
+            this.disabled = false;
+            this.innerHTML = "Save Name";
+          });
+      });
+    }
+
+    // Consecutive kicks functionality
+    const trackConsecutiveCheckbox =
+      document.getElementById("track-consecutive");
+    const consecutiveContainer = document.getElementById(
+      "consecutive-container"
+    );
+    const consecutiveInput = document.getElementById("consecutive-kicks");
+    const consecutiveError = document.getElementById("consecutive-error");
+    const goalsInput = document.getElementById("goals");
+
+    // Validate consecutive kicks input
+    if (consecutiveInput && goalsInput) {
+      function validateConsecutiveKicks() {
+        const goals = parseInt(goalsInput.value) || 0;
+        const consecutive = parseInt(consecutiveInput.value) || 0;
+
+        if (trackConsecutiveCheckbox.checked) {
+          // First check if there are enough goals to track consecutive kicks
+          if (goals < 2) {
+            consecutiveError.textContent =
+              "You must score at least 2 goals to track consecutive kicks.";
+            consecutiveError.style.display = "block";
+            return false;
+          }
+
+          // If consecutive value is entered, validate it
+          if (consecutive > 0) {
+            // Must be at least 2
+            if (consecutive < 2) {
+              consecutiveError.textContent =
+                "Consecutive kicks must be at least 2.";
+              consecutiveError.style.display = "block";
+              return false;
+            }
+          }
+
+          consecutiveError.style.display = "none";
+          return true;
+        }
+
+        consecutiveError.style.display = "none";
+        return true;
+      }
+
+      consecutiveInput.addEventListener("input", validateConsecutiveKicks);
+      goalsInput.addEventListener("input", validateConsecutiveKicks);
+    }
+
+    if (trackConsecutiveCheckbox && consecutiveContainer) {
+      trackConsecutiveCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+          consecutiveContainer.style.display = "block";
+          // Validate immediately when checkbox is checked
+          if (typeof validateConsecutiveKicks === "function") {
+            validateConsecutiveKicks();
+          }
+        } else {
+          consecutiveContainer.style.display = "none";
+          consecutiveInput.value = "";
+          consecutiveError.style.display = "none";
+        }
+      });
+    }
+
+    // Submit goals
+    const submitGoalsBtn = document.getElementById("submit-goals");
+    if (submitGoalsBtn) {
+      submitGoalsBtn.addEventListener("click", function () {
+        const ticketIdEl = document.getElementById("ticket-id");
+        const locationEl = document.getElementById("location");
+
+        if (!ticketIdEl || !locationEl) {
+          console.error("Required form elements not found");
+          alert("Form elements not found. Please refresh the page.");
+          return;
+        }
+
+        const ticketId = ticketIdEl.value;
+        const location = locationEl.value;
+
+        if (!location) {
+          alert("Please enter a location");
+          return;
+        }
+
+        // Individual play mode
+        const playerIdEl = document.getElementById("player-id");
+        const kicksUsedEl = document.getElementById("kicks-used");
+        const goalsEl = document.getElementById("goals");
+        const trackConsecutiveEl = document.getElementById("track-consecutive");
+        const consecutiveKicksEl = document.getElementById("consecutive-kicks");
+
+        if (!playerIdEl || !kicksUsedEl || !goalsEl) {
+          console.error("Individual player form elements not found");
+          alert("Form elements not found. Please refresh the page.");
+          return;
+        }
+
+        const playerId = playerIdEl.value;
+        const kicksUsed = kicksUsedEl.value;
+        const goals = parseInt(goalsEl.value) || 0;
+        const trackConsecutive = trackConsecutiveEl.checked;
+        const consecutiveKicks = parseInt(consecutiveKicksEl.value) || 0;
+
+        if (!playerId) {
+          alert("Player ID is missing");
+          return;
+        }
+
+        // Validate consecutive kicks if enabled
+        if (trackConsecutive) {
+          console.log("Validating consecutive kicks feature. Goals scored:", goals);
+          if (goals < 2) {
+            console.log("Validation failed: goals < 2, cannot track consecutive kicks");
+            alert("You must score at least 2 goals to track consecutive kicks.");
             return;
           }
-          
-          // Show goal modal
-          const goalModal = new bootstrap.Modal(document.getElementById('goalModal'));
-          
-          // Set player and ticket info
-          document.getElementById('player-id').value = currentPlayerId;
-          document.getElementById('ticket-id').value = selectedTicket.id;
-          document.getElementById('player-name').value = player.name;
-          
-          // Set max goals to 5
-          document.getElementById('goals').max = 5;
-          
-          // Show modal
-          goalModal.show();
-        });
-      }
-    }
-    
-    // Edit name button
-    document.getElementById('edit-name-btn').addEventListener('click', function() {
-      if (!currentPlayerId) {
-        alert('No player selected');
-        return;
-      }
-      
-      // Set player ID and current name
-      document.getElementById('edit-player-id').value = currentPlayerId;
-      document.getElementById('new-name').value = document.getElementById('player-name').value;
-      
-      // Get name change count
-      const nameChanges = currentPlayerData?.player?.name_change_count || 0;
-      const remainingChanges = 2 - nameChanges;
-      
-      // Update changes remaining text
-      document.getElementById('changes-remaining').textContent = 
-        remainingChanges === 0 ? 'No more name changes allowed.' :
-        remainingChanges === 1 ? 'This is the last name change allowed.' : 
-        'After this change, you will have 1 more change available.';
-      
-      // Disable button if no changes remaining
-      document.getElementById('submit-name').disabled = remainingChanges === 0;
-      
-      // Show edit name modal
-      const editNameModal = new bootstrap.Modal(document.getElementById('editNameModal'));
-      editNameModal.show();
-    });
-    
-    // Submit name change
-    document.getElementById('submit-name').addEventListener('click', function() {
-      const playerId = document.getElementById('edit-player-id').value;
-      const name = document.getElementById('new-name').value;
-      
-      if (!name) {
-        alert('Please enter a name');
-        return;
-      }
-      
-      // Show loading indicator
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-      
-      // Send name update to server
-      fetch('/staff/update-name', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ playerId, name })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Update player name in goal modal
-          document.getElementById('player-name').value = name;
-          
-          // Close edit name modal
-          bootstrap.Modal.getInstance(document.getElementById('editNameModal')).hide();
-          
-          // Show success message
-          alert(`Player name updated successfully. ${data.remainingChanges > 0 ? data.remainingChanges + ' name changes remaining.' : 'No more name changes allowed.'}`);
-          
-          // Update player data
-          if (currentPlayerData && currentPlayerData.player) {
-            currentPlayerData.player.name = name;
-            currentPlayerData.player.name_change_count = 2 - data.remainingChanges;
+          if (consecutiveKicks > 0 && consecutiveKicks < 2) {
+            console.log("Validation failed: consecutive kicks value < 2");
+            alert("Consecutive kicks value must be at least 2.");
+            return;
           }
-        } else {
-          // Show error message
-          alert(`Error: ${data.message}`);
+          console.log("Consecutive kicks validation passed");
         }
-        
-        // Reset button
-        this.disabled = false;
-        this.innerHTML = 'Save Name';
-      })
-      .catch(error => {
-        console.error('Error updating name:', error);
-        alert('Error updating name. Please try again.');
-        this.disabled = false;
-        this.innerHTML = 'Save Name';
-      });
-    });
-    
-    // Submit goals
-    document.getElementById('submit-goals').addEventListener('click', function() {
-      const playerId = document.getElementById('player-id').value;
-      const ticketId = document.getElementById('ticket-id').value;
-      const goals = document.getElementById('goals').value;
-      const location = document.getElementById('location').value;
-      const teamPlay = document.getElementById('team-play').checked;
-      
-      if (!location) {
-        alert('Please enter a location');
-        return;
-      }
-      
-      // Show loading indicator
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-      
-      // Send goal data to server
-      fetch('/staff/log-goal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ playerId, ticketId, goals, location, teamPlay })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Close goal modal
-          bootstrap.Modal.getInstance(document.getElementById('goalModal')).hide();
-          
-          // Show success message
-          alert(`Successfully logged ${goals} goals!${teamPlay ? ' (Team Play)' : ''}`);
-          
-          // Update activity table
-          updateActivityTable({
-            timestamp: new Date(),
-            playerName: document.getElementById('player-name').value,
-            goals: goals
+
+        // Debug: Log ticket information and competition type
+        console.log(
+          "Selected ticket for goal submission:",
+          window.selectedTicket
+        );
+        const isCompForLog =
+          window.selectedTicket?.competition_type === "for-competition" ||
+          (window.selectedTicket?.competition_type &&
+            String(window.selectedTicket.competition_type).includes(
+              "competition"
+            ));
+        console.log("Is competition detected:", isCompForLog);
+        console.log(
+          "Competition type:",
+          window.selectedTicket?.competition_type || "practice"
+        );
+
+        // Show loading indicator
+        this.disabled = true;
+        this.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+        // Send individual goal data to server
+        fetch("/staff/log-goal", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            playerId,
+            ticketId,
+            kicksUsed,
+            goals,
+            location,
+            teamPlay: false,
+            staffName: "<%= user.name %>",
+            consecutiveKicks: trackConsecutive ? consecutiveKicks : null,
+            // Make a direct check specifically for practice tickets
+            // The client needs to be explicit about this
+            isCompetition: !(
+              window.selectedTicket?.competition_type === "practice" ||
+              window.selectedTicket?.competition_type === "Practice" ||
+              window.selectedTicket?.competition_type === "no-competition" ||
+              window.selectedTicket?.competition_type === "No Competition"
+            ),
+            competition_type:
+              window.selectedTicket?.competition_type === "practice" ||
+              window.selectedTicket?.competition_type === "Practice" ||
+              window.selectedTicket?.competition_type === "no-competition" ||
+              window.selectedTicket?.competition_type === "No Competition"
+                ? "practice"
+                : "for-competition",
+            kickType:
+              window.selectedTicket?.competition_type === "practice" ||
+              window.selectedTicket?.competition_type === "Practice" ||
+              window.selectedTicket?.competition_type === "no-competition" ||
+              window.selectedTicket?.competition_type === "No Competition"
+                ? "practice"
+                : "competition",
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              // Handle HTTP error status codes (400, 500, etc.)
+              return response.json().then((errorData) => {
+                throw new Error(errorData.message || "Server error occurred");
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            handleGoalSubmissionResponse(data, goals, this);
+          })
+          .catch((error) => {
+            console.error("Error logging goals:", error);
+
+            // Check for specific queue mismatch error
+            const errorMessage = error.toString();
+            if (
+              errorMessage.includes("not current") ||
+              errorMessage.includes("wrong ticket") ||
+              errorMessage.includes("queue") ||
+              errorMessage.includes("turn")
+            ) {
+              // This is a queue mismatch error - provide detailed instructions
+              const currentQueue = document.getElementById(
+                "current-queue-number"
+              ).textContent;
+              const playerTicket =
+                window.selectedTicket?.ticket_number || "unknown";
+              const playerName =
+                document.getElementById("player-name")?.value || "This player";
+
+              showAlert(
+                "warning",
+                `<strong>PROBLEM:</strong> You're trying to log goals for ticket #<span style="background-color: #fff3cd; padding: 2px 5px; font-weight: bold;">${playerTicket}</span>, but the system is currently serving ticket #<span style="background-color: #cff4fc; padding: 2px 5px; font-weight: bold;">${currentQueue}</span>.<br><br>
+                <strong>WHY THIS ERROR OCCURRED:</strong><br>
+                Goals can only be logged for the currently active ticket number.<br><br>
+                <strong>HOW TO RESOLVE THIS:</strong><br>
+                <ul style="margin-left: 15px; padding-left: 5px;">
+                  <li><strong>Option 1:</strong> Find the player with ticket #${currentQueue} and log their goals instead</li>
+                  <li><strong>Option 2:</strong> Use the "<i class="bi bi-skip-forward"></i> Skip Current Queue" button ${
+                    playerTicket > currentQueue ? "repeatedly" : ""
+                  } to advance to ticket #${playerTicket}</li>
+                </ul>
+                <div style="margin-top: 10px;"><strong>Note:</strong> If ticket #${playerTicket} is much ${
+                  playerTicket > currentQueue ? "higher" : "lower"
+                } than the current number, you may need to skip multiple times.</div>`,
+                "Wrong Ticket Number"
+              );
+            } else {
+              // Generic error - try to provide more context from error message
+              let errorDetail = error.toString();
+              // Remove "Error: " from the beginning if it exists
+              if (errorDetail.startsWith("Error: ")) {
+                errorDetail = errorDetail.substring(7);
+              }
+
+              showAlert(
+                "danger",
+                `<strong>Problem:</strong> ${errorDetail}<br><br>
+                <strong>Possible solutions:</strong><br>
+                - Check if the player has enough kicks available<br>
+                - Verify that the ticket is valid<br>
+                - Make sure the server connection is working<br>
+                - Try refreshing the page if the problem persists`,
+                "Goal Logging Error"
+              );
+            }
+
+            this.disabled = false;
+            this.innerHTML = "Log Goals";
           });
-          
-          // Update current queue number
-          if (data.currentQueuePosition) {
-            document.getElementById('current-queue-number').textContent = data.currentQueuePosition;
+      });
+    }    // Helper function to handle goal submission response
+    function handleGoalSubmissionResponse(data, goals, button) {
+      if (data.success) {
+        // Close goal modal
+        const goalModalElement = document.getElementById("goalModal");
+        if (goalModalElement) {
+          const modalInstance = bootstrap.Modal.getInstance(goalModalElement);
+          if (modalInstance) {
+            modalInstance.hide();
           }
-          
-          // Reset player info
-          document.getElementById('player-info').innerHTML = `
-            <div class="text-center">
-              <p>Scan a player's QR code or search to get started</p>
-              <i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i>
-            </div>
-          `;
-          currentPlayerId = null;
-          currentPlayerData = null;
-          selectedTicket = null;
-        } else {
-          // Show error message
-          alert(`Error: ${data.message}`);
         }
-        
-        // Reset button
-        this.disabled = false;
-        this.innerHTML = 'Log Goals';
-      })
-      .catch(error => {
-        console.error('Error logging goals:', error);
-        alert('Error logging goals. Please try again.');
-        this.disabled = false;
-        this.innerHTML = 'Log Goals';
-      });
-    });
-    
-    // Skip queue button
-    document.getElementById('skip-queue-btn').addEventListener('click', function() {
-      if (!confirm('Are you sure you want to skip the current queue position?')) {
-        return;
+
+        // Show success message
+        showAlert(
+          "success",
+          `Successfully logged ${goals} goal${goals == 1 ? "" : "s"} for ${
+            document.getElementById("player-name").value
+          }!`,
+          "Goals Recorded"
+        );
+
+        // Update current queue number
+        if (data.currentQueuePosition) {
+          const queueElement = document.getElementById("current-queue-number");
+          if (queueElement) {
+            queueElement.textContent = data.currentQueuePosition;
+          }
+        }
+
+        console.log("Raw server response data:", data);
+
+        // Don't rely on isCompetition flag from server, it might be wrong
+        // Instead, check if competition_type is explicitly "practice" - CASE SENSITIVE
+        const ticketCompType =
+          data.competition_type ||
+          window.selectedTicket?.competition_type ||
+          "";
+
+        const isPracticeTicket =
+          ticketCompType === "practice" ||
+          ticketCompType === "Practice" ||
+          ticketCompType === "no-competition" ||
+          ticketCompType === "No Competition" ||
+          ticketCompType === "no competition";
+
+        // For debugging - look at what's coming back from the server
+        console.log("Creating activity with detailed debug data:", {
+          "Competition type from server": data.competition_type,
+          "Competition type from client": window.selectedTicket?.competition_type,
+          "Final decision": isPracticeTicket ? "PRACTICE" : "COMPETITION",
+          "Raw selected ticket": window.selectedTicket,
+          "Raw server data": data,
+        });
+
+        // Create a complete activity object with all needed properties
+        const newActivity = {
+          id: data.activityId || `client-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          playerName: document.getElementById("player-name").value,
+          goals: goals,
+          location: document.getElementById("location").value || "Unknown",
+          staffName: "<%= user.name %>",
+          player_id: parseInt(document.getElementById("player-id").value),
+          staff_id: "<%= user.id %>",
+          competition_type: isPracticeTicket ? "practice" : "for-competition",
+          timestamp: new Date(),
+          clientGenerated: !data.activityId // Mark as client-generated if no server ID
+        };
+
+        console.log("New activity created with ID:", newActivity.id);
+
+        // Clear the table first to prevent duplicates
+        const table = document.getElementById("activity-table");
+        while (table && table.rows.length > 0) {
+          table.deleteRow(0);
+        }
+
+        // Add to the UI table
+        updateActivityTable(newActivity);
+
+        // Update in-memory cache
+        if (!window.cachedActivity) window.cachedActivity = [];
+
+        // Remove any existing activity with the same ID
+        window.cachedActivity = window.cachedActivity.filter(a => a.id !== newActivity.id);
+
+        // Add to beginning of array
+        window.cachedActivity.unshift(newActivity);
+
+        // Update localStorage and sessionStorage
+        try {
+          localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
+          sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
+          console.log("Activity saved to storage successfully");
+        } catch (e) {
+          console.error("Failed to save activity to storage:", e);
+        }
+
+        // If we have server-generated ID, no need to refresh from server
+        if (data.activityId) {
+          console.log("Server provided activity ID, skipping refresh");
+
+          // Instead of reloading, load from our cache
+          setTimeout(() => {
+            updateActivityTableWithData(window.cachedActivity);
+          }, 500);
+        } else {
+          // Only refresh from server if we don't have a server-generated ID
+          console.log("No activity ID from server, scheduling server refresh");
+          setTimeout(() => {
+            loadTodaysActivity(true);
+          }, 3000);
+        }
+
+        // Reset player info
+        const playerInfoElement = document.getElementById("player-info");
+        if (playerInfoElement) {
+          playerInfoElement.innerHTML =
+            '<div class="text-center"><p>Scan a player\'s QR code or search to get started</p><i class="bi bi-person-circle" style="font-size: 5rem; color: #ccc;"></i></div>';
+        }
+        currentPlayerId = null;
+        currentPlayerData = null;
+        window.selectedTicket = null;
+      } else {
+        // Show error message
+        showAlert("danger", data.message || "Failed to log goals", "Error");
       }
-      
-      // Show loading indicator
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Skipping...';
-      
-      // Send skip request to server
-      fetch('/staff/skip-queue', {
-        method: 'POST',
+
+      // Reset button
+      button.disabled = false;
+      button.innerHTML = "Log Goals";
+    }
+
+    // Skip queue button handler is now handled separately
+    // Skip queue button handler is now handled by setupSkipQueueBtn function
+    // Removed duplicate event listener code    // Load today's activity - ROBUST VERSION WITH PERSISTENCE
+    function loadTodaysActivity(forceRefresh = false) {
+      console.log("Loading today's activity... forceRefresh:", forceRefresh);
+
+      // Track if we've displayed data at least once
+      let dataDisplayed = false;
+
+      // We'll preserve client-generated activities
+      let clientGeneratedActivities = [];
+
+      // Track the cached data we already have
+      let existingCacheData = null;
+
+      // Extract client-generated activities and existing cache before any operation
+      if (window.cachedActivity && window.cachedActivity.length > 0) {
+        clientGeneratedActivities = window.cachedActivity.filter(a => a.clientGenerated);
+        console.log("Preserved client-generated activities:", clientGeneratedActivities.length);
+        existingCacheData = [...window.cachedActivity];
+      }
+
+      // Try localStorage cache if no in-memory cache
+      if (!existingCacheData || existingCacheData.length === 0) {
+        try {
+          const localData = localStorage.getItem(ACTIVITY_STORAGE_KEY);
+          if (localData) {
+            const parsedData = JSON.parse(localData);
+            if (parsedData && parsedData.length > 0) {
+              console.log("Using localStorage as fallback:", parsedData.length, "items");
+              existingCacheData = parsedData;
+
+              // Find client-generated activities in localStorage data
+              clientGeneratedActivities = parsedData.filter(a => a.clientGenerated);
+            }
+          }
+        } catch (e) {
+          console.error("Error reading activity from localStorage:", e);
+        }
+      }
+
+      // If we have cache data and we're not forcing refresh, use it
+      if (!forceRefresh && existingCacheData && existingCacheData.length > 0) {
+        console.log("Using cached activity data:", existingCacheData.length, "items");
+
+        // Filter cached data to only show today's activities
+        const today = new Date();
+        const todayDateString = today.getFullYear() + '-' +
+          String(today.getMonth() + 1).padStart(2, '0') + '-' +
+          String(today.getDate()).padStart(2, '0');
+
+        const todaysActivities = existingCacheData.filter(activity => {
+          if (!activity.timestamp) return false;
+
+          // Parse the timestamp and extract date part
+          const activityDate = new Date(activity.timestamp);
+          const activityDateString = activityDate.getFullYear() + '-' +
+            String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(activityDate.getDate()).padStart(2, '0');
+
+          return activityDateString === todayDateString;
+        });
+
+        console.log("Filtered to today's activities:", todaysActivities.length, "items (from", existingCacheData.length, "total)");
+
+        window.cachedActivity = todaysActivities;
+        updateActivityTableWithData(todaysActivities);
+        dataDisplayed = true;
+
+        // Only proceed with server fetch if it's been more than 5 minutes since last load
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        if (window.lastActivityLoad && now - window.lastActivityLoad < fiveMinutes) {
+          console.log("Skipping server fetch - last load was less than 5 minutes ago");
+          return;
+        }
+
+        console.log("Cache is older than 5 minutes, will try to refresh from server");
+      }
+
+      // Fetch fresh data from server
+      const timestamp = Date.now();
+      const url = `/api/activity/today?t=${timestamp}&nocache=${Math.random()}`;
+
+      console.log("Fetching activity from server:", url);
+
+      fetch(url, {
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+        credentials: "same-origin",
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Update queue number
-          document.getElementById('current-queue-number').textContent = data.currentQueuePosition || 'No active tickets';
-          
-          // Show success message
-          alert(data.message);
-        } else {
-          // Show error message
-          alert(`Error: ${data.message}`);
-        }
-        
-        // Reset button
-        this.disabled = false;
-        this.innerHTML = '<i class="bi bi-skip-forward"></i> Skip Current Queue';
-      })
-      .catch(error => {
-        console.error('Error skipping queue:', error);
-        alert('Error skipping queue. Please try again.');
-        this.disabled = false;
-        this.innerHTML = '<i class="bi bi-skip-forward"></i> Skip Current Queue';
-      });
-    });
-    
-    // Load today's activity
-    function loadTodaysActivity() {
-      fetch('/api/activity/today')
-        .then(response => response.json())
-        .then(data => {
-          if (data.length > 0) {
-            updateActivityTableWithData(data);
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Fetched fresh activity from server:", data.length, "items");
+
+          // Process server data
+          const processedData = data.map((activity) => {
+            return {
+              ...activity,
+              goals: parseInt(activity.goals || 0, 10),
+              timestamp: activity.timestamp,
+              serverFetched: true,
+            };
+          });
+
+          // Create a map of server activity IDs for efficient lookup
+          const serverActivityMap = {};
+          processedData.forEach(activity => {
+            if (activity.id) {
+              serverActivityMap[activity.id] = activity;
+            }
+          });
+
+          // Filter out client-generated activities that now exist on the server
+          const uniqueClientActivities = clientGeneratedActivities.filter(
+            activity => !activity.id || !serverActivityMap[activity.id]
+          );
+
+          console.log("Client activities not found on server:", uniqueClientActivities.length);
+
+          // Combine all data sources
+          const combinedData = [...processedData, ...uniqueClientActivities];
+
+          // Remove exact duplicates using a Map (keeping the server version when duplicate)
+          const uniqueMap = new Map();
+
+          // Add server data first (priority)
+          processedData.forEach(activity => {
+            if (activity.id) {
+              uniqueMap.set(activity.id, activity);
+            }
+          });
+
+          // Then add client data if not already in map
+          uniqueClientActivities.forEach(activity => {
+            if (activity.id && !uniqueMap.has(activity.id)) {
+              uniqueMap.set(activity.id, activity);
+            }
+          });
+
+          // Convert back to array
+          const uniqueActivity = Array.from(uniqueMap.values());
+
+          // Sort by timestamp, most recent first
+          uniqueActivity.sort((a, b) => {
+            const dateA = typeof a.timestamp === 'string' ? new Date(a.timestamp) : a.timestamp;
+            const dateB = typeof b.timestamp === 'string' ? new Date(b.timestamp) : b.timestamp;
+            return dateB - dateA;
+          });
+
+          console.log(`Final deduplicated activity count: ${uniqueActivity.length} items`);
+
+          // Cache the data
+          try {
+            localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
+            sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
+            window.cachedActivity = uniqueActivity;
+            window.lastActivityLoad = Date.now();
+            console.log("Activity cached successfully");
+          } catch (e) {
+            console.error("Failed to cache activity:", e);
+          }
+
+          // Update the table if we haven't already displayed data
+          if (!dataDisplayed || forceRefresh) {
+            updateActivityTableWithData(uniqueActivity);
           }
         })
-        .catch(error => {
-          console.error('Error loading today\'s activity:', error);
+        .catch((error) => {
+          console.error("Error loading today's activity:", error);
+
+          // If we already displayed data, no need to show fallback
+          if (dataDisplayed) {
+            return;
+          }
+
+          // Try to fall back to any cached data
+          try {
+            if (existingCacheData && existingCacheData.length > 0) {
+              console.log("Using existing cache as fallback after fetch error");
+
+              // Filter cached data to only show today's activities
+              const today = new Date();
+              const todayDateString = today.getFullYear() + '-' +
+                String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                String(today.getDate()).padStart(2, '0');
+
+              const todaysActivities = existingCacheData.filter(activity => {
+                if (!activity.timestamp) return false;
+
+                // Parse the timestamp and extract date part
+                const activityDate = new Date(activity.timestamp);
+                const activityDateString = activityDate.getFullYear() + '-' +
+                  String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(activityDate.getDate()).padStart(2, '0');
+
+                return activityDateString === todayDateString;
+              });
+
+              console.log("Fallback filtered to today's activities:", todaysActivities.length, "items (from", existingCacheData.length, "total)");
+
+              updateActivityTableWithData(todaysActivities);
+              window.cachedActivity = todaysActivities;
+              return;
+            }
+
+            const fallbackData = sessionStorage.getItem(ACTIVITY_STORAGE_KEY) ||
+                                localStorage.getItem(ACTIVITY_STORAGE_KEY);
+            if (fallbackData) {
+              const parsedData = JSON.parse(fallbackData);
+              console.log("Using storage fallback cached activity:", parsedData.length, "items");
+
+              // Filter storage fallback data to only show today's activities
+              const today = new Date();
+              const todayDateString = today.getFullYear() + '-' +
+                String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                String(today.getDate()).padStart(2, '0');
+
+              const todaysActivities = parsedData.filter(activity => {
+                if (!activity.timestamp) return false;
+
+                // Parse the timestamp and extract date part
+                const activityDate = new Date(activity.timestamp);
+                const activityDateString = activityDate.getFullYear() + '-' +
+                  String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(activityDate.getDate()).padStart(2, '0');
+
+                return activityDateString === todayDateString;
+              });
+
+              console.log("Storage fallback filtered to today's activities:", todaysActivities.length, "items (from", parsedData.length, "total)");
+
+              updateActivityTableWithData(todaysActivities);
+              window.cachedActivity = todaysActivities;
+              return;
+            }
+          } catch (e) {
+            console.error("Failed to use fallback cache:", e);
+          }
+
+          // Show error message
+          console.log("No activity data available");
         });
     }
-    
+
     // Update queue position
     function updateQueuePosition() {
-      fetch('/api/queue/current')
-        .then(response => response.json())
-        .then(data => {
-          if (data.currentQueuePosition) {
-            document.getElementById('current-queue-number').textContent = data.currentQueuePosition;
-          } else {
-            document.getElementById('current-queue-number').textContent = 'No active tickets';
+      fetch("/api/queue/current", {
+        // Add cache-busting and credentials
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
+      })
+        .then((response) => {
+          // Validate response
+          if (!response.ok) {
+            throw new Error(`Queue API returned ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Queue position update:", data);
+          const queueElement = document.getElementById("current-queue-number");
+          if (queueElement) {
+            if (data && data.currentQueuePosition !== undefined) {
+              // Convert to number if needed and handle 0 correctly
+              const queueValue = data.currentQueuePosition;
+              queueElement.textContent = queueValue === 0 ? "No active tickets" : queueValue;
+            } else {
+              queueElement.textContent = "No active tickets";
+            }
           }
         })
-        .catch(error => {
-          console.error('Error updating queue position:', error);
+        .catch((error) => {
+          console.error("Error updating queue position:", error);
+          // Don't update the element on error
         });
     }
-    
+
+    // Update queue list module
+    function updateQueueList() {
+      fetch("/api/queue/list", {
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Queue list API returned ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Queue list update:", data);
+          const statusText = document.getElementById("queue-status-text");
+          const queueCountBadge = document.getElementById("queue-count-badge");
+          const queueContainer = document.getElementById("queue-items-container");
+
+          if (data.success && data.queue) {
+            const queueList = data.queue;
+            const count = queueList.length;
+
+            // Update count badge
+            if (queueCountBadge) {
+              queueCountBadge.textContent = count;
+            }
+
+            // Update status text
+            if (statusText) {
+              if (count === 0) {
+                statusText.textContent = "No players in queue";
+              } else {
+                statusText.textContent = `${count} player${count > 1 ? 's' : ''} in queue`;
+              }
+            }
+
+            // Update queue items container
+            if (queueContainer) {
+              queueContainer.innerHTML = '';
+
+              if (count === 0) {
+                queueContainer.innerHTML = `
+                  <div class="text-center text-muted py-3">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">No players currently in queue</p>
+                  </div>
+                `;
+              } else {
+                queueList.forEach((ticket, index) => {
+                  // Determine if this is a competition kick or not based on competition_type
+                  const isCompetitionKick = ticket.competition_type &&
+                    ticket.competition_type !== 'practice' &&
+                    ticket.competition_type !== 'no-competition' &&
+                    ticket.competition_type !== 'casual';
+
+                  const kickType = isCompetitionKick ? 'Competition' : 'No Competition';
+                  const ageGroup = ticket.age_group || 'Unknown';
+
+                  // Determine if this is the currently serving ticket
+                  const isCurrentlyServing = index === 0;
+                  const servingClass = isCurrentlyServing ? 'now-serving' : '';
+                  const statusBadge = isCurrentlyServing ?
+                    '<span class="badge bg-success ms-2">Now Serving</span>' : '';
+
+                  const queueItem = `
+                    <div class="queue-item ${servingClass}">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h6 class="mb-1">
+                            <strong>Ticket #${ticket.ticket_number}</strong>${statusBadge}
+                          </h6>
+                          <p class="mb-1 text-primary fw-bold">${ticket.player_name}</p>
+                          <small class="text-muted">
+                            <i class="bi bi-person-badge me-1"></i>Age: ${ageGroup}
+                            <span class="mx-2">|</span>
+                            <i class="bi bi-trophy me-1"></i>Type: ${kickType}
+                          </small>
+                        </div>
+                        <div class="text-end">
+                          <small class="text-muted">Position</small>
+                          <div class="badge bg-secondary">${index + 1}</div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+
+                  queueContainer.innerHTML += queueItem;
+                });
+              }
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Error updating queue list:", error);
+          const statusText = document.getElementById("queue-status-text");
+          if (statusText) {
+            statusText.textContent = "Error loading queue";
+          }
+        });
+    }
+
     // Update activity table with local data
     function updateActivityTable(activity) {
-      const table = document.getElementById('activity-table');
-      const noActivityRow = document.getElementById('no-activity-row');
-      
+      const table = document.getElementById("activity-table");
+      const noActivityRow = document.getElementById("no-activity-row");
+
       if (noActivityRow) {
         noActivityRow.remove();
       }
-      
+
       const newRow = table.insertRow(0);
-      
+
+      // Add data attribute to identify this row
+      if (activity.id) {
+        newRow.setAttribute('data-activity-id', activity.id);
+      }
+
       const timeCell = newRow.insertCell(0);
       const playerCell = newRow.insertCell(1);
       const goalsCell = newRow.insertCell(2);
-      
-      timeCell.textContent = activity.timestamp.toLocaleTimeString();
+      const locationCell = newRow.insertCell(3);
+      const staffCell = newRow.insertCell(4);
+
+      // Handle timestamp display consistently
+      let displayTime;
+      if (activity.timestamp instanceof Date) {
+        // Preloaded data - already correct
+        displayTime = activity.timestamp.toLocaleTimeString('en-US', {
+          hour12: true,
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      } else {
+        // String timestamp - likely UTC, adjust for Belize
+        const utcTime = new Date(activity.timestamp);
+        const belizeTime = new Date(utcTime.getTime() - (6 * 60 * 60 * 1000));
+        displayTime = belizeTime.toLocaleTimeString('en-US', {
+          hour12: true,
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      }
+
+      timeCell.textContent = displayTime;
+
       playerCell.textContent = activity.playerName;
       goalsCell.textContent = activity.goals;
-    }
-    
-    // Update activity table with data from API
+
+      // Add location
+      locationCell.textContent = activity.location || "Unknown";
+
+      staffCell.textContent = activity.staffName || "<%= user.name %>"; // Use current user's name if not provided
+
+      // No longer adding to cache here - that's handled in the goal submission handler
+    }    // Update activity table with data from API
     function updateActivityTableWithData(activities) {
-      const table = document.getElementById('activity-table');
-      const noActivityRow = document.getElementById('no-activity-row');
-      
+      const table = document.getElementById("activity-table");
+      const noActivityRow = document.getElementById("no-activity-row");
+
+      // Make a deep copy of activities to avoid modifying the original
+      let activitiesToDisplay = [];
+
+      // First deduplicate the array by ID
+      if (activities && activities.length) {
+        console.log("Updating activity table with", activities.length, "activities");
+
+        // Create a map to deduplicate by ID
+        const uniqueActivitiesMap = new Map();
+
+        // Add each activity to the map, with ID as key
+        activities.forEach(activity => {
+          if (activity.id) {
+            uniqueActivitiesMap.set(activity.id, activity);
+          } else {
+            // For activities without ID, generate a temporary one
+            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            activity.id = tempId;
+            uniqueActivitiesMap.set(tempId, activity);
+          }
+        });
+
+        // Convert map back to array
+        activitiesToDisplay = Array.from(uniqueActivitiesMap.values());
+
+        // Sort by timestamp, newest first
+        activitiesToDisplay.sort((a, b) => {
+          // Convert to Date objects if they're strings
+          const dateA = typeof a.timestamp === 'string' ? new Date(a.timestamp) : a.timestamp;
+          const dateB = typeof b.timestamp === 'string' ? new Date(b.timestamp) : b.timestamp;
+          return dateB - dateA;
+        });
+
+        console.log("Deduplicated activities:", activitiesToDisplay.length);
+      }
+
+      // Clear existing table data first to prevent duplicates
+      while (table.rows.length > 0) {
+        table.deleteRow(0);
+      }
+
       if (noActivityRow) {
         noActivityRow.remove();
       }
-      
-      activities.forEach(activity => {
+
+      // If there are no activities, show a "no activity" message
+      if (!activitiesToDisplay || activitiesToDisplay.length === 0) {
+        const newRow = table.insertRow(0);
+        const cell = newRow.insertCell(0);
+        cell.colSpan = 5;
+        cell.className = "text-center";
+        cell.textContent = "No activity recorded today";
+        newRow.id = "no-activity-row";
+        return;
+      }
+
+      // Add each activity to the table
+      activitiesToDisplay.forEach((activity) => {
+
         const newRow = table.insertRow(-1);
-        
+
+        // Add a data attribute to help with deduplication
+        if (activity.id) {
+          newRow.setAttribute('data-activity-id', activity.id);
+        }
+
+        // Add a class to highlight client-generated activities
+        if (activity.clientGenerated) {
+          newRow.className = "table-success";
+        }
+
         const timeCell = newRow.insertCell(0);
         const playerCell = newRow.insertCell(1);
         const goalsCell = newRow.insertCell(2);
-        
-        const timestamp = new Date(activity.timestamp);
-        timeCell.textContent = timestamp.toLocaleTimeString();
-        playerCell.textContent = activity.playerName;
-        goalsCell.textContent = activity.goals;
+        const locationCell = newRow.insertCell(3);
+        const staffCell = newRow.insertCell(4);
+
+        // Handle timestamp formatting - fix timezone conversion
+        try {
+          let timestamp = new Date(activity.timestamp);
+
+          // If the timestamp appears to be UTC (from API), adjust for Belize timezone
+          if (typeof activity.timestamp === 'string' && activity.timestamp.includes('Z')) {
+            // This is a UTC timestamp from the database
+            // Subtract 6 hours to get the actual Belize time
+            timestamp = new Date(timestamp.getTime() - (6 * 60 * 60 * 1000));
+          }
+
+          timeCell.textContent = timestamp.toLocaleTimeString('en-US', {
+            hour12: true,
+            hour: 'numeric',
+            minute: '2-digit'
+          });
+        } catch (e) {
+          console.error("Error formatting timestamp:", e);
+          timeCell.textContent = String(activity.timestamp);
+        }
+
+        playerCell.textContent = activity.playerName || activity.player_name || "Unknown Player";
+        goalsCell.textContent = activity.goals || 0;
+
+        // Add location
+        locationCell.textContent = activity.location || "Unknown";
+
+        staffCell.textContent =
+          activity.staffName || activity.staff_name || "<%= user.name %>" || "Unknown"; // Handle different possible field names
+      });
+    }
+
+    // No team-related functions needed
+
+    // Log Goals button handler - Simplified for individual play only
+    document.addEventListener("click", function (e) {
+      if (e.target && e.target.id === "log-goals-btn-individual") {
+        try {
+          // Individual ticket selected
+          if (!window.selectedTicket) {
+            showAlert(
+              "warning",
+              "You need to select a player's ticket before logging goals.",
+              "No Ticket Selected"
+            );
+            return;
+          }
+
+          // Show goal modal
+          const goalModalElement = document.getElementById("goalModal");
+          if (!goalModalElement) {
+            showAlert(
+              "danger",
+              "Goal modal not found. Please refresh the page and try again.",
+              "System Error"
+            );
+            return;
+          }
+          const goalModal = new bootstrap.Modal(goalModalElement);
+
+          // Set player and ticket info
+          const playerIdElement = document.getElementById("player-id");
+          const ticketIdElement = document.getElementById("ticket-id");
+          const playerNameElement = document.getElementById("player-name");
+
+          if (playerIdElement) playerIdElement.value = currentPlayerId;
+          if (ticketIdElement) ticketIdElement.value = window.selectedTicket.id;
+          if (playerNameElement) {
+            playerNameElement.value = window.currentPlayer
+              ? window.currentPlayer.name
+              : currentPlayerData
+              ? currentPlayerData.player.name
+              : "Unknown Player";
+          }
+
+          // Standard individual play limits
+          const kicksUsedInput = document.getElementById("kicks-used");
+          if (kicksUsedInput) {
+            kicksUsedInput.max = 5;
+            kicksUsedInput.value = 5;
+          }
+
+          // Reset goals
+          const goalsInput = document.getElementById("goals");
+          if (goalsInput) {
+            goalsInput.max = 5;
+            goalsInput.value = 0;
+          }
+
+          // Show modal
+          goalModal.show();
+        } catch (error) {
+          console.error("Error in Log Goals button handler:", error);
+          showAlert(
+            "danger",
+            "An error occurred while trying to log goals. Please try again.",
+            "System Error"
+          );
+        }
+      }
+    });
+
+    // Add event listener to skip queue button
+    document
+      .getElementById("skip-queue-btn")
+      .addEventListener("click", function () {
+        // Create a confirmation dialog using Bootstrap
+        const skipConfirm = document.createElement("div");
+        skipConfirm.className = "modal fade";
+        skipConfirm.id = "skipQueueConfirmModal";
+        skipConfirm.setAttribute("tabindex", "-1");
+        skipConfirm.innerHTML = `
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Skip Current Queue?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to skip the current queue position? This will move to the next player in the queue.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirm-skip-queue">Yes, Skip Queue</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(skipConfirm);
+
+        // Create and show the modal
+        const skipModal = new bootstrap.Modal(
+          document.getElementById("skipQueueConfirmModal")
+        );
+        skipModal.show();
+
+        // Add event listener to confirm button
+        document
+          .getElementById("confirm-skip-queue")
+          .addEventListener("click", () => {
+            skipModal.hide();
+
+            // Show loading indicator
+            this.disabled = true;
+            this.innerHTML =
+              '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Skipping...';
+
+            // Send skip request to server
+            fetch("/staff/skip-queue", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Update queue number
+                  const queueElement = document.getElementById(
+                    "current-queue-number"
+                  );
+                  if (queueElement) {
+                    queueElement.textContent =
+                      data.currentQueuePosition || "No active tickets";
+                  }
+
+                  // Show success message
+                  showAlert(
+                    "success",
+                    data.message || "Queue position skipped successfully",
+                    "Queue Updated"
+                  );
+                } else {
+                  // Show error message
+                  showAlert(
+                    "danger",
+                    data.message || "Failed to skip queue",
+                    "Error"
+                  );
+                }
+
+                // Reset button
+                this.disabled = false;
+                this.innerHTML =
+                  '<i class="bi bi-skip-forward"></i> Skip Current Queue';
+              })
+              .catch((error) => {
+                console.error("Error skipping queue:", error);
+                showAlert(
+                  "danger",
+                  "There was a problem connecting to the server. Please try again.",
+                  "Connection Error"
+                );
+
+                // Reset button
+                this.disabled = false;
+                this.innerHTML =
+                  '<i class="bi bi-skip-forward"></i> Skip Current Queue';
+              });
+          });
+
+        // Clean up the modal after it's hidden
+        document
+          .getElementById("skipQueueConfirmModal")
+          .addEventListener("hidden.bs.modal", function () {
+            document.body.removeChild(skipConfirm);
+          });
+      });
+
+    // Debug: Check if buttons exist on page load
+    console.log("🔍 Checking button existence on page load:");
+    console.log("Search button:", !!document.getElementById("search-button"));
+    console.log(
+      "Skip queue button:",
+      !!document.getElementById("skip-queue-btn")
+    );
+    console.log(
+      "Search results container:",
+      !!document.getElementById("search-results")
+    );
+
+    // --- Fix: Always enable Log Goals buttons when a ticket is selected ---
+    function enableLogGoalsButtons() {
+      const indBtn = document.getElementById("log-goals-btn-individual");
+      if (indBtn) indBtn.disabled = false;
+    }
+
+    // Call enableLogGoalsButtons() after any ticket is selected
+    document.addEventListener("click", function (e) {
+      if (e.target.classList.contains("ticket-item")) {
+        setTimeout(enableLogGoalsButtons, 50); // Wait for DOM update
+      }
+    });
+
+    // Reset consecutive kicks form when modal closes
+    const goalModal = document.getElementById("goalModal");
+    if (goalModal) {
+      goalModal.addEventListener("hidden.bs.modal", function () {
+        const trackConsecutiveCheckbox =
+          document.getElementById("track-consecutive");
+        const consecutiveContainer = document.getElementById(
+          "consecutive-container"
+        );
+        const consecutiveInput = document.getElementById("consecutive-kicks");
+        const consecutiveError = document.getElementById("consecutive-error");
+
+        if (trackConsecutiveCheckbox) {
+          trackConsecutiveCheckbox.checked = false;
+        }
+        if (consecutiveContainer) {
+          consecutiveContainer.style.display = "none";
+        }
+        if (consecutiveInput) {
+          consecutiveInput.value = "";
+        }
+        if (consecutiveError) {
+          consecutiveError.style.display = "none";
+        }
       });
     }
   });

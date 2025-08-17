@@ -1,209 +1,185 @@
-import express from 'express';
-import { pool } from '../../config/db';
-import QueueTicket from '../../models/QueueTicket';
-import QRCode from 'qrcode';
+import express from "express";
 
 const router = express.Router();
 
-// Get current queue position
-router.get('/queue/current', async (req, res) => {
-  try {
-    const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
-    res.json({ currentQueuePosition });
-  } catch (error) {
-    console.error('Error getting current queue position:', error);
-    res.status(500).json({ error: 'Failed to get current queue position' });
-  }
+console.log("=== API ROUTES MODULE LOADING ===");
+console.log("API routes loading...");
+
+// Test route to verify API is working
+router.get("/test", (req, res) => {
+  console.log("API test route hit!");
+  res.json({ message: "API is working", timestamp: new Date().toISOString() });
 });
 
-// Search players by name or ID
-router.get('/players/search', async (req, res) => {
-  try {
-    const name = req.query.name as string;
-    const id = req.query.id as string;
-    
-    let query = '';
-    let params = [];
-    
-    if (id) {
-      query = 'SELECT * FROM players WHERE id = $1';
-      params = [id];
-    } else if (name) {
-      query = `
-        SELECT * FROM players 
-        WHERE name ILIKE $1
-        ORDER BY name
-        LIMIT 10
-      `;
-      params = [`%${name}%`];
-    } else {
-      return res.json([]);
-    }
-    
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error searching players:', error);
-    res.status(500).json({ error: 'Failed to search players' });
-  }
-});
+// Simple activity route that returns today's activities only
+router.get("/activity/today", async (req, res) => {
+  console.log("Activity/today route hit!");
 
-// Get today's activity
-router.get('/activity/today', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    // Import pool here to avoid circular dependencies
+    const { pool } = require("../../config/db");
+
+    // Get today's date in local timezone
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const todayString = `${year}-${month}-${day}`;
+
+    console.log(`Getting activity for today: ${todayString}`);
+
+    // Get today's game stats with player names - simplified query
     const query = `
       SELECT 
-        gs.timestamp,
-        p.name as playerName,
-        gs.goals
+        gs.id,
+        gs.player_id,
+        p.name as "playerName",
+        gs.goals,
+        gs.staff_id,
+        s.name as "staffName",
+        gs.location,
+        gs.competition_type,
+        gs.requeued,
+        gs.timestamp
       FROM 
         game_stats gs
       JOIN 
         players p ON gs.player_id = p.id
+      JOIN 
+        staff s ON gs.staff_id = s.id
       WHERE 
-        gs.timestamp >= $1
+        DATE(gs.timestamp) = $1
       ORDER BY 
         gs.timestamp DESC
     `;
-    
-    const result = await pool.query(query, [today]);
+
+    const result = await pool.query(query, [todayString]);
+    console.log(`Found ${result.rows.length} activities for today`);
+
     res.json(result.rows);
   } catch (error) {
-    console.error('Error getting today\'s activity:', error);
-    res.status(500).json({ error: 'Failed to get today\'s activity' });
+    console.error("Error getting today's activity:", error);
+    res.status(500).json({ error: "Failed to get today's activity" });
   }
 });
 
-// Get today's transactions
-router.get('/transactions/today', async (req, res) => {
-  try {
-    // First check if transactions table exists
-    const checkTableQuery = `
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'transactions'
-      )
-    `;
-    
-    const checkResult = await pool.query(checkTableQuery);
-    
-    if (!checkResult.rows[0].exists) {
-      // Table doesn't exist, return empty array
-      return res.json([]);
-    }
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const query = `
-      SELECT 
-        t.created_at as timestamp,
-        p.name as playerName,
-        t.kicks,
-        t.amount,
-        qt.ticket_number as ticketNumber
-      FROM 
-        transactions t
-      JOIN 
-        players p ON t.player_id = p.id
-      LEFT JOIN 
-        queue_tickets qt ON t.player_id = qt.player_id AND DATE(t.created_at) = DATE(qt.created_at)
-      WHERE 
-        t.created_at >= $1
-      ORDER BY 
-        t.created_at DESC
-    `;
-    
-    const result = await pool.query(query, [today]);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error getting today\'s transactions:', error);
-    res.json([]); // Return empty array on error
-  }
-});
+// Public events endpoint for About Us page
+router.get("/public/events", async (req, res) => {
+  console.log("=== PUBLIC EVENTS API CALLED ===");
+  console.log("Request received at:", new Date().toISOString());
 
-// Get player's team
-router.get('/player/:id/team', async (req, res) => {
+  // First, let's try a simple response to make sure the route works
   try {
-    const playerId = req.params.id;
-    
-    const query = `
-      SELECT 
-        t.id,
-        t.name,
-        COUNT(tm2.id) as memberCount
-      FROM 
-        team_members tm
-      JOIN 
-        teams t ON tm.team_id = t.id
-      JOIN 
-        team_members tm2 ON t.id = tm2.team_id
-      WHERE 
-        tm.player_id = $1
-      GROUP BY 
-        t.id, t.name
-    `;
-    
-    const result = await pool.query(query, [playerId]);
-    
-    if (result.rows.length > 0) {
-      res.json({ 
-        team: {
-          id: result.rows[0].id,
-          name: result.rows[0].name
-        },
-        memberCount: result.rows[0].membercount
-      });
-    } else {
-      res.json({ team: null, memberCount: 0 });
-    }
-  } catch (error) {
-    console.error('Error getting player\'s team:', error);
-    res.status(500).json({ error: 'Failed to get player\'s team' });
-  }
-});
-
-// Generate QR code for player
-router.get('/qr/:playerId', async (req, res) => {
-  try {
-    const playerId = req.params.playerId;
-    
-    // Get player details
-    const playerQuery = 'SELECT * FROM players WHERE id = $1';
-    const playerResult = await pool.query(playerQuery, [playerId]);
-    
-    if (playerResult.rows.length === 0) {
-      return res.status(404).send('Player not found');
-    }
-    
-    const player = playerResult.rows[0];
-    
-    // Create QR code data
-    const qrData = JSON.stringify({
-      playerId: player.id,
-      name: player.name,
-      phone: player.phone
+    res.json({
+      success: true,
+      events: [],
+      debug: "Route is working but returning empty for now",
     });
-    
-    // Generate QR code
-    const qrCodeDataURL = await QRCode.toDataURL(qrData);
-    
-    // Convert data URL to buffer
-    const data = qrCodeDataURL.replace(/^data:image\/png;base64,/, '');
-    const buffer = Buffer.from(data, 'base64');
-    
-    // Set response headers
-    res.setHeader('Content-Type', 'image/png');
-    
-    // Send the buffer
-    res.send(buffer);
   } catch (error) {
-    console.error('QR code generation error:', error);
-    res.status(500).send('Failed to generate QR code');
+    console.error("Error in public events route:", error);
+    res.status(500).json({
+      success: false,
+      error: "Route error",
+      events: [],
+    });
+  }
+});
+
+// Events endpoint for logged-in users (supports player registrations)
+router.get("/events/upcoming", async (req, res) => {
+  console.log("Events/upcoming route hit!");
+
+  try {
+    // Import pool here to avoid circular dependencies
+    const { pool } = require("../../config/db");
+
+    // Get upcoming events (current and future events only)
+    const today = new Date().toISOString().split("T")[0];
+    const eventsQuery = `
+      SELECT * FROM event_locations 
+      WHERE end_date >= $1
+      ORDER BY start_date ASC
+    `;
+
+    const eventsResult = await pool.query(eventsQuery, [today]);
+    console.log(
+      `Found ${eventsResult.rows.length} upcoming events for logged-in user`
+    );
+
+    // For now, return basic structure - can be enhanced later for player-specific data
+    res.json({
+      success: true,
+      events: eventsResult.rows,
+      availableKicks: 0, // Default value
+      registrations: [], // Default empty registrations
+    });
+  } catch (error) {
+    console.error("Error fetching events for logged-in user:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch events",
+      events: [],
+      availableKicks: 0,
+      registrations: [],
+    });
+  }
+});
+
+// Event registration endpoint
+router.post("/events/register", async (req, res) => {
+  console.log("Events/register route hit!");
+
+  try {
+    // For now, return a basic response - implement full registration logic later
+    res.json({
+      success: true,
+      message: "Registration functionality not yet implemented",
+    });
+  } catch (error) {
+    console.error("Error registering for event:", error);
+    res.status(500).json({
+      success: false,
+      error: "Registration failed",
+    });
+  }
+});
+
+// Get player's event registrations
+router.get("/events/registrations", async (req, res) => {
+  console.log("Events/registrations route hit!");
+
+  try {
+    // For now, return empty registrations - implement full logic later
+    res.json({
+      success: true,
+      registrations: [],
+    });
+  } catch (error) {
+    console.error("Error fetching registrations:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch registrations",
+      registrations: [],
+    });
+  }
+});
+
+// Delete event registration
+router.delete("/events/registrations/:id", async (req, res) => {
+  console.log("Delete registration route hit!");
+
+  try {
+    // For now, return success - implement full logic later
+    res.json({
+      success: true,
+      message: "Registration deletion not yet implemented",
+    });
+  } catch (error) {
+    console.error("Error deleting registration:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete registration",
+    });
   }
 });
 

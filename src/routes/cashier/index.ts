@@ -1,24 +1,367 @@
-import express from 'express';
-import { isStaff } from '../../middleware/auth';
-import { 
-  getCashierInterface,
+import express from "express";
+import { pool } from "../../config/db";
+import { isCashier, isCashierAPI } from "../../middleware/auth";
+import QueueTicket from "../../models/QueueTicket";
+import {
   searchPlayer,
   processQRScan,
   processKicksPurchase,
   processReQueue,
-  processCreditTransfer
-} from '../../controllers/cashier/transactionController';
+  getQueueStatus,
+  getTodaysTransactions,
+  searchTeams,
+  processPurchaseKicksTeam,
+  processRequeueTeam,
+  getCashierInterface,
+} from "../../controllers/cashier/transactionController";
 
 const router = express.Router();
 
-// Cashier interface routes
-router.get('/', isStaff, getCashierInterface);
-
 // API routes
-router.get('/api/search', isStaff, searchPlayer);
-router.post('/api/scan', isStaff, processQRScan);
-router.post('/api/purchase', isStaff, processKicksPurchase);
-router.post('/api/requeue', isStaff, processReQueue);
-router.post('/api/transfer', isStaff, processCreditTransfer);
+router.get("/api/search", isCashierAPI, searchPlayer);
+router.get("/api/search-teams", isCashierAPI, searchTeams);
+router.post("/api/scan", isCashierAPI, processQRScan);
+router.post("/api/purchase-kicks", isCashierAPI, processKicksPurchase);
+router.post("/api/sell-kicks-team", isCashierAPI, processPurchaseKicksTeam);
+router.post("/api/requeue", isCashierAPI, processReQueue);
+router.post("/api/requeue-team", isCashierAPI, processRequeueTeam);
+router.get("/api/queue-status", isCashierAPI, getQueueStatus);
+router.get("/api/transactions/today", isCashierAPI, getTodaysTransactions);
+
+// Debug endpoint to check transactions
+router.get("/api/debug/transactions", isCashierAPI, async (req, res) => {
+  try {
+    const userId = parseInt((req.session as any).user.id); // Convert string to integer
+    const userRole = (req.session as any).user.role;
+
+    // Get today's date in Belize timezone (UTC-6) to match other queries
+    const centralTimeQuery = `SELECT (NOW() - interval '6 hours')::date as today`;
+    const centralTimeResult = await pool.query(centralTimeQuery);
+    const today = centralTimeResult.rows[0].today.toISOString().split("T")[0];
+
+    console.log(
+      "Debug endpoint - User ID:",
+      userId,
+      "Role:",
+      userRole,
+      "Type:",
+      typeof userId,
+      "Today:",
+      today,
+      "(Central timezone)"
+    );
+
+    // Get all today's transactions using Central timezone range converted to UTC
+    const allTransactionsQuery = `
+      SELECT t.id, t.player_id, t.staff_id, t.kicks, t.amount, t.created_at, 
+             p.name as player_name, s.name as staff_name, s.role as staff_role
+      FROM transactions t 
+      LEFT JOIN players p ON t.player_id = p.id
+      LEFT JOIN staff s ON t.staff_id = s.id
+      WHERE t.created_at >= timezone('UTC', ($1::date)::timestamp)
+        AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
+      ORDER BY t.created_at DESC
+    `;
+
+    const allTransactions = await pool.query(allTransactionsQuery, [today]);
+
+    // Get transactions for this user using Central timezone range converted to UTC
+    const userTransactionsQuery = `
+      SELECT t.id, t.player_id, t.staff_id, t.kicks, t.amount, t.created_at,
+             p.name as player_name, s.name as staff_name, s.role as staff_role
+      FROM transactions t 
+      LEFT JOIN players p ON t.player_id = p.id
+      LEFT JOIN staff s ON t.staff_id = s.id
+      WHERE t.created_at >= timezone('UTC', ($1::date)::timestamp)
+        AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
+        AND t.staff_id = $2
+      ORDER BY t.created_at DESC
+    `;
+
+    const userTransactions = await pool.query(userTransactionsQuery, [
+      today,
+      userId,
+    ]);
+
+    res.json({
+      userId,
+      userRole,
+      today,
+      allTransactionsCount: allTransactions.rows.length,
+      userTransactionsCount: userTransactions.rows.length,
+      allTransactions: allTransactions.rows,
+      userTransactions: userTransactions.rows,
+    });
+  } catch (error) {
+    console.error("Debug endpoint error:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Root route for cashier - allow access for staff
+router.get("/", (req, res) => {
+  res.redirect("/cashier/interface");
+});
+
+// Cashier interface - allow access for staff and cashier
+router.get("/interface", getCashierInterface);
+
+// Process kick sales
+// Requeue player (using existing kicks balance)
+router.post("/requeue", isCashier, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { playerId, kicks, officialEntry, teamPlay } = req.body;
+
+    // Validate input
+    if (!playerId || !kicks) {
+      return res.status(400).json({
+        success: false,
+        message: "Player ID and kicks are required",
+      });
+    }
+
+    const kicksInt = parseInt(kicks);
+    const playerIdInt = parseInt(playerId);
+
+    if (kicksInt < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Kicks must be at least 1",
+      });
+    }
+
+    // Check if player exists and has enough kicks (exclude deleted players)
+    const playerCheck = await client.query(
+      "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL",
+      [playerIdInt]
+    );
+
+    if (playerCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Player not found or account inactive",
+      });
+    }
+
+    const player = playerCheck.rows[0];
+
+    // Check kicks balance
+    if (player.kicks_balance < kicksInt) {
+      return res.status(400).json({
+        success: false,
+        message: `Player only has ${player.kicks_balance} kicks but trying to use ${kicksInt}.`,
+      });
+    }
+
+    // Deduct kicks from player's balance
+    await client.query(
+      "UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2",
+      [kicksInt, playerIdInt]
+    );
+
+    // Create queue ticket
+    const ticketNumber = await QueueTicket.addToQueue(
+      playerIdInt,
+      officialEntry === true,
+      teamPlay === true
+    );
+
+    // Record transaction with zero amount using proper Belize timezone (UTC-6)
+    await client.query(
+      "INSERT INTO transactions (player_id, kicks, amount, team_play, created_at) VALUES ($1, $2, $3, $4, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')",
+      [playerIdInt, kicksInt, 0, teamPlay === true]
+    );
+
+    // Get next ticket number
+    const nextTicket = await QueueTicket.getNextTicketNumber();
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      message: "Player requeued successfully",
+      ticketNumber: ticketNumber,
+      nextTicket: nextTicket,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error requeuing player:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to requeue player",
+    });
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/sell-kicks", isCashier, async (req, res) => {
+  // Debug mode - just return request details
+  if (req.body.debug) {
+    console.log("DEBUG REQUEST RECEIVED:", req.body);
+    console.log("SESSION USER:", (req.session as any).user);
+    return res.status(200).send("Debug info logged to server console");
+  }
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { playerId, kicks, amount, addToQueue, officialEntry, teamPlay } =
+      req.body;
+
+    // Validate input
+    if (!playerId || !kicks || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    if (kicks < 1 || amount < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid kicks or amount",
+      });
+    }
+
+    // Check if player exists (exclude deleted players)
+    const playerCheck = await client.query(
+      "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL",
+      [playerId]
+    );
+    if (playerCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Player not found or account inactive",
+      });
+    }
+
+    const player = playerCheck.rows[0];
+
+    // Create transaction record
+    const userId = parseInt((req.session as any).user.id); // Convert string to integer
+    console.log(
+      "sell-kicks route - Creating transaction with staff_id:",
+      userId,
+      "for player:",
+      playerId,
+      "Type:",
+      typeof userId
+    );
+
+    const transactionQuery = `
+      INSERT INTO transactions (player_id, kicks, amount, team_play, staff_id, created_at)
+      VALUES ($1, $2, $3, $4, $5, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')
+      RETURNING id
+    `;
+
+    const transactionResult = await client.query(transactionQuery, [
+      playerId,
+      kicks,
+      amount,
+      teamPlay || false,
+      userId,
+    ]);
+
+    // Update player's kicks balance
+    const updateBalanceQuery = `
+      UPDATE players 
+      SET kicks_balance = COALESCE(kicks_balance, 0) + $1,
+          updated_at = NOW()
+      WHERE id = $2
+    `;
+
+    await client.query(updateBalanceQuery, [kicks, playerId]);
+
+    let ticketNumber = null;
+    let nextTicket = null;
+
+    // Add to queue if requested
+    if (addToQueue) {
+      try {
+        ticketNumber = await QueueTicket.addToQueue(
+          playerId,
+          officialEntry,
+          teamPlay
+        );
+        // Get the next ticket number without incrementing
+        nextTicket = await QueueTicket.getNextTicketNumber();
+      } catch (queueError) {
+        console.error("Queue error:", queueError);
+        // Don't fail the entire transaction if queue fails
+      }
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      message: "Sale completed successfully",
+      ticketNumber: ticketNumber,
+      nextTicket: nextTicket,
+      transactionId: transactionResult.rows[0].id,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error processing sale - DETAILED ERROR:", error);
+    console.error("Request body:", JSON.stringify(req.body));
+    console.error("User session:", JSON.stringify((req.session as any).user));
+
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Failed to process sale: " +
+        (error instanceof Error ? error.message : "Unknown error"),
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Get player profile with picture
+router.get("/player/:id", isCashier, async (req, res) => {
+  try {
+    const playerId = req.params.id;
+
+    const query = `
+      SELECT 
+        p.*,
+        COALESCE(p.kicks_balance, 0) as kicks_balance
+      FROM players p
+      WHERE p.id = $1
+    `;
+
+    const result = await pool.query(query, [playerId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const player = result.rows[0];
+
+    // Add full photo URL if photo_path exists
+    if (player.photo_path) {
+      player.photoUrl = `/uploads/${player.photo_path}`;
+    }
+
+    res.json(player);
+  } catch (error) {
+    console.error("Error fetching player:", error);
+    res.status(500).json({ error: "Failed to fetch player" });
+  }
+});
 
 export default router;

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile Picture Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .image-test {
+        margin-bottom: 30px;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .test-result {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .success {
+        color: green;
+      }
+      .failure {
+        color: red;
+      }
+      img {
+        max-width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
+      h2 {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Profile Picture Test Page</h1>
+    <p>This page tests if the profile pictures are loading correctly.</p>
+
+    <h2>Direct Image Tests</h2>
+
+    <div class="image-test">
+      <h3>John Doe - Rick Sanchez</h3>
+      <img src="/uploads/1748851001102-rick sanchez.jpg" alt="John Doe" />
+      <div class="test-result" id="test1"></div>
+    </div>
+
+    <div class="image-test">
+      <h3>Joshua Smith - Rick Sanchez (with dash)</h3>
+      <img src="/uploads/1748853818679-rick-sanchez.jpg" alt="Joshua Smith" />
+      <div class="test-result" id="test2"></div>
+    </div>
+
+    <div class="image-test">
+      <h3>Billy Kid - Profile</h3>
+      <img src="/uploads/1748844098408-profile.jpeg" alt="Billy Kid" />
+      <div class="test-result" id="test3"></div>
+    </div>
+
+    <div class="image-test">
+      <h3>Tysha Daniels - Anime Profile</h3>
+      <img
+        src="/uploads/1748851531487-Black girl anime pfp.jpg"
+        alt="Tysha Daniels"
+      />
+      <div class="test-result" id="test4"></div>
+    </div>
+
+    <div class="image-test">
+      <h3>Lil Johnny - Anime Profile (with dash)</h3>
+      <img
+        src="/uploads/1748854109834-Black-girl-anime-pfp.jpg"
+        alt="Lil Johnny"
+      />
+      <div class="test-result" id="test5"></div>
+    </div>
+
+    <h2>Default Image</h2>
+    <div class="image-test">
+      <h3>Default Profile Picture</h3>
+      <img src="/images/default-profile.png" alt="Default Profile" />
+      <div class="test-result" id="test6"></div>
+    </div>
+
+    <h2>Avatar.js Test</h2>
+    <div class="image-test">
+      <h3>createAvatar Function Test</h3>
+      <div id="avatar-test"></div>
+      <div class="test-result" id="test7"></div>
+    </div>
+
+    <script src="/js/avatar.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Test direct images
+        const images = document.querySelectorAll(".image-test img");
+        images.forEach((img, index) => {
+          const resultElement = document.getElementById(`test${index + 1}`);
+
+          img.onload = function () {
+            resultElement.textContent = "✓ Image loaded successfully";
+            resultElement.className = "test-result success";
+            console.log(`Image ${index + 1} loaded: ${img.src}`);
+          };
+
+          img.onerror = function () {
+            resultElement.textContent = "✗ Failed to load image";
+            resultElement.className = "test-result failure";
+            console.error(`Image ${index + 1} failed to load: ${img.src}`);
+
+            // Try to fetch the image to get HTTP status
+            fetch(img.src)
+              .then((response) => {
+                if (!response.ok) {
+                  console.error(
+                    `HTTP error for ${img.src}: ${response.status}`
+                  );
+                  resultElement.textContent += ` (HTTP ${response.status})`;
+                }
+              })
+              .catch((error) => {
+                console.error(`Fetch error for ${img.src}:`, error);
+                resultElement.textContent += " (Network error)";
+              });
+          };
+        });
+
+        // Test avatar.js
+        if (typeof createAvatar === "function") {
+          const avatarTestElement = document.getElementById("avatar-test");
+          const resultElement = document.getElementById("test7");
+
+          try {
+            // Test with all player images
+            const testAvatars = [
+              {
+                name: "John Doe",
+                path: "uploads/1748851001102-rick sanchez.jpg",
+              },
+              {
+                name: "Joshua Smith",
+                path: "uploads/1748853818679-rick-sanchez.jpg",
+              },
+              { name: "Billy Kid", path: "uploads/1748844098408-profile.jpeg" },
+              {
+                name: "Tysha Daniels",
+                path: "uploads/1748851531487-Black girl anime pfp.jpg",
+              },
+              {
+                name: "Lil Johnny",
+                path: "uploads/1748854109834-Black-girl-anime-pfp.jpg",
+              },
+            ];
+
+            testAvatars.forEach((test) => {
+              const avatar = createAvatar(test.name, 50, test.path);
+              avatarTestElement.appendChild(avatar);
+              const label = document.createElement("div");
+              label.textContent = test.name;
+              label.style.fontSize = "12px";
+              label.style.marginBottom = "10px";
+              avatarTestElement.appendChild(label);
+            });
+
+            resultElement.textContent = "✓ Avatar function executed";
+            resultElement.className = "test-result success";
+          } catch (error) {
+            console.error("Error executing createAvatar:", error);
+            resultElement.textContent = `✗ Avatar function error: ${error.message}`;
+            resultElement.className = "test-result failure";
+          }
+        } else {
+          const resultElement = document.getElementById("test7");
+          resultElement.textContent = "✗ Avatar function not found";
+          resultElement.className = "test-result failure";
+        }
+      });
+    </script>
+  </body>
+</html>

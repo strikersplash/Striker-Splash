@@ -1,0 +1,226 @@
+<!-- Hero Section -->
+<div class="bg-primary text-white py-5">
+  <div class="container">
+    <!-- Admin Edit Button for Hero Section -->
+    <% if (locals.user && locals.user.role === 'admin') { %>
+    <div class="admin-controls mb-3">
+      <button
+        class="btn btn-outline-light btn-sm admin-edit-btn"
+        data-section="home_hero"
+      >
+        <i class="bi bi-pencil-square"></i> Edit Hero Section
+      </button>
+    </div>
+    <% } %>
+
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <h1
+          class="display-4 fw-bold"
+          data-editable="home_hero"
+          data-key="title"
+        >
+          <%= heroContent.title || 'Striker Splash' %>
+        </h1>
+        <p class="lead" data-editable="home_hero" data-key="subtitle">
+          <%= heroContent.subtitle || 'Test your football skills and compete for prizes!' %>
+        </p>
+        <p data-editable="home_hero" data-key="description">
+          <%= heroContent.description || 'Join our football challenge and see if you have what it takes to top the leaderboard.' %>
+        </p>
+        <a href="/leaderboard" class="btn btn-light btn-lg">View Leaderboard</a>
+        <a href="/auth/register" class="btn btn-outline-light btn-lg ms-2"
+          >Register Now</a
+        >
+      </div>
+      <div class="col-md-6">
+        <img
+          src="<%= heroContent.banner_image || '/images/hero-image.jpg' %>"
+          alt="Striker Splash"
+          class="img-fluid rounded"
+          data-editable="home_hero"
+          data-key="banner_image"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="container my-5">
+  <!-- Admin Edit Button for Features Section -->
+  <% if (locals.user && locals.user.role === 'admin') { %>
+  <div class="admin-controls mb-3">
+    <button
+      class="btn btn-outline-primary btn-sm admin-edit-btn"
+      data-section="home_features"
+    >
+      <i class="bi bi-pencil-square"></i> Edit Features Section
+    </button>
+  </div>
+  <% } %>
+
+  <div class="row text-center">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <i class="bi bi-trophy text-primary" style="font-size: 3rem"></i>
+          <h3
+            class="my-3"
+            data-editable="home_features"
+            data-key="compete_title"
+          >
+            <%= featuresContent.compete_title || 'Compete' %>
+          </h3>
+          <p data-editable="home_features" data-key="compete_description">
+            <%= featuresContent.compete_description || 'Challenge yourself
+            against other players and climb the leaderboard rankings.' %>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <i class="bi bi-graph-up text-primary" style="font-size: 3rem"></i>
+          <h3 class="my-3" data-editable="home_features" data-key="track_title">
+            <%= featuresContent.track_title || 'Track Progress' %>
+          </h3>
+          <p data-editable="home_features" data-key="track_description">
+            <%= featuresContent.track_description || 'Monitor your performance
+            and see your improvement over time.' %>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <i class="bi bi-gift text-primary" style="font-size: 3rem"></i>
+          <h3 class="my-3" data-editable="home_features" data-key="win_title">
+            <%= featuresContent.win_title || 'Win Prizes' %>
+          </h3>
+          <p data-editable="home_features" data-key="win_description">
+            <%= featuresContent.win_description || 'Top performers can win
+            exciting prizes and recognition.' %>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upcoming Events -->
+<div class="bg-light py-5">
+  <div class="container">
+    <h2 class="text-center mb-4">Upcoming Events</h2>
+    <div class="row">
+      <% if (events && events.length > 0) { %> <% events.forEach(event => { %>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><%= event.name %></h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              <%= new Date(event.start_date).toLocaleDateString() %> - <%= new
+              Date(event.end_date).toLocaleDateString() %>
+            </h6>
+            <p class="card-text">
+              <%= event.description || 'Join us for this exciting event!' %>
+            </p>
+            <p><strong>Location:</strong> <%= event.address %></p>
+            <p><strong>Pricing:</strong> $1 per kick (max 5 kicks per turn)</p>
+          </div>
+          <div class="card-footer">
+            <a href="/about#events" class="btn btn-primary">View Details</a>
+          </div>
+        </div>
+      </div>
+      <% }); %> <% } else { %>
+      <div class="col-12 text-center">
+        <p>No upcoming events at this time. Check back soon!</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- How It Works -->
+<div class="container my-5">
+  <!-- Admin Edit Button for How It Works Section -->
+  <% if (locals.user && locals.user.role === 'admin') { %>
+  <div class="admin-controls mb-3">
+    <button
+      class="btn btn-outline-primary btn-sm admin-edit-btn"
+      data-section="home_steps"
+    >
+      <i class="bi bi-pencil-square"></i> Edit How It Works Section
+    </button>
+  </div>
+  <% } %>
+
+  <h2 class="text-center mb-4">How It Works</h2>
+  <div class="row">
+    <div class="col-md-3 mb-4 text-center">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
+        <h3>1</h3>
+      </div>
+      <h4 data-editable="home_steps" data-key="step1_title">
+        <%= stepsContent.step1_title || 'Register' %>
+      </h4>
+      <p data-editable="home_steps" data-key="step1_description">
+        <%= stepsContent.step1_description || 'Create your player account' %>
+      </p>
+    </div>
+    <div class="col-md-3 mb-4 text-center">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
+        <h3>2</h3>
+      </div>
+      <h4 data-editable="home_steps" data-key="step2_title">
+        <%= stepsContent.step2_title || 'Purchase Kicks' %>
+      </h4>
+      <p data-editable="home_steps" data-key="step2_description">
+        <%= stepsContent.step2_description || 'Buy kicks for $1 each (min. 5
+        kicks)' %>
+      </p>
+    </div>
+    <div class="col-md-3 mb-4 text-center">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
+        <h3>3</h3>
+      </div>
+      <h4 data-editable="home_steps" data-key="step3_title">
+        <%= stepsContent.step3_title || 'Compete' %>
+      </h4>
+      <p data-editable="home_steps" data-key="step3_description">
+        <%= stepsContent.step3_description || 'Show your skills and score goals'
+        %>
+      </p>
+    </div>
+    <div class="col-md-3 mb-4 text-center">
+      <div
+        class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+        style="width: 100px; height: 100px"
+      >
+        <h3>4</h3>
+      </div>
+      <h4 data-editable="home_steps" data-key="step4_title">
+        <%= stepsContent.step4_title || 'Win' %>
+      </h4>
+      <p data-editable="home_steps" data-key="step4_description">
+        <%= stepsContent.step4_description || 'Top the leaderboard and win
+        prizes' %>
+      </p>
+    </div>
+  </div>
+  <div class="text-center mt-3">
+    <a href="/about" class="btn btn-outline-primary btn-lg">Learn More</a>
+  </div>
+</div>

@@ -1,0 +1,816 @@
+<!-- Event Registration Management Interface -->
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4">
+        <div
+          class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">Event Registration Management</h3>
+          <div>
+            <button type="button" class="btn btn-light" id="refresh-btn">
+              <i class="bi bi-arrow-clockwise fs-6"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill fs-6"></i> This interface allows
+            you to manage event registrations and assign queue tickets to
+            registered players.
+          </div>
+
+          <!-- Events List -->
+          <div id="events-list">
+            <h4 class="mb-3">Upcoming Events with Registrations</h4>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Location</th>
+                    <th>Date</th>
+                    <th>Registration Status</th>
+                    <th>Total Registrations</th>
+                    <th>Pending Tickets</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="events-table">
+                  <!-- Will be populated by JavaScript -->
+                  <tr>
+                    <td colspan="7" class="text-center">Loading events...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Registrations for Selected Event -->
+          <div id="event-registrations" class="mt-5 d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4 id="selected-event-name">Registrations</h4>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="back-to-events"
+              >
+                <i class="bi bi-arrow-left fs-6"></i> Back to Events
+              </button>
+            </div>
+
+            <div class="alert alert-warning mb-3" id="assign-instructions">
+              <i class="bi bi-exclamation-triangle-fill fs-6"></i>
+              Select players and click "Assign Queue Tickets" to assign tickets
+              in the order they registered.
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="select-all-registrations"
+                />
+                <label class="form-check-label" for="select-all-registrations">
+                  Select All
+                </label>
+              </div>
+              <button
+                type="button"
+                class="btn btn-success mt-2 d-none"
+                id="assign-tickets-btn"
+              >
+                <i class="bi bi-ticket-perforated fs-6"></i> Assign Queue
+                Tickets
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th class="text-center" style="width: 50px">Select</th>
+                    <th>Registration #</th>
+                    <th>Player Name</th>
+                    <th>Phone</th>
+                    <th>Kicks</th>
+                    <th>Registration Date</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody id="registrations-table">
+                  <!-- Will be populated by JavaScript -->
+                  <tr>
+                    <td colspan="7" class="text-center">
+                      Select an event to view registrations
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div
+    id="statusToast"
+    class="toast"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="toast-header bg-info text-white">
+      <strong class="me-auto">System Notification</strong>
+      <small id="toast-time">just now</small>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="toast"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="toast-body" id="toast-message">Data updated successfully.</div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div
+  class="modal fade"
+  id="successModal"
+  tabindex="-1"
+  aria-labelledby="successModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="successModalLabel">Tickets Assigned</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-3">
+          <i
+            class="bi bi-check-circle"
+            style="font-size: 3rem; color: #28a745"
+          ></i>
+        </div>
+        <p id="success-message">
+          Queue tickets have been successfully assigned.
+        </p>
+        <div id="assigned-tickets-list" class="mt-3">
+          <!-- Will be populated by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS for improved aesthetics -->
+<style>
+  /* Compact table styling */
+  .table td {
+    vertical-align: middle;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Compact action buttons container */
+  .d-flex.gap-1 {
+    gap: 0.25rem !important;
+  }
+
+  /* Badge improvements */
+  .badge {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Ensure buttons don't wrap awkwardly */
+  .table td:last-child {
+    min-width: 150px;
+  }
+
+  /* Better responsive handling */
+  @media (max-width: 768px) {
+    .table-responsive {
+      font-size: 0.875rem;
+    }
+
+    .btn-sm {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.7rem;
+    }
+  }
+</style>
+
+<script>
+  // Global variables to store DOM elements
+  let eventsTable;
+  let eventsListDiv;
+  let eventRegistrationsDiv;
+  let registrationsTable;
+  let selectedEventName;
+  let backToEventsBtn;
+  let refreshBtn;
+  let selectAllCheckbox;
+  let assignTicketsBtn;
+  let successMessage;
+  let assignedTicketsList;
+  let successModal;
+  let currentEventId = null;
+
+  // Function to view registrations - make it available globally
+  window.viewRegistrations = function (eventId, eventName) {
+    console.log("View Registrations clicked for event:", eventId, eventName);
+
+    // Get DOM elements if not already available
+    if (!eventsListDiv) eventsListDiv = document.getElementById("events-list");
+    if (!eventRegistrationsDiv)
+      eventRegistrationsDiv = document.getElementById("event-registrations");
+    if (!registrationsTable)
+      registrationsTable = document.getElementById("registrations-table");
+    if (!selectedEventName)
+      selectedEventName = document.getElementById("selected-event-name");
+    if (!assignTicketsBtn)
+      assignTicketsBtn = document.getElementById("assign-tickets-btn");
+
+    // Check DOM elements
+    if (!eventRegistrationsDiv || !eventsListDiv || !registrationsTable) {
+      console.error("DOM elements not found!");
+      return;
+    }
+
+    // Set current event
+    currentEventId = eventId;
+    selectedEventName.textContent = `Registrations for: ${eventName}`;
+
+    // Show loading message
+    registrationsTable.innerHTML =
+      '<tr><td colspan="7" class="text-center">Loading registrations...</td></tr>';
+
+    // Show registrations section, hide events list - DO THIS EARLY
+    console.log("Showing registrations section, hiding events list");
+
+    eventsListDiv.classList.add("d-none");
+    eventRegistrationsDiv.classList.remove("d-none");
+
+    // Make sure we don't have a null eventId before making the request
+    if (!eventId) {
+      console.error("No event ID provided");
+      registrationsTable.innerHTML =
+        '<tr><td colspan="7" class="text-center text-danger">Error: No event ID provided</td></tr>';
+      return;
+    }
+
+    // Fetch registrations data
+    fetch(`/staff/registered-players/${eventId}`)
+      .then((response) => {
+        console.log("Response status:", response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Received data:", data);
+
+        if (data.success && data.registrations) {
+          if (data.registrations.length === 0) {
+            registrationsTable.innerHTML =
+              '<tr><td colspan="7" class="text-center">No pending registrations found for this event</td></tr>';
+            assignTicketsBtn.classList.add("d-none");
+            return;
+          }
+
+          registrationsTable.innerHTML = "";
+          data.registrations.forEach((reg) => {
+            const row = document.createElement("tr");
+
+            // Format date
+            const regDate = new Date(reg.registration_date);
+            const formattedDate = regDate.toLocaleString();
+
+            row.innerHTML = `
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input registration-checkbox" value="${
+                reg.registration_id
+              }">
+            </td>
+            <td>#${reg.registration_number}</td>
+            <td>
+              ${reg.player_name}
+              ${
+                reg.age_group
+                  ? `<small class="text-muted d-block">${reg.age_group}</small>`
+                  : ""
+              }
+            </td>
+            <td>${reg.phone}</td>
+            <td>${reg.kicks_requested}</td>
+            <td>${formattedDate}</td>
+            <td>
+              <span class="badge ${
+                reg.is_competition ? "bg-warning" : "bg-info"
+              }">
+                ${reg.is_competition ? "Competition" : "Practice"}
+              </span>
+            </td>
+          `;
+
+            registrationsTable.appendChild(row);
+          });
+
+          // Show the assign tickets button if there are registrations
+          assignTicketsBtn.classList.remove("d-none");
+
+          // Add event listeners to checkboxes
+          document
+            .querySelectorAll(".registration-checkbox")
+            .forEach((checkbox) => {
+              checkbox.addEventListener("change", updateAssignButtonState);
+            });
+        } else {
+          registrationsTable.innerHTML =
+            '<tr><td colspan="7" class="text-center text-danger">Failed to load registrations</td></tr>';
+          console.error("Error in data:", data);
+        }
+
+        // Show registrations section, hide events list
+        console.log("Showing registrations section, hiding events list");
+        eventsListDiv.classList.add("d-none");
+        eventRegistrationsDiv.classList.remove("d-none");
+      })
+      .catch((error) => {
+        console.error("Error loading registrations:", error);
+        registrationsTable.innerHTML =
+          '<tr><td colspan="7" class="text-center text-danger">Error loading registrations</td></tr>';
+      });
+  };
+
+  // Load all events with their registration count
+  function loadEvents() {
+    console.log("Loading events...");
+
+    // Make sure eventsTable is defined
+    if (!eventsTable) {
+      eventsTable = document.getElementById("events-table");
+    }
+
+    if (!eventsTable) {
+      console.error("Events table element not found!");
+      return;
+    }
+
+    eventsTable.innerHTML =
+      '<tr><td colspan="7" class="text-center">Loading events...</td></tr>';
+
+    // Show loading toast
+    showToast("Refreshing events data...", "info");
+
+    console.log("Making fetch request to /api/staff/events");
+    fetch("/api/staff/events")
+      .then((response) => {
+        console.log("Fetch response received:", response.status);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json().catch((err) => {
+          throw new Error(`Failed to parse JSON: ${err.message}`);
+        });
+      })
+      .then((data) => {
+        console.log("Events data received:", data);
+
+        if (data.success && data.events) {
+          if (data.events.length === 0) {
+            eventsTable.innerHTML =
+              '<tr><td colspan="7" class="text-center">No upcoming events found</td></tr>';
+            return;
+          }
+
+          // Clear the table
+          eventsTable.innerHTML = "";
+
+          // Show all events, including those with zero registrations
+          data.events.forEach((event) => {
+            const row = document.createElement("tr");
+
+            // Format date
+            const startDate = new Date(event.start_date);
+            const endDate = new Date(event.end_date);
+            const formattedDate = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+
+            // Create badge for pending tickets (consistent styling)
+            const pendingBadge =
+              event.pending_ticket_assignments &&
+              event.pending_ticket_assignments > 0
+                ? `<span class="badge bg-warning" style="font-size: 0.875rem;">${event.pending_ticket_assignments} pending</span>`
+                : `<span class="badge bg-success" style="font-size: 0.875rem;">None pending</span>`;
+
+            const registrations = parseInt(event.total_registrations) || 0;
+
+            // Debug logging
+            console.log(
+              `Event: ${event.name}, total_registrations: ${
+                event.total_registrations
+              } (type: ${typeof event.total_registrations}), parsed: ${registrations}`
+            );
+
+            // Create registration status badge (smaller icons and compact design)
+            const statusBadge = event.registration_closed
+              ? `<span class="badge bg-danger d-flex align-items-center" style="font-size: 0.875rem;">
+                  <i class="bi bi-x-circle me-1" style="font-size: 0.75rem;"></i>Closed
+                 </span>`
+              : `<span class="badge bg-success d-flex align-items-center" style="font-size: 0.875rem;">
+                  <i class="bi bi-check-circle me-1" style="font-size: 0.75rem;"></i>Open
+                 </span>`;
+
+            // Create status controls (more compact buttons)
+            const statusControls = event.registration_closed
+              ? `<button type="button" class="btn btn-sm btn-success open-registration-btn"
+                  data-event-id="${event.id}"
+                  data-event-name="${event.name.replace(/"/g, "&quot;")}"
+                  title="Open registration"
+                  style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                  <i class="bi bi-unlock" style="font-size: 0.75rem;"></i> Open
+                </button>`
+              : `<button type="button" class="btn btn-sm btn-warning close-registration-btn"
+                  data-event-id="${event.id}"
+                  data-event-name="${event.name.replace(/"/g, "&quot;")}"
+                  title="Close registration"
+                  style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                  <i class="bi bi-lock" style="font-size: 0.75rem;"></i> Close
+                </button>`;
+
+            row.innerHTML = `
+            <td>${event.name}</td>
+            <td>${event.address}</td>
+            <td>${formattedDate}</td>
+            <td>${statusBadge}</td>
+            <td>${registrations}</td>
+            <td>${pendingBadge}</td>
+            <td>
+              <div class="d-flex flex-wrap gap-1 align-items-center">
+                ${statusControls}
+                ${
+                  registrations > 0
+                    ? `<button type="button" class="btn btn-sm btn-primary view-registrations-btn"
+                        data-event-id="${event.id}"
+                        data-event-name="${event.name.replace(/"/g, "&quot;")}"
+                        style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="bi bi-eye" style="font-size: 0.75rem;"></i> View
+                      </button>`
+                    : `<button type="button" class="btn btn-sm btn-secondary" disabled
+                        style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="bi bi-x-circle" style="font-size: 0.75rem;"></i> No Registrations
+                      </button>`
+                }
+              </div>
+            </td>
+          `;
+
+            eventsTable.appendChild(row);
+          });
+
+          // Add event listeners to all buttons
+          document
+            .querySelectorAll(".view-registrations-btn")
+            .forEach((button) => {
+              button.addEventListener("click", function () {
+                const eventId = this.getAttribute("data-event-id");
+                const eventName = this.getAttribute("data-event-name");
+                window.viewRegistrations(eventId, eventName);
+              });
+            });
+
+          // Add event listeners for close registration buttons
+          document
+            .querySelectorAll(".close-registration-btn")
+            .forEach((button) => {
+              button.addEventListener("click", function () {
+                const eventId = this.getAttribute("data-event-id");
+                const eventName = this.getAttribute("data-event-name");
+                closeEventRegistration(eventId, eventName);
+              });
+            });
+
+          // Add event listeners for open registration buttons
+          document
+            .querySelectorAll(".open-registration-btn")
+            .forEach((button) => {
+              button.addEventListener("click", function () {
+                const eventId = this.getAttribute("data-event-id");
+                const eventName = this.getAttribute("data-event-name");
+                openEventRegistration(eventId, eventName);
+              });
+            });
+
+          console.log("Successfully loaded " + data.events.length + " events!");
+          // Show success toast with pending tickets count
+          const totalPending = data.events.reduce(
+            (sum, event) =>
+              sum + parseInt(event.pending_ticket_assignments || 0),
+            0
+          );
+          showToast(
+            `${data.events.length} events loaded. ${totalPending} pending ticket assignments found.`,
+            "success"
+          );
+        } else {
+          eventsTable.innerHTML =
+            '<tr><td colspan="7" class="text-center text-danger">Failed to load events</td></tr>';
+          console.error("Error in data:", data);
+          showToast("Failed to load events", "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading events:", error);
+        eventsTable.innerHTML =
+          '<tr><td colspan="7" class="text-center text-danger">Error loading events</td></tr>';
+        showToast(
+          `Error loading events: ${error.message || "Unknown error"}`,
+          "error"
+        );
+      });
+  }
+
+  // Update assign button state based on checkbox selection
+  function updateAssignButtonState() {
+    const checkedBoxes = document.querySelectorAll(
+      ".registration-checkbox:checked"
+    );
+    if (checkedBoxes.length > 0) {
+      assignTicketsBtn.classList.remove("d-none");
+      assignTicketsBtn.textContent = `Assign Queue Tickets (${checkedBoxes.length})`;
+    } else {
+      assignTicketsBtn.classList.add("d-none");
+    }
+  }
+
+  // Assign tickets to selected registrations
+  function assignTickets() {
+    const checkedBoxes = document.querySelectorAll(
+      ".registration-checkbox:checked"
+    );
+
+    if (checkedBoxes.length === 0) {
+      return; // No registrations selected
+    }
+
+    const registrationIds = Array.from(checkedBoxes).map(
+      (checkbox) => checkbox.value
+    );
+
+    // Show loading state
+    assignTicketsBtn.disabled = true;
+    assignTicketsBtn.innerHTML =
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Assigning tickets...';
+
+    fetch(`/staff/assign-tickets/${currentEventId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registrationIds }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Show success message
+          successMessage.textContent = `${data.assignedTickets.length} queue tickets have been successfully assigned.`;
+
+          // Display assigned tickets
+          if (data.assignedTickets.length > 0) {
+            let ticketsList = '<ul class="list-group">';
+            data.assignedTickets.forEach((ticket) => {
+              ticketsList += `
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                ${ticket.playerName}
+                <span class="badge bg-primary rounded-pill">Ticket #${ticket.ticketNumber}</span>
+              </li>
+            `;
+            });
+            ticketsList += "</ul>";
+            assignedTicketsList.innerHTML = ticketsList;
+          } else {
+            assignedTicketsList.innerHTML = "";
+          }
+
+          successModal.show();
+
+          // Show toast notification
+          showToast(
+            `${data.assignedTickets.length} tickets successfully assigned!`,
+            "success"
+          );
+
+          // Reload both the events list and current registrations to update counts
+          loadEvents();
+
+          // Delay the registration reload so events list can finish updating first
+          setTimeout(() => {
+            viewRegistrations(
+              currentEventId,
+              selectedEventName.textContent.replace("Registrations for: ", "")
+            );
+          }, 500);
+        } else {
+          alert(data.message || "Failed to assign tickets. Please try again.");
+        }
+
+        // Reset button state
+        assignTicketsBtn.disabled = false;
+        assignTicketsBtn.innerHTML =
+          '<i class="bi bi-ticket-perforated fs-6"></i> Assign Queue Tickets';
+      })
+      .catch((error) => {
+        console.error("Error assigning tickets:", error);
+        alert("An error occurred while assigning tickets. Please try again.");
+
+        // Reset button state
+        assignTicketsBtn.disabled = false;
+        assignTicketsBtn.innerHTML =
+          '<i class="bi bi-ticket-perforated fs-6"></i> Assign Queue Tickets';
+      });
+  }
+
+  // Function to close event registration
+  function closeEventRegistration(eventId, eventName) {
+    if (
+      !confirm(
+        `Are you sure you want to close registration for "${eventName}"? Players will no longer be able to register for this event.`
+      )
+    ) {
+      return;
+    }
+
+    fetch(`/api/staff/events/${eventId}/close-registration`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          showToast(`Registration closed for "${eventName}"`, "success");
+          loadEvents(); // Refresh the events list
+        } else {
+          showToast(`Failed to close registration: ${data.error}`, "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error closing registration:", error);
+        showToast(`Error closing registration: ${error.message}`, "error");
+      });
+  }
+
+  // Function to open event registration
+  function openEventRegistration(eventId, eventName) {
+    if (
+      !confirm(
+        `Are you sure you want to reopen registration for "${eventName}"? Players will be able to register again.`
+      )
+    ) {
+      return;
+    }
+
+    fetch(`/api/staff/events/${eventId}/open-registration`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          showToast(`Registration reopened for "${eventName}"`, "success");
+          loadEvents(); // Refresh the events list
+        } else {
+          showToast(`Failed to reopen registration: ${data.error}`, "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error opening registration:", error);
+        showToast(`Error opening registration: ${error.message}`, "error");
+      });
+  }
+
+  // Helper function to show toast messages
+  function showToast(message, type = "info") {
+    const toastEl = document.getElementById("statusToast");
+    const toastMsg = document.getElementById("toast-message");
+    const toastTime = document.getElementById("toast-time");
+
+    if (!toastEl || !toastMsg) return;
+
+    // Set color based on type
+    const toastHeader = toastEl.querySelector(".toast-header");
+    if (toastHeader) {
+      toastHeader.className = "toast-header";
+      if (type === "success")
+        toastHeader.classList.add("bg-success", "text-white");
+      else if (type === "error")
+        toastHeader.classList.add("bg-danger", "text-white");
+      else toastHeader.classList.add("bg-info", "text-white");
+    }
+
+    // Set message and time
+    toastMsg.textContent = message;
+    toastTime.textContent = new Date().toLocaleTimeString();
+
+    // Show toast
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+  }
+
+  // Initialize on DOM content loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("Document ready, initializing event registration management");
+
+    // Get DOM elements
+    eventsTable = document.getElementById("events-table");
+    eventsListDiv = document.getElementById("events-list");
+    eventRegistrationsDiv = document.getElementById("event-registrations");
+    registrationsTable = document.getElementById("registrations-table");
+    selectedEventName = document.getElementById("selected-event-name");
+    backToEventsBtn = document.getElementById("back-to-events");
+    refreshBtn = document.getElementById("refresh-btn");
+    selectAllCheckbox = document.getElementById("select-all-registrations");
+    assignTicketsBtn = document.getElementById("assign-tickets-btn");
+    successMessage = document.getElementById("success-message");
+    assignedTicketsList = document.getElementById("assigned-tickets-list");
+
+    // Initialize Bootstrap modal safely
+    const successModalElement = document.getElementById("successModal");
+    if (
+      successModalElement &&
+      typeof bootstrap !== "undefined" &&
+      bootstrap.Modal
+    ) {
+      try {
+        successModal = new bootstrap.Modal(successModalElement);
+      } catch (e) {
+        console.error("Error initializing modal:", e);
+      }
+    } else {
+      console.error(
+        "Bootstrap Modal could not be initialized - element or bootstrap not found"
+      );
+    }
+
+    // Log element references to ensure they're found
+    console.log("DOM Elements:", {
+      eventsTable: !!eventsTable,
+      eventsListDiv: !!eventsListDiv,
+      eventRegistrationsDiv: !!eventRegistrationsDiv,
+      registrationsTable: !!registrationsTable,
+      selectedEventName: !!selectedEventName,
+      backToEventsBtn: !!backToEventsBtn,
+      refreshBtn: !!refreshBtn,
+      selectAllCheckbox: !!selectAllCheckbox,
+      assignTicketsBtn: !!assignTicketsBtn,
+    });
+
+    // Event listeners
+    backToEventsBtn.addEventListener("click", function () {
+      console.log("Back to events clicked");
+      eventsListDiv.classList.remove("d-none");
+      eventRegistrationsDiv.classList.add("d-none");
+      currentEventId = null;
+
+      // Reload the events list to refresh the counts
+      loadEvents();
+    });
+
+    refreshBtn.addEventListener("click", function () {
+      console.log("Refresh clicked");
+      loadEvents();
+    });
+
+    selectAllCheckbox.addEventListener("change", function () {
+      document
+        .querySelectorAll(".registration-checkbox")
+        .forEach((checkbox) => {
+          checkbox.checked = this.checked;
+        });
+      updateAssignButtonState();
+    });
+
+    assignTicketsBtn.addEventListener("click", assignTickets);
+
+    // Initial load
+    loadEvents();
+  });
+</script>

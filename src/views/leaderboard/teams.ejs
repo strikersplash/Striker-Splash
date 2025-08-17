@@ -10,12 +10,16 @@
           <div class="row mb-4">
             <div class="col-12">
               <div class="btn-group w-100" role="group">
-                <a href="/leaderboard" class="btn btn-outline-primary">Player Leaderboard</a>
-                <a href="/leaderboard?view=teams" class="btn btn-primary">Team Leaderboard</a>
+                <a href="/leaderboard" class="btn btn-outline-primary"
+                  >Player Leaderboard</a
+                >
+                <a href="/leaderboard?view=teams" class="btn btn-primary"
+                  >Team Leaderboard</a
+                >
               </div>
             </div>
           </div>
-          
+
           <!-- Leaderboard Table -->
           <div class="table-responsive">
             <table class="table table-hover">
@@ -33,34 +37,44 @@
                 </tr>
               </thead>
               <tbody id="leaderboard-data">
-                <% if (teams && teams.length > 0) { %>
-                  <% teams.forEach((team, index) => { %>
-                    <tr>
-                      <td><%= index + 1 %></td>
-                      <td><a href="/teams/dashboard/<%= team.id %>"><%= team.name %></a></td>
-                      <td><%= team.member_count %>/5</td>
-                      <td><small><%= team.districts %></small></td>
-                      <td><%= team.total_goals || 0 %></td>
-                      <td><%= team.total_attempts || 0 %></td>
-                      <td><%= team.total_attempts ? ((team.total_goals / team.total_attempts) * 100).toFixed(1) : 0 %>%</td>
-                      <td><small><%= team.referees || 'Unknown' %></small></td>
-                      <td>
-                        <% if (team.percentile <= 10) { %>
-                          <span class="badge bg-danger">Top 10%</span>
-                        <% } else if (team.percentile <= 25) { %>
-                          <span class="badge bg-warning">Top 25%</span>
-                        <% } else if (team.percentile <= 50) { %>
-                          <span class="badge bg-info">Top 50%</span>
-                        <% } else { %>
-                          <span class="badge bg-secondary"><%= team.percentile %>%</span>
-                        <% } %>
-                      </td>
-                    </tr>
-                  <% }); %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="9" class="text-center">No team data available</td>
-                  </tr>
+                <% if (teams && teams.length > 0) { %> <% teams.forEach((team,
+                index) => { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td>
+                    <a href="/teams/dashboard/<%= team.slug %>"
+                      ><%= team.name %></a
+                    >
+                  </td>
+                  <td><%= team.member_count %>/5</td>
+                  <td><small><%= team.districts %></small></td>
+                  <td><%= team.total_goals || 0 %></td>
+                  <td><%= team.total_attempts || 0 %></td>
+                  <td>
+                    <%= team.total_attempts ? ((team.total_goals /
+                    team.total_attempts) * 100).toFixed(1) : 0 %>%
+                  </td>
+                  <td><small><%= team.referees || 'Unknown' %></small></td>
+                  <td>
+                    <% if (team.percentile <= 10) { %>
+                    <span class="badge bg-danger">Top 10%</span>
+                    <% } else if (team.percentile <= 25) { %>
+                    <span class="badge bg-warning">Top 25%</span>
+                    <% } else if (team.percentile <= 50) { %>
+                    <span class="badge bg-info">Top 50%</span>
+                    <% } else { %>
+                    <span class="badge bg-secondary"
+                      ><%= team.percentile %>%</span
+                    >
+                    <% } %>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="9" class="text-center">
+                    No team data available
+                  </td>
+                </tr>
                 <% } %>
               </tbody>
             </table>

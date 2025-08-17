@@ -3,81 +3,102 @@
     <div class="col-md-10 offset-md-1">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Player Name Change</h3>
+          <h3 class="mb-0">Edit User Profile</h3>
         </div>
         <div class="card-body">
           <div class="alert alert-warning">
             <h5>Important</h5>
-            <p>Player names can be changed up to 2 times. After the second change, the name will be locked.</p>
+            <p>
+              Staff can edit all player profile information. Player names can be
+              changed up to 2 times before being locked.
+            </p>
           </div>
-          
+
           <!-- Search Form -->
           <form id="search-form" class="mb-4">
             <div class="input-group">
-              <input type="text" class="form-control" id="search-input" name="search" placeholder="Search by name, phone, or email" value="<%= search %>">
-              <button class="btn btn-outline-primary" type="submit">Search</button>
+              <input
+                type="text"
+                class="form-control"
+                id="search-input"
+                name="search"
+                placeholder="Search by name, phone, or email"
+                value="<%= search %>"
+              />
+              <button class="btn btn-outline-primary" type="submit">
+                Search
+              </button>
             </div>
           </form>
-          
+
           <!-- Search Results -->
           <% if (players && players.length > 0) { %>
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>District</th>
-                    <th>Changes</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% players.forEach(player => { %>
-                    <tr>
-                      <td><%= player.name %></td>
-                      <td><%= player.phone %></td>
-                      <td><%= player.email || '-' %></td>
-                      <td><%= player.residence %></td>
-                      <td><%= player.name_change_count || 0 %> / 2</td>
-                      <td>
-                        <% if ((player.name_change_count || 0) >= 2) { %>
-                          <span class="badge bg-danger">Locked</span>
-                        <% } else { %>
-                          <span class="badge bg-success">Editable</span>
-                        <% } %>
-                      </td>
-                      <td>
-                        <% if ((player.name_change_count || 0) < 2) { %>
-                          <button class="btn btn-sm btn-primary edit-name-btn" 
-                            data-id="<%= player.id %>" 
-                            data-name="<%= player.name %>"
-                            data-changes="<%= player.name_change_count || 0 %>"
-                            data-bs-toggle="modal" 
-                            data-bs-target="#editNameModal">
-                            Edit Name
-                          </button>
-                        <% } else { %>
-                          <button class="btn btn-sm btn-secondary" disabled>Name Locked</button>
-                        <% } %>
-                      </td>
-                    </tr>
-                  <% }); %>
-                </tbody>
-              </table>
-            </div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>District</th>
+                  <th>Age Group</th>
+                  <th>Name Changes</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% players.forEach(player => { %>
+                <tr>
+                  <td><%= player.name %></td>
+                  <td><%= player.phone %></td>
+                  <td><%= player.email || '-' %></td>
+                  <td><%= player.residence %></td>
+                  <td><%= player.age_group || 'Adult' %></td>
+                  <td><%= player.name_change_count || 0 %> / 2</td>
+                  <td>
+                    <% if ((player.name_change_count || 0) >= 2) { %>
+                    <span class="badge bg-danger">Name Locked</span>
+                    <% } else { %>
+                    <span class="badge bg-success">Name Editable</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-primary edit-profile-btn"
+                      data-id="<%= player.id %>"
+                      data-name="<%= player.name %>"
+                      data-phone="<%= player.phone %>"
+                      data-email="<%= player.email || '' %>"
+                      data-district="<%= player.residence %>"
+                      data-cityvillage="<%= player.city_village || '' %>"
+                      data-gender="<%= player.gender || '' %>"
+                      data-agegroup="<%= player.age_group || 'adult' %>"
+                      data-changes="<%= player.name_change_count || 0 %>"
+                      data-photopath="<%= player.photo_path || '' %>"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editProfileModal"
+                    >
+                      Edit Profile
+                    </button>
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
           <% } else if (search) { %>
-            <div class="alert alert-info">
-              <p class="mb-0">No players found matching your search criteria.</p>
-            </div>
+          <div class="alert alert-info">
+            <p class="mb-0">No players found matching your search criteria.</p>
+          </div>
           <% } else { %>
-            <div class="alert alert-info">
-              <p class="mb-0">Search for a player by name to change their name.</p>
-            </div>
+          <div class="alert alert-info">
+            <p class="mb-0">
+              Search for a player to edit their profile information.
+            </p>
+          </div>
           <% } %>
-          
+
           <!-- QR Scanner -->
           <div class="card mt-4">
             <div class="card-header bg-info text-white">
@@ -86,22 +107,37 @@
             <div class="card-body">
               <div class="row">
                 <div class="col-md-6">
-                  <div id="qr-reader-container" class="mb-3" style="width: 100%; height: 300px; border: 1px solid #ddd; position: relative;">
+                  <div
+                    id="qr-reader-container"
+                    class="mb-3"
+                    style="
+                      width: 100%;
+                      height: 300px;
+                      border: 1px solid #ddd;
+                      position: relative;
+                    "
+                  >
                     <!-- Scanner will be inserted here -->
                   </div>
-                  
+
                   <div class="d-grid gap-2">
-                    <button id="start-scan" class="btn btn-primary">Start Scanner</button>
+                    <button id="start-scan" class="btn btn-primary">
+                      Start Scanner
+                    </button>
                     <div id="scanner-controls" class="d-none">
-                      <button id="stop-scan" class="btn btn-danger">Stop Scanner</button>
+                      <button id="stop-scan" class="btn btn-danger">
+                        Stop Scanner
+                      </button>
                     </div>
                   </div>
                 </div>
-                
+
                 <div class="col-md-6">
                   <div id="scan-result" class="mt-3">
                     <div class="alert alert-info">
-                      <p class="mb-0">Scan a player's QR code to quickly find their profile.</p>
+                      <p class="mb-0">
+                        Scan a player's QR code to quickly find their profile.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -114,36 +150,186 @@
   </div>
 </div>
 
-<!-- Edit Name Modal -->
-<div class="modal fade" id="editNameModal" tabindex="-1" aria-labelledby="editNameModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+<!-- Edit Profile Modal -->
+<div
+  class="modal fade"
+  id="editProfileModal"
+  tabindex="-1"
+  aria-labelledby="editProfileModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="editNameModalLabel">Edit Player Name</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="editProfileModalLabel">
+          Edit Player Profile
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <form id="edit-name-form">
-          <input type="hidden" id="player-id" name="playerId">
-          
-          <div class="mb-3">
-            <label for="current-name" class="form-label">Current Name</label>
-            <input type="text" class="form-control" id="current-name" readonly>
+        <form id="edit-profile-form">
+          <input type="hidden" id="profile-player-id" name="playerId" />
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-name" class="form-label">Player Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="profile-name"
+                  name="name"
+                  required
+                />
+                <div class="form-text">
+                  <span id="name-changes-text"></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-phone" class="form-label"
+                  >Phone Number</label
+                >
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="profile-phone"
+                  name="phone"
+                  required
+                />
+              </div>
+            </div>
           </div>
-          
-          <div class="mb-3">
-            <label for="new-name" class="form-label">New Name</label>
-            <input type="text" class="form-control" id="new-name" name="name" required>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-email" class="form-label">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="profile-email"
+                  name="email"
+                />
+              </div>
+            </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-district" class="form-label">District</label>
+                <select class="form-select" id="profile-district" name="district" required>
+                  <option value="">Select District</option>
+                  <option value="Belize">Belize</option>
+                  <option value="Cayo">Cayo</option>
+                  <option value="Corozal">Corozal</option>
+                  <option value="Orange Walk">Orange Walk</option>
+                  <option value="Stann Creek">Stann Creek</option>
+                  <option value="Toledo">Toledo</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-city-village" class="form-label">City/Village</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="profile-city-village"
+                  name="cityVillage"
+                  placeholder="Enter city or village"
+                  required
+                />
+              </div>
+            </div>
           </div>
-          
-          <div class="alert alert-warning">
-            <p class="mb-0"><strong>Important:</strong> Player names can be changed up to 2 times. <span id="changes-remaining"></span></p>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-age-group" class="form-label"
+                  >Age Group</label
+                >
+                <select
+                  class="form-select"
+                  id="profile-age-group"
+                  name="ageGroup"
+                  required
+                >
+                  <option value="Up to 10 years">Up to 10 years</option>
+                  <option value="Teens 11-17 years">Teens 11-17 years</option>
+                  <option value="Young Adults 18-30 years">Young Adults 18-30 years</option>
+                  <option value="Adults 31-50 years">Adults 31-50 years</option>
+                  <option value="Seniors 51+ years">Seniors 51+ years</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="profile-gender" class="form-label">Gender</label>
+                <select class="form-select" id="profile-gender" name="gender">
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mb-3">
+                <label for="profile-photo" class="form-label"
+                  >Profile Picture</label
+                >
+                <input
+                  type="file"
+                  class="form-control"
+                  id="profile-photo"
+                  name="photo"
+                  accept="image/*"
+                />
+                <div class="form-text">
+                  Upload a new profile picture (JPG, PNG, GIF - Max 5MB). Leave
+                  empty to keep current photo.
+                </div>
+                <div class="mt-2">
+                  <img
+                    id="current-photo"
+                    style="max-width: 100px; max-height: 100px; display: none"
+                    class="img-thumbnail me-2"
+                  />
+                  <img
+                    id="photo-preview"
+                    style="max-width: 100px; max-height: 100px; display: none"
+                    class="img-thumbnail"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <p class="mb-0">
+              <strong>Note:</strong> All changes will be saved immediately. Name
+              changes are limited to 2 times per player.
+            </p>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="submit-name">Save Name</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="submit-profile">
+          Save Changes
+        </button>
       </div>
     </div>
   </div>
@@ -153,234 +339,392 @@
 <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Edit name button click handler
-    document.querySelectorAll('.edit-name-btn').forEach(button => {
-      button.addEventListener('click', function() {
-        const playerId = this.dataset.id;
-        const playerName = this.dataset.name;
-        const nameChanges = parseInt(this.dataset.changes || '0');
+  document.addEventListener("DOMContentLoaded", function () {
+    // Edit profile button click handler
+    document.addEventListener("click", function (e) {
+      if (e.target.classList.contains("edit-profile-btn")) {
+        const button = e.target;
+        const playerId = button.dataset.id;
+        const playerName = button.dataset.name;
+        const playerPhone = button.dataset.phone;
+        const playerEmail = button.dataset.email;
+        const playerDistrict = button.dataset.district || button.dataset.residence; // fallback
+        const playerCityVillage = button.dataset.cityvillage;
+        const playerGender = button.dataset.gender;
+        const playerAgeGroup = button.dataset.agegroup;
+        const nameChanges = parseInt(button.dataset.changes || "0");
         const remainingChanges = 2 - nameChanges;
-        
-        document.getElementById('player-id').value = playerId;
-        document.getElementById('current-name').value = playerName;
-        document.getElementById('new-name').value = playerName;
-        document.getElementById('changes-remaining').textContent = 
-          remainingChanges === 1 ? 'This is the last name change allowed.' : 'After this change, you will have 1 more change available.';
-      });
-    });
-    
-    // Submit name change
-    document.getElementById('submit-name').addEventListener('click', function() {
-      const playerId = document.getElementById('player-id').value;
-      const name = document.getElementById('new-name').value;
-      
-      if (!name) {
-        alert('Please enter a name');
-        return;
-      }
-      
-      // Show loading indicator
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-      
-      // Send name update to server
-      fetch('/staff/name-change', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ playerId, name })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Close modal
-          bootstrap.Modal.getInstance(document.getElementById('editNameModal')).hide();
-          
-          // Show success message
-          alert(`Player name updated successfully. ${data.remainingChanges > 0 ? data.remainingChanges + ' name changes remaining.' : 'No more name changes allowed.'}`);
-          
-          // Reload page to show updated data
-          window.location.reload();
+
+        // Fill the form
+        document.getElementById("profile-player-id").value = playerId;
+        document.getElementById("profile-name").value = playerName;
+        document.getElementById("profile-phone").value = playerPhone;
+        document.getElementById("profile-email").value = playerEmail;
+        document.getElementById("profile-district").value = playerDistrict;
+        document.getElementById("profile-city-village").value = playerCityVillage || "";
+        document.getElementById("profile-gender").value = playerGender || "";
+        document.getElementById("profile-age-group").value = playerAgeGroup;
+
+        // Update name changes text
+        document.getElementById("name-changes-text").textContent =
+          remainingChanges === 0
+            ? "No more name changes allowed."
+            : remainingChanges === 1
+            ? "This is the last name change allowed."
+            : "Name can be changed " + remainingChanges + " more times.";
+
+        // Show current photo if available
+        const currentPhotoEl = document.getElementById("current-photo");
+        const playerPhotoPath = button.dataset.photopath;
+        if (playerPhotoPath) {
+          currentPhotoEl.src = playerPhotoPath;
+          currentPhotoEl.style.display = "inline-block";
         } else {
-          // Show error message
-          alert(`Error: ${data.message}`);
+          currentPhotoEl.style.display = "none";
         }
-        
-        // Reset button
-        this.disabled = false;
-        this.innerHTML = 'Save Name';
-      })
-      .catch(error => {
-        console.error('Error updating name:', error);
-        alert('Error updating name. Please try again.');
-        this.disabled = false;
-        this.innerHTML = 'Save Name';
-      });
+
+        // Reset photo preview
+        const photoPreviewEl = document.getElementById("photo-preview");
+        photoPreviewEl.style.display = "none";
+        document.getElementById("profile-photo").value = "";
+      }
     });
-    
+
+    // Photo preview functionality
+    document
+      .getElementById("profile-photo")
+      .addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        const photoPreview = document.getElementById("photo-preview");
+        const currentPhoto = document.getElementById("current-photo");
+
+        if (file) {
+          // Check file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            alert("File size must be less than 5MB");
+            this.value = "";
+            photoPreview.style.display = "none";
+            currentPhoto.style.display = "inline-block"; // Show current photo again
+            return;
+          }
+
+          // Check file type
+          if (!file.type.match(/^image\/(jpeg|jpg|png|gif)$/)) {
+            alert("Please select a valid image file (JPG, PNG, or GIF)");
+            this.value = "";
+            photoPreview.style.display = "none";
+            currentPhoto.style.display = "inline-block"; // Show current photo again
+            return;
+          }
+
+          // Hide current photo and show preview
+          currentPhoto.style.display = "none";
+          
+          // Create preview
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            photoPreview.src = e.target.result;
+            photoPreview.style.display = "inline-block";
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // No file selected, hide preview and show current photo
+          photoPreview.style.display = "none";
+          currentPhoto.style.display = "inline-block";
+        }
+      });
+
+    // Submit profile changes
+    document
+      .getElementById("submit-profile")
+      .addEventListener("click", function () {
+        const form = document.getElementById("edit-profile-form");
+        const formData = new FormData(form);
+
+        // Check required fields
+        if (
+          !formData.get("name") ||
+          !formData.get("phone") ||
+          !formData.get("district") ||
+          !formData.get("cityVillage")
+        ) {
+          alert("Please fill in all required fields (name, phone, district, and city/village)");
+          return;
+        }
+
+        // Show loading indicator
+        this.disabled = true;
+        this.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        // Send profile update to server (using FormData for file upload support)
+        fetch("/staff/edit-profile", {
+          method: "POST",
+          body: formData, // Don't set Content-Type header when using FormData
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log('Upload response:', data); // Debug log
+            if (data.success) {
+              // Show success message including photo info if applicable
+              let message = data.message || "Player profile updated successfully";
+              
+              // If a photo was uploaded, show a more specific success message
+              if (data.photoUploaded && data.photoPath) {
+                message += ". Your profile picture has been updated.";
+                console.log('New photo path:', data.photoPath);
+                
+                // Pre-load the image to ensure it's available before page refresh
+                const preloadImg = new Image();
+                preloadImg.onload = function() {
+                  console.log('Image preloaded successfully');
+                  // Close modal first
+                  bootstrap.Modal.getInstance(
+                    document.getElementById("editProfileModal")
+                  ).hide();
+                  
+                  // Show success message
+                  alert(message);
+                  
+                  // Force cache refresh and reload page with stronger cache busting
+                  setTimeout(() => {
+                    const timestamp = new Date().getTime() + Math.floor(Math.random() * 100000);
+                    const currentUrl = window.location.href.split('?')[0];
+                    window.location.href = `${currentUrl}?nocache=${timestamp}&refresh=1`;
+                  }, 500); // Small delay to ensure modal closes properly
+                };
+                
+                preloadImg.onerror = function() {
+                  console.error('Failed to preload image, refreshing anyway');
+                  // Still refresh even if preload fails
+                  bootstrap.Modal.getInstance(
+                    document.getElementById("editProfileModal")
+                  ).hide();
+                  alert(message);
+                  setTimeout(() => {
+                    const timestamp = new Date().getTime() + Math.floor(Math.random() * 100000);
+                    const currentUrl = window.location.href.split('?')[0];
+                    window.location.href = `${currentUrl}?nocache=${timestamp}&refresh=1`;
+                  }, 500);
+                };
+                
+                // Set source with cache busting to trigger preload
+                preloadImg.src = data.photoPath + '?t=' + new Date().getTime() + Math.floor(Math.random() * 10000);
+              } else {
+                // No photo uploaded, just update normally
+                alert(message);
+                
+                // Close modal
+                bootstrap.Modal.getInstance(
+                  document.getElementById("editProfileModal")
+                ).hide();
+
+                // Refresh to show updated profile data
+                setTimeout(() => {
+                  const timestamp = new Date().getTime() + Math.floor(Math.random() * 100000);
+                  const currentUrl = window.location.href.split('?')[0];
+                  window.location.href = `${currentUrl}?nocache=${timestamp}&refresh=1`;
+                }, 500);
+              }
+            } else {
+              // Show error message
+              alert(`Error: ${data.message}`);
+            }
+
+            // Reset button
+            this.disabled = false;
+            this.innerHTML = "Save Changes";
+          })
+          .catch((error) => {
+            console.error("Error updating profile:", error);
+            alert("Error updating profile. Please try again.");
+            this.disabled = false;
+            this.innerHTML = "Save Changes";
+          });
+      });
+
     // QR Code Scanner
     let html5QrCode = null;
-    const qrContainer = document.getElementById('qr-reader-container');
-    
+    const qrContainer = document.getElementById("qr-reader-container");
+
     // Start scanning button
-    document.getElementById('start-scan').addEventListener('click', function() {
-      // Clean up any existing scanner
-      if (html5QrCode) {
-        try {
-          html5QrCode.stop();
-          html5QrCode.clear();
-        } catch (e) {
-          console.error("Error stopping scanner:", e);
+    document
+      .getElementById("start-scan")
+      .addEventListener("click", function () {
+        // Clean up any existing scanner
+        if (html5QrCode) {
+          try {
+            html5QrCode.stop();
+            html5QrCode.clear();
+          } catch (e) {
+            console.error("Error stopping scanner:", e);
+          }
+          html5QrCode = null;
         }
-        html5QrCode = null;
-      }
-      
-      // Clear the container
-      qrContainer.innerHTML = '';
-      
-      // Create a new scanner div
-      const scannerDiv = document.createElement('div');
-      scannerDiv.id = 'qr-scanner';
-      scannerDiv.style.width = '100%';
-      scannerDiv.style.height = '100%';
-      qrContainer.appendChild(scannerDiv);
-      
-      // Create new scanner instance
-      html5QrCode = new Html5Qrcode("qr-scanner");
-      
-      // Start scanning
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        onScanSuccess,
-        onScanError
-      )
-      .then(() => {
-        document.getElementById('scanner-controls').classList.remove('d-none');
-        this.classList.add('d-none');
-      })
-      .catch(err => {
-        console.error('Failed to start scanner:', err);
-        alert('Failed to start camera. Please check camera permissions.');
+
+        // Clear the container
+        qrContainer.innerHTML = "";
+
+        // Create a new scanner div
+        const scannerDiv = document.createElement("div");
+        scannerDiv.id = "qr-scanner";
+        scannerDiv.style.width = "100%";
+        scannerDiv.style.height = "100%";
+        qrContainer.appendChild(scannerDiv);
+
+        // Create new scanner instance
+        html5QrCode = new Html5Qrcode("qr-scanner");
+
+        // Start scanning
+        html5QrCode
+          .start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess,
+            onScanError
+          )
+          .then(() => {
+            document
+              .getElementById("scanner-controls")
+              .classList.remove("d-none");
+            this.classList.add("d-none");
+          })
+          .catch((err) => {
+            console.error("Failed to start scanner:", err);
+            alert("Failed to start camera. Please check camera permissions.");
+          });
       });
-    });
-    
+
     // Stop scanning button
-    document.getElementById('stop-scan').addEventListener('click', function() {
+    document.getElementById("stop-scan").addEventListener("click", function () {
       stopScanner();
     });
-    
+
     // QR scan success handler
     function onScanSuccess(qrCodeMessage) {
       // Stop scanning
       stopScanner();
-      
+
       // Process QR code data
       processQRCode(qrCodeMessage);
     }
-    
+
     // QR scan error handler
     function onScanError(error) {
       console.warn(`QR scan error: ${error}`);
     }
-    
+
     // Helper function to stop scanner
     function stopScanner() {
       if (html5QrCode) {
-        html5QrCode.stop()
+        html5QrCode
+          .stop()
           .then(() => {
             html5QrCode.clear();
             html5QrCode = null;
-            qrContainer.innerHTML = '';
-            document.getElementById('scanner-controls').classList.add('d-none');
-            document.getElementById('start-scan').classList.remove('d-none');
+            qrContainer.innerHTML = "";
+            document.getElementById("scanner-controls").classList.add("d-none");
+            document.getElementById("start-scan").classList.remove("d-none");
           })
-          .catch(err => {
-            console.error('Failed to stop scanner:', err);
+          .catch((err) => {
+            console.error("Failed to stop scanner:", err);
           });
       }
     }
-    
+
     // Process QR code data
     function processQRCode(qrData) {
       // Show loading indicator
-      document.getElementById('scan-result').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-      
+      document.getElementById("scan-result").innerHTML =
+        '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
       // Send QR data to server
-      fetch('/staff/scan', {
-        method: 'POST',
+      fetch("/staff/scan", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ qrData })
+        body: JSON.stringify({ qrData }),
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const player = data.player;
-          const nameChanges = player.name_change_count || 0;
-          const remainingChanges = 2 - nameChanges;
-          
-          // Display player info
-          document.getElementById('scan-result').innerHTML = `
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            const player = data.player;
+            const nameChanges = player.name_change_count || 0;
+            const remainingChanges = 2 - nameChanges;
+
+            // Display player info
+            document.getElementById("scan-result").innerHTML = `
             <div class="card">
               <div class="card-body">
-                <h5 class="card-title">${player.name}</h5>
-                <p class="card-text">Phone: ${player.phone}</p>
-                <p class="card-text">Email: ${player.email || '-'}</p>
-                <p class="card-text">District: ${player.residence}</p>
+                <h5 class="card-title">
+                  ${player.name}
+                  ${player.is_child_account ? '<span class="badge bg-info ms-2"><i class="bi bi-person-hearts"></i> Child Account</span>' : ''}
+                </h5>
+                <p class="card-text">
+                  ${player.is_child_account && player.parent_phone ? 
+                    `<strong>Parent's Phone:</strong> ${player.parent_phone}<br><strong>Child ID:</strong> ${player.phone}` : 
+                    `Phone: ${player.phone}`
+                  }
+                </p>
+                <p class="card-text">Email: ${player.email || "-"}</p>
+                <p class="card-text">Location: ${player.city_village ? player.city_village + ', ' : ''}${player.residence}</p>
+                <p class="card-text">Age Group: ${
+                  player.age_group || "Adult"
+                }</p>
                 <p class="card-text">Name Changes: ${nameChanges} / 2</p>
-                <p class="card-text">Status: ${nameChanges >= 2 ? 
-                  '<span class="badge bg-danger">Locked</span>' : 
-                  '<span class="badge bg-success">Editable</span>'}</p>
+                <p class="card-text">Status: ${
+                  nameChanges >= 2
+                    ? '<span class="badge bg-danger">Name Locked</span>'
+                    : '<span class="badge bg-success">Name Editable</span>'
+                }</p>
                 
-                ${nameChanges < 2 ? `
-                  <button class="btn btn-primary edit-name-btn" 
-                    data-id="${player.id}" 
-                    data-name="${player.name}"
-                    data-changes="${nameChanges}"
-                    data-bs-toggle="modal" 
-                    data-bs-target="#editNameModal">
-                    Edit Name
-                  </button>
-                ` : `
-                  <button class="btn btn-secondary" disabled>Name Locked</button>
-                `}
+                <button class="btn btn-primary edit-profile-btn" 
+                  data-id="${player.id}" 
+                  data-name="${player.name}"
+                  data-phone="${player.phone}"
+                  data-email="${player.email || ""}"
+                  data-district="${player.residence}"
+                  data-cityvillage="${player.city_village || ""}"
+                  data-gender="${player.gender || ""}"
+                  data-agegroup="${player.age_group || "adult"}"
+                  data-changes="${nameChanges}"
+                  data-photopath="${player.photo_path || ""}"
+                  data-bs-toggle="modal" 
+                  data-bs-target="#editProfileModal">
+                  Edit Profile
+                </button>
               </div>
             </div>
           `;
-          
-          // Add event listener to the new button
-          const newButton = document.querySelector('#scan-result .edit-name-btn');
-          if (newButton) {
-            newButton.addEventListener('click', function() {
-              const playerId = this.dataset.id;
-              const playerName = this.dataset.name;
-              const nameChanges = parseInt(this.dataset.changes || '0');
-              const remainingChanges = 2 - nameChanges;
-              
-              document.getElementById('player-id').value = playerId;
-              document.getElementById('current-name').value = playerName;
-              document.getElementById('new-name').value = playerName;
-              document.getElementById('changes-remaining').textContent = 
-                remainingChanges === 1 ? 'This is the last name change allowed.' : 'After this change, you will have 1 more change available.';
-            });
-          }
-        } else {
-          // Display error
-          document.getElementById('scan-result').innerHTML = `
+
+            // Add event listener to the new button
+            const newButton = document.querySelector(
+              "#scan-result .edit-profile-btn"
+            );
+            if (newButton) {
+              // The event listener is already handled by the global click handler above
+            }
+          } else {
+            // Display error
+            document.getElementById("scan-result").innerHTML = `
             <div class="alert alert-danger">${data.message}</div>
           `;
-        }
-      })
-      .catch(error => {
-        console.error('Error processing QR code:', error);
-        document.getElementById('scan-result').innerHTML = `
+          }
+        })
+        .catch((error) => {
+          console.error("Error processing QR code:", error);
+          document.getElementById("scan-result").innerHTML = `
           <div class="alert alert-danger">Error processing QR code. Please try again.</div>
         `;
-      });
+        });
     }
   });
 </script>
+
+<style>
+  /* Make child account badge icon smaller */
+  .badge .bi-person-hearts {
+    font-size: 0.875rem !important;
+  }
+</style>

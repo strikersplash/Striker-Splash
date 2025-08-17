@@ -2,52 +2,87 @@
   <div class="row">
     <div class="col-md-8 offset-md-2">
       <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Edit Profile</h3>
+        <div class="card-header bg-info text-white">
+          <h3 class="mb-0">Profile Changes</h3>
         </div>
         <div class="card-body">
-          <form action="/player/edit-profile" method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-              <label for="name" class="form-label">Name</label>
-              <input type="text" class="form-control" id="name" name="name" value="<%= player.name %>" readonly>
-              <div class="form-text text-danger">Names can only be changed by a referee or admin.</div>
+          <div class="alert alert-info">
+            <h4>
+              <i class="bi bi-info-circle"></i> Profile Changes Require Staff
+              Assistance
+            </h4>
+            <p class="mb-3">
+              For security and data integrity reasons, all profile changes must
+              now be handled by our staff members.
+            </p>
+
+            <h5>Current Profile Information:</h5>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p><strong>Name:</strong> <%= player.name %></p>
+                <p><strong>Phone:</strong> <%= player.phone %></p>
+                <p>
+                  <strong>Email:</strong> <%= player.email || 'Not provided' %>
+                </p>
+              </div>
+              <div class="col-md-6">
+                <p>
+                  <strong>Location:</strong>
+                  <% if (player.city_village) { %> <%= player.city_village %>,
+                  <%= player.residence %> <% } else { %> <%= player.residence %>
+                  <% } %>
+                </p>
+                <p>
+                  <strong>Age Group:</strong> <%= player.age_group || 'Adult' %>
+                </p>
+                <p><strong>Profile Photo:</strong></p>
+                <div id="player-profile-avatar-container"></div>
+                <script src="/js/avatar.js"></script>
+                <script>
+                  document.addEventListener("DOMContentLoaded", function () {
+                    const avatarContainer = document.getElementById(
+                      "player-profile-avatar-container"
+                    );
+                    const avatar = createAvatar(
+                      "<%= player.name %>",
+                      100,
+                      '<%= player.photo_path || "" %>'
+                    );
+                    avatar.style.maxHeight = "100px";
+                    avatarContainer.appendChild(avatar);
+                  });
+                </script>
+              </div>
             </div>
-            
-            <div class="mb-3">
-              <label for="phone" class="form-label">Phone Number</label>
-              <input type="tel" class="form-control" id="phone" name="phone" value="<%= player.phone %>" required>
-            </div>
-            
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" name="email" value="<%= player.email || '' %>">
-            </div>
-            
-            <div class="mb-3">
-              <label for="residence" class="form-label">District</label>
-              <input type="text" class="form-control" id="residence" name="residence" value="<%= player.residence %>" required>
-            </div>
-            
-            <div class="mb-3">
-              <label for="photo" class="form-label">Profile Photo</label>
-              <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-              <% if (player.photo_path) { %>
-                <div class="mt-2">
-                  <img src="<%= player.photo_path %>" alt="Current Profile Photo" class="img-thumbnail" style="max-height: 100px;">
-                </div>
-              <% } %>
-            </div>
-            
-            <div class="mb-3">
-              <label for="password" class="form-label">New Password (leave blank to keep current)</label>
-              <input type="password" class="form-control" id="password" name="password">
-            </div>
-            
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary">Update Profile</button>
-              <a href="/player/dashboard" class="btn btn-outline-secondary">Cancel</a>
-            </div>
-          </form>
+          </div>
+
+          <div class="alert alert-warning">
+            <h5>
+              <i class="bi bi-exclamation-triangle"></i> Need to Update Your
+              Information?
+            </h5>
+            <p class="mb-2">
+              To make changes to your profile information, please:
+            </p>
+            <ul class="mb-3">
+              <li>Visit our facility and speak with any staff member</li>
+              <li>Bring your QR code for verification</li>
+              <li>
+                Staff can update your name, contact details, and other
+                information
+              </li>
+            </ul>
+            <p class="mb-0">
+              <strong>Note:</strong> Player names can only be changed up to 2
+              times for security purposes.
+            </p>
+          </div>
+
+          <div class="d-grid gap-2">
+            <a href="/player/dashboard" class="btn btn-primary">
+              <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+          </div>
         </div>
       </div>
     </div>

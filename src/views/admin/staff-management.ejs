@@ -1,0 +1,434 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+      <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/admin/staff">
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/players">
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/sales-reports">
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/tickets">
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/raffle">
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li class="nav-item"></li>
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/event-locations">
+              <i class="bi bi-calendar-event"></i> Event Locations
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div
+        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+      >
+        <h1 class="h2">Staff Management</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#addStaffModal"
+          >
+            <i class="bi bi-person-plus"></i> Add Staff
+          </button>
+        </div>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if(typeof messages != 'undefined'){ %> <% if(messages.success_msg){ %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= messages.success_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% if(messages.error_msg){ %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= messages.error_msg %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      <% } %> <% } %>
+
+      <!-- Staff Members -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Staff Members</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (staff && staff.length > 0) { %> <%
+                staff.forEach(function(member) { %>
+                <tr <% if (member.active === false) { %>class="table-warning"<% } %>>
+                  <td>
+                    <%= member.name %>
+                    <% if (member.active === false) { %>
+                      <span class="badge bg-warning text-dark ms-2">Account Deleted</span>
+                    <% } %>
+                  </td>
+                  <td><%= member.username %></td>
+                  <td>
+                    <% if (member.role === 'admin') { %>
+                    <span class="badge bg-danger">Admin</span>
+                    <% } else if (member.role === 'sales') { %>
+                    <span class="badge bg-success">Outside Sales</span>
+                    <% } else { %>
+                    <span class="badge bg-primary">Staff</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <%= new Date(member.created_at).toLocaleDateString() %>
+                  </td>
+                  <td>
+                    <% if (member.active === false) { %>
+                      <!-- Deactivated account - show status only -->
+                      <button class="btn btn-sm btn-danger" disabled>
+                        <i class="bi bi-x-circle" style="font-size: 0.875rem;"></i> Account Deleted
+                      </button>
+                    <% } else { %>
+                      <!-- Active account - show edit/delete buttons -->
+                      <button
+                        class="btn btn-sm btn-outline-primary edit-staff-btn"
+                        data-id="<%= member.id %>"
+                        data-name="<%= member.name %>"
+                        data-username="<%= member.username %>"
+                        data-role="<%= member.role %>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editStaffModal"
+                      >
+                        Edit
+                      </button>
+                      <% if (member.username !== 'admin') { %>
+                      <button
+                        class="btn btn-sm btn-outline-danger delete-staff-btn"
+                        data-id="<%= member.id %>"
+                        data-name="<%= member.name %>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteStaffModal"
+                      >
+                        Deactivate
+                      </button>
+                      <% } %>
+                    <% } %>
+                  </td>
+                </tr>
+                <% }); %> <% } else { %>
+                <tr>
+                  <td colspan="5" class="text-center">
+                    No staff members found
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Staff Modal -->
+      <div
+        class="modal fade"
+        id="addStaffModal"
+        tabindex="-1"
+        aria-labelledby="addStaffModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="addStaffModalLabel">
+                Add Staff Member
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <form action="/admin/staff/add" method="POST">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    name="name"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="username" class="form-label">Username</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="username"
+                    name="username"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="password"
+                    name="password"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="role" class="form-label">Role</label>
+                  <select class="form-select" id="role" name="role" required>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                    <option value="sales">Outside Sales</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">Add Staff</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Staff Modal -->
+      <div
+        class="modal fade"
+        id="editStaffModal"
+        tabindex="-1"
+        aria-labelledby="editStaffModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editStaffModalLabel">
+                Edit Staff Member
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <form action="/admin/staff/edit" method="POST" id="editStaffForm">
+              <input type="hidden" id="editStaffId" name="id" />
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="editName" class="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="editName"
+                    name="name"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="editUsername" class="form-label">Username</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="editUsername"
+                    name="username"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="editPassword" class="form-label"
+                    >New Password (leave blank to keep current)</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="editPassword"
+                    name="password"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="editRole" class="form-label">Role</label>
+                  <select
+                    class="form-select"
+                    id="editRole"
+                    name="role"
+                    required
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                    <option value="sales">Outside Sales</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deactivate Staff Modal -->
+      <div
+        class="modal fade"
+        id="deleteStaffModal"
+        tabindex="-1"
+        aria-labelledby="deleteStaffModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteStaffModalLabel">
+                Confirm Deactivation
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <p>
+                Are you sure you want to deactivate staff member
+                <span id="deleteStaffName" class="fw-bold"></span>?
+              </p>
+              <p class="text-info">
+                <i class="bi bi-info-circle"></i> 
+                The account will be deactivated but their transaction history will be preserved for reports. They will not be able to log in.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <form
+                action="/admin/staff/delete"
+                method="POST"
+                id="deleteStaffForm"
+              >
+                <input type="hidden" id="deleteStaffId" name="id" />
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-warning">
+                  <i class="bi bi-x-circle"></i> Deactivate Account
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          // Setup edit staff modal
+          var editButtons = document.querySelectorAll(".edit-staff-btn");
+          editButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+              var id = this.getAttribute("data-id");
+              var name = this.getAttribute("data-name");
+              var username = this.getAttribute("data-username");
+              var role = this.getAttribute("data-role");
+
+              document.getElementById("editStaffId").value = id;
+              document.getElementById("editName").value = name;
+              document.getElementById("editUsername").value = username;
+              document.getElementById("editRole").value = role;
+              document.getElementById("editPassword").value = "";
+
+              // Update form action with staff ID
+              document.getElementById("editStaffForm").action =
+                "/admin/staff/edit/" + id;
+            });
+          });
+
+          // Setup delete staff modal
+          var deleteButtons = document.querySelectorAll(".delete-staff-btn");
+          deleteButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+              var id = this.getAttribute("data-id");
+              var name = this.getAttribute("data-name");
+
+              document.getElementById("deleteStaffId").value = id;
+              document.getElementById("deleteStaffName").textContent = name;
+
+              // Update form action with staff ID
+              document.getElementById("deleteStaffForm").action =
+                "/admin/staff/delete/" + id;
+            });
+          });
+        });
+      </script>
+    </div>
+  </div>
+</div>

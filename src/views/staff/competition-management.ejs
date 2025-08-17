@@ -1,0 +1,1107 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-trophy"></i> Teams & Competition Management</h2>
+        <div class="btn-group" role="group">
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#createMatchModal"
+          >
+            <i class="bi bi-plus-circle"></i> Create Match
+          </button>
+          <button
+            type="button"
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#createSoloModal"
+          >
+            <i class="bi bi-person-plus"></i> Create Solo Competition
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Competitions Alert -->
+  <div class="row">
+    <div class="col-12">
+      <div
+        class="alert alert-info"
+        id="active-competitions-alert"
+        style="display: none"
+      >
+        <h5><i class="bi bi-exclamation-triangle"></i> Active Competitions</h5>
+        <p>
+          There are currently active competitions that require attention. Click
+          on them below to manage live scoring.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs" id="competitionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link active"
+            id="active-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#active-competitions"
+            type="button"
+            role="tab"
+          >
+            <i class="bi bi-play-circle"></i> Active Competitions
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="matches-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#matches"
+            type="button"
+            role="tab"
+          >
+            <i class="bi bi-people"></i> Team Matches
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="solo-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#solo-competitions"
+            type="button"
+            role="tab"
+          >
+            <i class="bi bi-person"></i> Solo Competitions
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="activity-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#recent-activity"
+            type="button"
+            role="tab"
+          >
+            <i class="bi bi-clock-history"></i> Recent Activity
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content" id="competitionTabsContent">
+    <!-- Active Competitions Tab -->
+    <div
+      class="tab-pane fade show active"
+      id="active-competitions"
+      role="tabpanel"
+    >
+      <div class="card mt-3">
+        <div class="card-header">
+          <h5><i class="bi bi-broadcast"></i> Live Competitions</h5>
+        </div>
+        <div class="card-body">
+          <div id="active-competitions-list">
+            <div class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">Loading active competitions...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Matches Tab -->
+    <div class="tab-pane fade" id="matches" role="tabpanel">
+      <div class="card mt-3">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5><i class="bi bi-people"></i> Team vs Team Matches</h5>
+          <div class="btn-group btn-group-sm">
+            <button
+              class="btn btn-outline-secondary"
+              onclick="filterMatches('all')"
+            >
+              All
+            </button>
+            <button
+              class="btn btn-outline-warning"
+              onclick="filterMatches('scheduled')"
+            >
+              Scheduled
+            </button>
+            <button
+              class="btn btn-outline-success"
+              onclick="filterMatches('active')"
+            >
+              Active
+            </button>
+            <button
+              class="btn btn-outline-info"
+              onclick="filterMatches('completed')"
+            >
+              Completed
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Match Name</th>
+                  <th>Type</th>
+                  <th>Teams</th>
+                  <th>Status</th>
+                  <th>Scheduled</th>
+                  <th>Score</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="matches-table">
+                <tr>
+                  <td colspan="7" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading matches...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solo Competitions Tab -->
+    <div class="tab-pane fade" id="solo-competitions" role="tabpanel">
+      <div class="card mt-3">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5><i class="bi bi-person"></i> Solo Competitions</h5>
+          <div class="btn-group btn-group-sm">
+            <button
+              class="btn btn-outline-secondary"
+              onclick="filterSolo('all')"
+            >
+              All
+            </button>
+            <button
+              class="btn btn-outline-warning"
+              onclick="filterSolo('scheduled')"
+            >
+              Scheduled
+            </button>
+            <button
+              class="btn btn-outline-success"
+              onclick="filterSolo('active')"
+            >
+              Active
+            </button>
+            <button
+              class="btn btn-outline-info"
+              onclick="filterSolo('completed')"
+            >
+              Completed
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Competition Name</th>
+                  <th>Status</th>
+                  <th>Participants</th>
+                  <th>Max Participants</th>
+                  <th>Scheduled</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="solo-competitions-table">
+                <tr>
+                  <td colspan="6" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading solo competitions...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Tab -->
+    <div class="tab-pane fade" id="recent-activity" role="tabpanel">
+      <div class="card mt-3">
+        <div class="card-header">
+          <h5>
+            <i class="bi bi-clock-history"></i> Recent Competition Activity
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="text-primary" id="today-total-kicks">-</h3>
+                  <small>Total Kicks Today</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="text-success" id="today-total-goals">-</h3>
+                  <small>Total Goals Today</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="text-warning" id="today-avg-accuracy">-</h3>
+                  <small>Average Accuracy</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Player</th>
+                  <th>Competition</th>
+                  <th>Type</th>
+                  <th>Goals</th>
+                  <th>Kicks</th>
+                  <th>Staff</th>
+                </tr>
+              </thead>
+              <tbody id="activity-table">
+                <tr>
+                  <td colspan="7" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading recent activity...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Match Modal -->
+<div class="modal fade" id="createMatchModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create New Match</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="createMatchForm">
+          <div class="mb-3">
+            <label for="match-name" class="form-label">Match Name</label>
+            <input type="text" class="form-control" id="match-name" required />
+          </div>
+
+          <div class="mb-3">
+            <label for="match-type" class="form-label">Match Type</label>
+            <select class="form-control" id="match-type" required>
+              <option value="">Select match type...</option>
+              <option value="3v3">3 vs 3</option>
+              <option value="5v5">5 vs 5</option>
+              <option value="10v10">10 vs 10</option>
+              <option value="11v11">11 vs 11</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="team-a" class="form-label">Team A</label>
+            <select class="form-control" id="team-a" required>
+              <option value="">Select Team A...</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="team-b" class="form-label">Team B</label>
+            <select class="form-control" id="team-b" required>
+              <option value="">Select Team B...</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="scheduled-start" class="form-label"
+              >Scheduled Start</label
+            >
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="scheduled-start"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="match-location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="match-location" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="createMatch()">
+          Create Match
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Solo Competition Modal -->
+<div class="modal fade" id="createSoloModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Solo Competition</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="createSoloForm">
+          <div class="mb-3">
+            <label for="solo-name" class="form-label">Competition Name</label>
+            <input type="text" class="form-control" id="solo-name" required />
+          </div>
+
+          <div class="mb-3">
+            <label for="solo-description" class="form-label">Description</label>
+            <textarea
+              class="form-control"
+              id="solo-description"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="max-participants" class="form-label"
+              >Max Participants</label
+            >
+            <input
+              type="number"
+              class="form-control"
+              id="max-participants"
+              value="50"
+              min="1"
+              max="200"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="solo-scheduled-start" class="form-label"
+              >Scheduled Start</label
+            >
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="solo-scheduled-start"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="solo-location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="solo-location" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-success"
+          onclick="createSoloCompetition()"
+        >
+          Create Competition
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Load initial data
+    loadActiveCompetitions();
+    loadMatches();
+    loadSoloCompetitions();
+    loadRecentActivity();
+    loadTeamsForDropdowns();
+
+    // Set up auto-refresh for active competitions
+    setInterval(() => {
+      if (document.querySelector("#active-tab").classList.contains("active")) {
+        loadActiveCompetitions();
+      }
+    }, 10000); // Refresh every 10 seconds
+
+    // Set up auto-refresh for recent activity
+    setInterval(() => {
+      if (
+        document.querySelector("#activity-tab").classList.contains("active")
+      ) {
+        loadRecentActivity();
+      }
+    }, 30000); // Refresh every 30 seconds
+  });
+
+  // Load active competitions
+  async function loadActiveCompetitions() {
+    try {
+      const response = await fetch("/staff/competitions/active");
+      const data = await response.json();
+
+      if (data.success) {
+        renderActiveCompetitions(
+          data.activeMatches,
+          data.activeSoloCompetitions
+        );
+
+        // Show alert if there are active competitions
+        const hasActive =
+          data.activeMatches.length > 0 ||
+          data.activeSoloCompetitions.length > 0;
+        document.getElementById("active-competitions-alert").style.display =
+          hasActive ? "block" : "none";
+      }
+    } catch (error) {
+      console.error("Error loading active competitions:", error);
+      document.getElementById("active-competitions-list").innerHTML = `
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i> Error loading active competitions
+      </div>
+    `;
+    }
+  }
+
+  // Render active competitions
+  function renderActiveCompetitions(matches, soloCompetitions) {
+    const container = document.getElementById("active-competitions-list");
+
+    if (matches.length === 0 && soloCompetitions.length === 0) {
+      container.innerHTML = `
+      <div class="text-center py-4">
+        <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+        <p class="text-muted mt-2">No active competitions at the moment</p>
+      </div>
+    `;
+      return;
+    }
+
+    let html = "";
+
+    // Active matches
+    if (matches.length > 0) {
+      html +=
+        '<h6 class="mb-3"><i class="bi bi-people"></i> Active Team Matches</h6>';
+      html += '<div class="row">';
+
+      matches.forEach((match) => {
+        html += `
+        <div class="col-md-6 mb-3">
+          <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0">${match.name}</h6>
+              <small>${match.match_type} Match</small>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>${match.team_a_name || "Team A"}</span>
+                <span class="badge bg-secondary">${
+                  match.team_a_score || 0
+                }</span>
+              </div>
+              <div class="text-center mb-2">
+                <small class="text-muted">VS</small>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span>${match.team_b_name || "Team B"}</span>
+                <span class="badge bg-secondary">${
+                  match.team_b_score || 0
+                }</span>
+              </div>
+              <div class="d-grid">
+                <a href="/staff/competitions/match/${
+                  match.id
+                }/live" class="btn btn-primary btn-sm">
+                  <i class="bi bi-broadcast"></i> Manage Live
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      });
+
+      html += "</div>";
+    }
+
+    // Active solo competitions
+    if (soloCompetitions.length > 0) {
+      html +=
+        '<h6 class="mb-3 mt-4"><i class="bi bi-person"></i> Active Solo Competitions</h6>';
+      html += '<div class="row">';
+
+      soloCompetitions.forEach((comp) => {
+        html += `
+        <div class="col-md-6 mb-3">
+          <div class="card border-success">
+            <div class="card-header bg-success text-white">
+              <h6 class="mb-0">${comp.name}</h6>
+            </div>
+            <div class="card-body">
+              <p class="card-text">${comp.description || "No description"}</p>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <small>Participants: ${comp.participant_count || 0}/${
+          comp.max_participants
+        }</small>
+                <small>Active: ${comp.active_participants || 0}</small>
+              </div>
+              <div class="d-grid">
+                <a href="/staff/competitions/solo/${
+                  comp.id
+                }/live" class="btn btn-success btn-sm">
+                  <i class="bi bi-broadcast"></i> Manage Live
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      });
+
+      html += "</div>";
+    }
+
+    container.innerHTML = html;
+  }
+
+  // Load all matches
+  async function loadMatches() {
+    try {
+      const response = await fetch("/staff/competitions/matches");
+      const data = await response.json();
+
+      if (data.success) {
+        window.allMatches = data.matches;
+        renderMatches(data.matches);
+      }
+    } catch (error) {
+      console.error("Error loading matches:", error);
+      document.getElementById("matches-table").innerHTML = `
+      <tr><td colspan="7" class="text-center text-danger">Error loading matches</td></tr>
+    `;
+    }
+  }
+
+  // Render matches table
+  function renderMatches(matches) {
+    const tbody = document.getElementById("matches-table");
+
+    if (matches.length === 0) {
+      tbody.innerHTML = `
+      <tr><td colspan="7" class="text-center text-muted">No matches found</td></tr>
+    `;
+      return;
+    }
+
+    tbody.innerHTML = matches
+      .map(
+        (match) => `
+    <tr>
+      <td>${match.name}</td>
+      <td><span class="badge bg-info">${match.match_type}</span></td>
+      <td>
+        <small>
+          ${match.team_a_name || "Team A"} vs ${match.team_b_name || "Team B"}
+        </small>
+      </td>
+      <td><span class="badge bg-${getStatusBadgeClass(match.status)}">${
+          match.status
+        }</span></td>
+      <td>${
+        match.scheduled_start
+          ? new Date(match.scheduled_start).toLocaleString()
+          : "-"
+      }</td>
+      <td>
+        ${
+          match.status === "completed"
+            ? `${match.team_a_score || 0} - ${match.team_b_score || 0}`
+            : "-"
+        }
+      </td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          ${
+            match.status === "scheduled"
+              ? `<button class="btn btn-success" onclick="updateMatchStatus(${match.id}, 'active')">
+              <i class="bi bi-play"></i>
+            </button>`
+              : ""
+          }
+          ${
+            match.status === "active"
+              ? `<a href="/staff/competitions/match/${match.id}/live" class="btn btn-primary">
+              <i class="bi bi-broadcast"></i>
+            </a>
+            <button class="btn btn-warning" onclick="updateMatchStatus(${match.id}, 'completed')">
+              <i class="bi bi-stop"></i>
+            </button>`
+              : ""
+          }
+          <button class="btn btn-outline-info" onclick="viewMatch(${match.id})">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `
+      )
+      .join("");
+  }
+
+  // Load solo competitions
+  async function loadSoloCompetitions() {
+    try {
+      const response = await fetch("/staff/competitions/solo");
+      const data = await response.json();
+
+      if (data.success) {
+        window.allSoloCompetitions = data.competitions;
+        renderSoloCompetitions(data.competitions);
+      }
+    } catch (error) {
+      console.error("Error loading solo competitions:", error);
+      document.getElementById("solo-competitions-table").innerHTML = `
+      <tr><td colspan="6" class="text-center text-danger">Error loading solo competitions</td></tr>
+    `;
+    }
+  }
+
+  // Render solo competitions table
+  function renderSoloCompetitions(competitions) {
+    const tbody = document.getElementById("solo-competitions-table");
+
+    if (competitions.length === 0) {
+      tbody.innerHTML = `
+      <tr><td colspan="6" class="text-center text-muted">No solo competitions found</td></tr>
+    `;
+      return;
+    }
+
+    tbody.innerHTML = competitions
+      .map(
+        (comp) => `
+    <tr>
+      <td>${comp.name}</td>
+      <td><span class="badge bg-${getStatusBadgeClass(comp.status)}">${
+          comp.status
+        }</span></td>
+      <td>${comp.participant_count || 0}</td>
+      <td>${comp.max_participants}</td>
+      <td>${
+        comp.scheduled_start
+          ? new Date(comp.scheduled_start).toLocaleString()
+          : "-"
+      }</td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          ${
+            comp.status === "scheduled"
+              ? `<button class="btn btn-success" onclick="updateSoloStatus(${comp.id}, 'active')">
+              <i class="bi bi-play"></i>
+            </button>`
+              : ""
+          }
+          ${
+            comp.status === "active"
+              ? `<a href="/staff/competitions/solo/${comp.id}/live" class="btn btn-primary">
+              <i class="bi bi-broadcast"></i>
+            </a>
+            <button class="btn btn-warning" onclick="updateSoloStatus(${comp.id}, 'completed')">
+              <i class="bi bi-stop"></i>
+            </button>`
+              : ""
+          }
+          <button class="btn btn-outline-info" onclick="viewSoloCompetition(${
+            comp.id
+          })">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `
+      )
+      .join("");
+  }
+
+  // Load recent activity
+  async function loadRecentActivity() {
+    try {
+      const response = await fetch("/staff/competitions/activity/today");
+      const data = await response.json();
+
+      if (data.success) {
+        renderRecentActivity(data.activity, data.summary);
+      }
+    } catch (error) {
+      console.error("Error loading recent activity:", error);
+      document.getElementById("activity-table").innerHTML = `
+      <tr><td colspan="7" class="text-center text-danger">Error loading recent activity</td></tr>
+    `;
+    }
+  }
+
+  // Render recent activity
+  function renderRecentActivity(activity, summary) {
+    // Update summary stats
+    let totalKicks = 0,
+      totalGoals = 0,
+      avgAccuracy = 0;
+
+    if (summary && summary.length > 0) {
+      totalKicks = summary.reduce(
+        (sum, s) => sum + parseInt(s.total_kicks || 0),
+        0
+      );
+      totalGoals = summary.reduce(
+        (sum, s) => sum + parseInt(s.total_goals || 0),
+        0
+      );
+
+      const avgAccuracySum = summary.reduce(
+        (sum, s) => sum + parseFloat(s.avg_accuracy || 0),
+        0
+      );
+      avgAccuracy =
+        summary.length > 0 ? (avgAccuracySum / summary.length).toFixed(1) : 0;
+    }
+
+    document.getElementById("today-total-kicks").textContent = totalKicks;
+    document.getElementById("today-total-goals").textContent = totalGoals;
+    document.getElementById("today-avg-accuracy").textContent =
+      avgAccuracy + "%";
+
+    // Update activity table
+    const tbody = document.getElementById("activity-table");
+
+    if (activity.length === 0) {
+      tbody.innerHTML = `
+      <tr><td colspan="7" class="text-center text-muted">No activity today</td></tr>
+    `;
+      return;
+    }
+
+    tbody.innerHTML = activity
+      .slice(0, 20)
+      .map(
+        (act) => `
+    <tr>
+      <td>${new Date(act.created_at).toLocaleTimeString()}</td>
+      <td>${act.player_name}</td>
+      <td>${act.competition_name || "Unknown"}</td>
+      <td>
+        <span class="badge bg-${
+          act.competition_type === "match" ? "primary" : "success"
+        }">
+          ${act.competition_type === "match" ? "Team Match" : "Solo"}
+        </span>
+      </td>
+      <td>${act.goals}</td>
+      <td>${act.kicks_used}</td>
+      <td>${act.staff_name}</td>
+    </tr>
+  `
+      )
+      .join("");
+  }
+
+  // Load teams for dropdown menus
+  async function loadTeamsForDropdowns() {
+    try {
+      const response = await fetch("/teams/api/all");
+      const data = await response.json();
+
+      if (data.success && data.teams) {
+        const teamASelect = document.getElementById("team-a");
+        const teamBSelect = document.getElementById("team-b");
+
+        const options = data.teams
+          .map((team) => `<option value="${team.id}">${team.name}</option>`)
+          .join("");
+
+        teamASelect.innerHTML =
+          '<option value="">Select Team A...</option>' + options;
+        teamBSelect.innerHTML =
+          '<option value="">Select Team B...</option>' + options;
+      }
+    } catch (error) {
+      console.error("Error loading teams:", error);
+    }
+  }
+
+  // Filter functions
+  function filterMatches(status) {
+    if (!window.allMatches) return;
+
+    const filtered =
+      status === "all"
+        ? window.allMatches
+        : window.allMatches.filter((match) => match.status === status);
+
+    renderMatches(filtered);
+  }
+
+  function filterSolo(status) {
+    if (!window.allSoloCompetitions) return;
+
+    const filtered =
+      status === "all"
+        ? window.allSoloCompetitions
+        : window.allSoloCompetitions.filter((comp) => comp.status === status);
+
+    renderSoloCompetitions(filtered);
+  }
+
+  // Create match
+  async function createMatch() {
+    const name = document.getElementById("match-name").value;
+    const matchType = document.getElementById("match-type").value;
+    const teamA = document.getElementById("team-a").value;
+    const teamB = document.getElementById("team-b").value;
+    const scheduledStart = document.getElementById("scheduled-start").value;
+    const location = document.getElementById("match-location").value;
+
+    if (!name || !matchType || !teamA || !teamB) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    if (teamA === teamB) {
+      alert("Please select different teams");
+      return;
+    }
+
+    try {
+      const response = await fetch("/staff/competitions/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          match_type: matchType,
+          team_a_id: teamA,
+          team_b_id: teamB,
+          scheduled_start: scheduledStart,
+          location,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        bootstrap.Modal.getInstance(
+          document.getElementById("createMatchModal")
+        ).hide();
+        document.getElementById("createMatchForm").reset();
+        loadMatches();
+        showAlert("Match created successfully!", "success");
+      } else {
+        alert(data.message || "Error creating match");
+      }
+    } catch (error) {
+      console.error("Error creating match:", error);
+      alert("Error creating match");
+    }
+  }
+
+  // Create solo competition
+  async function createSoloCompetition() {
+    const name = document.getElementById("solo-name").value;
+    const description = document.getElementById("solo-description").value;
+    const maxParticipants = document.getElementById("max-participants").value;
+    const scheduledStart = document.getElementById(
+      "solo-scheduled-start"
+    ).value;
+    const location = document.getElementById("solo-location").value;
+
+    if (!name) {
+      alert("Please enter a competition name");
+      return;
+    }
+
+    try {
+      const response = await fetch("/staff/competitions/solo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description,
+          max_participants: maxParticipants,
+          scheduled_start: scheduledStart,
+          location,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        bootstrap.Modal.getInstance(
+          document.getElementById("createSoloModal")
+        ).hide();
+        document.getElementById("createSoloForm").reset();
+        loadSoloCompetitions();
+        showAlert("Solo competition created successfully!", "success");
+      } else {
+        alert(data.message || "Error creating solo competition");
+      }
+    } catch (error) {
+      console.error("Error creating solo competition:", error);
+      alert("Error creating solo competition");
+    }
+  }
+
+  // Update match status
+  async function updateMatchStatus(matchId, status) {
+    try {
+      const response = await fetch(
+        `/staff/competitions/matches/${matchId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        loadMatches();
+        loadActiveCompetitions();
+        showAlert(`Match ${status} successfully!`, "success");
+      } else {
+        alert(data.message || "Error updating match status");
+      }
+    } catch (error) {
+      console.error("Error updating match status:", error);
+      alert("Error updating match status");
+    }
+  }
+
+  // Update solo competition status
+  async function updateSoloStatus(competitionId, status) {
+    try {
+      const response = await fetch(
+        `/staff/competitions/solo/${competitionId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        loadSoloCompetitions();
+        loadActiveCompetitions();
+        showAlert(`Competition ${status} successfully!`, "success");
+      } else {
+        alert(data.message || "Error updating competition status");
+      }
+    } catch (error) {
+      console.error("Error updating competition status:", error);
+      alert("Error updating competition status");
+    }
+  }
+
+  // Utility functions
+  function getStatusBadgeClass(status) {
+    switch (status) {
+      case "scheduled":
+        return "warning";
+      case "active":
+        return "success";
+      case "completed":
+        return "info";
+      case "cancelled":
+        return "danger";
+      default:
+        return "secondary";
+    }
+  }
+
+  function viewMatch(matchId) {
+    window.open(`/staff/competitions/match/${matchId}`, "_blank");
+  }
+
+  function viewSoloCompetition(competitionId) {
+    window.open(`/staff/competitions/solo/${competitionId}`, "_blank");
+  }
+
+  function showAlert(message, type = "success") {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText =
+      "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    alertDiv.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+  }
+</script>

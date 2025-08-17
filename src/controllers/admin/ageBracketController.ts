@@ -5,7 +5,7 @@ import { pool } from '../../config/db';
 export const getAgeBrackets = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow admin to access this page
-    if (!req.session.user || req.session.user.role !== 'admin') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'admin') {
       req.flash('error_msg', 'Unauthorized access');
       return res.redirect('/auth/login');
     }
@@ -34,7 +34,7 @@ export const getAgeBrackets = async (req: Request, res: Response): Promise<void>
 export const addAgeBracket = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'admin') {
       res.status(401).json({ success: false, message: 'Unauthorized access' });
       return;
     }
@@ -86,7 +86,7 @@ export const addAgeBracket = async (req: Request, res: Response): Promise<void> 
 export const updateAgeBracket = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'admin') {
       res.status(401).json({ success: false, message: 'Unauthorized access' });
       return;
     }
@@ -148,7 +148,7 @@ export const updateAgeBracket = async (req: Request, res: Response): Promise<voi
 export const deleteAgeBracket = async (req: Request, res: Response): Promise<void> => {
   try {
     // Only allow admin to access this API
-    if (!req.session.user || req.session.user.role !== 'admin') {
+    if (!(req.session as any).user || (req.session as any).user.role !== 'admin') {
       res.status(401).json({ success: false, message: 'Unauthorized access' });
       return;
     }

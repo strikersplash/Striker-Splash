@@ -1,171 +1,299 @@
-import { Request, Response } from 'express';
-import Staff from '../../models/Staff';
-import Player from '../../models/Player';
-import bcrypt from 'bcryptjs';
+import { Request, Response } from "express";
+import Staff from "../../models/Staff";
+import Player from "../../models/Player";
+import bcrypt = require("bcryptjs");
+import { pool } from "../../config/db";
+import { SERVER_START_TIME } from "../../app";
 
 // Display login form
 export const getLogin = (req: Request, res: Response): void => {
-  res.render('auth/login', { title: 'Login' });
+  res.render("auth/login", { title: "Login" });
 };
 
 // Process login form
 export const postLogin = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, userType } = req.body;
-    console.log('Login attempt:', { username, userType });
+    console.log("Login attempt:", { username, userType });
 
     // Validate input
     if (!username || !password) {
-      req.flash('error_msg', 'Please enter all fields');
-      return res.redirect('/auth/login');
+      req.flash("error_msg", "Please enter all fields");
+      return res.redirect("/auth/login");
     }
 
     // Staff login
-    if (userType === 'staff') {
+    if (userType === "staff") {
       // Find staff member
-      const query = 'SELECT * FROM staff WHERE username = $1';
+      const query = "SELECT * FROM staff WHERE username = $1";
       const { rows } = await Staff.query(query, [username]);
       const staff = rows[0];
-      
+
       if (!staff) {
-        console.log('Staff not found');
-        req.flash('error_msg', 'Invalid credentials');
-        return res.redirect('/auth/login');
+        console.log("Staff not found");
+        req.flash("error_msg", "Invalid credentials");
+        return res.redirect("/auth/login");
       }
 
-      console.log('Staff found, comparing password');
-      console.log('Stored hash:', staff.password_hash);
-      
+      // Check if staff account is active
+      if (staff.active === false) {
+        console.log("Staff account is deactivated");
+        req.flash(
+          "error_msg",
+          "Account has been deactivated. Please contact an administrator."
+        );
+        return res.redirect("/auth/login");
+      }
+
+      console.log("Staff found, comparing password");
+      console.log("Stored hash:", staff.password_hash);
+
       // Verify password
       const isMatch = await bcrypt.compare(password, staff.password_hash);
-      console.log('Password match:', isMatch);
-      
+      console.log("Password match:", isMatch);
+
       if (!isMatch) {
-        console.log('Password mismatch for staff');
-        req.flash('error_msg', 'Invalid credentials');
-        return res.redirect('/auth/login');
+        console.log("Password mismatch for staff");
+        req.flash("error_msg", "Invalid credentials");
+        return res.redirect("/auth/login");
       }
 
       // Create session
-      req.session.user = {
+      (req.session as any).user = {
         id: staff.id.toString(),
         username: staff.username,
         name: staff.name,
         role: staff.role,
-        type: 'staff'
+        type: "staff",
       };
 
-      req.flash('success_msg', `Welcome back, ${staff.name}`);
-      
-      // Redirect based on role
-      if (staff.role === 'admin') {
-        res.redirect('/admin/dashboard');
-      } else {
-        res.redirect('/staff/interface');
-      }
-    } 
-    // Player login
-    else {
-      // Find player by phone (used as username)
-      const query = 'SELECT * FROM players WHERE phone = $1';
-      const { rows } = await Player.query(query, [username]);
-      const player = rows[0];
-      
-      if (!player || !player.password_hash) {
-        console.log('Player not found or no password');
-        req.flash('error_msg', 'Invalid credentials');
-        return res.redirect('/auth/login');
+      // Mark session with current server start time
+      (req.session as any).serverStartTime = SERVER_START_TIME;
+
+      req.flash("success_msg", `Welcome back, ${staff.name}`);
+
+      // Check if there's a return URL stored in the session
+      if ((req.session as any).returnTo) {
+        const returnTo = (req.session as any).returnTo;
+        delete (req.session as any).returnTo;
+        return res.redirect(returnTo);
       }
 
-      console.log('Player found, comparing password');
-      console.log('Stored hash:', player.password_hash);
-      
+      // Redirect based on role
+      if (staff.role === "admin") {
+        res.redirect("/admin/dashboard");
+      } else if (staff.role === "sales") {
+        res.redirect("/cashier/interface");
+      } else {
+        res.redirect("/staff/interface");
+      }
+    }
+    // Player login
+    else {
+      // Find player by phone (used as username) - exclude deleted players
+      const query =
+        "SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL";
+      const { rows } = await Player.query(query, [username]);
+      const player = rows[0];
+
+      if (!player || !player.password_hash) {
+        console.log("Player not found, deleted, or no password");
+        req.flash(
+          "error_msg",
+          "Invalid credentials or account no longer active"
+        );
+        return res.redirect("/auth/login");
+      }
+
+      console.log("Player found, comparing password");
+      console.log("Stored hash:", player.password_hash);
+
       // Verify password
       const isMatch = await bcrypt.compare(password, player.password_hash);
-      console.log('Password match:', isMatch);
-      
+      console.log("Password match:", isMatch);
+
       if (!isMatch) {
-        console.log('Password mismatch for player');
-        req.flash('error_msg', 'Invalid credentials');
-        return res.redirect('/auth/login');
+        console.log("Password mismatch for player");
+        req.flash("error_msg", "Invalid credentials");
+        return res.redirect("/auth/login");
       }
 
       // Create session with valid ID
-      req.session.user = {
+      (req.session as any).user = {
         id: player.id.toString(),
         name: player.name,
-        role: 'player',
-        type: 'player'
+        role: "player",
+        type: "player",
       };
 
-      req.flash('success_msg', `Welcome back, ${player.name}`);
+      // Mark session with current server start time
+      (req.session as any).serverStartTime = SERVER_START_TIME;
+
+      req.flash("success_msg", `Welcome back, ${player.name}`);
       res.redirect(`/player/dashboard?phone=${player.phone}`);
     }
   } catch (error) {
-    console.error('Login error:', error);
-    req.flash('error_msg', 'An error occurred during login');
-    res.redirect('/auth/login');
+    console.error("Login error:", error);
+    req.flash("error_msg", "An error occurred during login");
+    res.redirect("/auth/login");
   }
 };
 
 // Display registration form
 export const getRegister = (req: Request, res: Response): void => {
-  res.render('auth/register', { title: 'Register' });
+  res.render("auth/register", { title: "Register" });
 };
 
 // Process registration form
-export const postRegister = async (req: Request, res: Response): Promise<void> => {
+export const postRegister = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { name, phone, dob, residence, password } = req.body;
-    
-    // Validate input
-    if (!name || !phone || !dob || !residence || !password) {
-      req.flash('error_msg', 'Please fill in all fields');
-      return res.redirect('/auth/register');
-    }
-    
-    // Check if player already exists
-    const existingPlayer = await Player.findByPhone(phone);
-    if (existingPlayer) {
-      req.flash('error_msg', 'Phone number already registered');
-      return res.redirect('/auth/register');
-    }
-    
-    // Generate QR hash
-    const qrHash = require('crypto').randomBytes(16).toString('hex');
-    
-    // Create new player
-    const player = await Player.create({
+    const {
       name,
+      countryCode,
       phone,
+      email,
+      gender,
       dob,
-      residence,
+      district,
+      cityVillage,
+      password,
+      isChildAccount,
+    } = req.body;
+
+    // Combine country code and phone number
+    const fullPhoneNumber =
+      countryCode && phone ? `${countryCode}${phone}` : phone;
+
+    // Validate input
+    if (
+      !name ||
+      !countryCode ||
+      !phone ||
+      !dob ||
+      !district ||
+      !cityVillage ||
+      !password
+    ) {
+      req.flash("error_msg", "Please fill in all required fields");
+      return res.redirect("/auth/register");
+    }
+
+    // Handle child registration logic
+    const isChild = isChildAccount === "on" || isChildAccount === true;
+    let actualPhone = fullPhoneNumber;
+    let parentPhone = null;
+
+    if (isChild) {
+      // For child accounts, the phone entered is the parent's phone
+      parentPhone = fullPhoneNumber;
+      // Generate a unique phone identifier for the child
+      // Check how many children this parent already has
+      const existingChildren = await pool.query(
+        "SELECT COUNT(*) as count FROM players WHERE parent_phone = $1",
+        [parentPhone]
+      );
+      const childNumber = parseInt(existingChildren.rows[0].count) + 1;
+      actualPhone = `${parentPhone}-C${childNumber}`;
+    }
+
+    // Check if player already exists (including deleted players to prevent conflicts)
+    const existingPlayerQuery = "SELECT * FROM players WHERE phone = $1";
+    const existingPlayerResult = await pool.query(existingPlayerQuery, [
+      actualPhone,
+    ]);
+    const existingPlayer = existingPlayerResult.rows[0];
+
+    if (existingPlayer) {
+      if (existingPlayer.deleted_at) {
+        // Player exists but is deleted - offer restoration option
+        req.flash(
+          "error_msg",
+          `This phone number was previously registered to ${existingPlayer.name} but the account was deleted. Please contact staff to restore your account or use a different phone number.`
+        );
+      } else if (isChild) {
+        req.flash(
+          "error_msg",
+          "A child account with this parent phone already exists. Please contact staff for assistance."
+        );
+      } else {
+        req.flash("error_msg", "Phone number already registered");
+      }
+      return res.redirect("/auth/register");
+    }
+
+    // Generate QR hash
+    const qrHash = require("crypto").randomBytes(16).toString("hex");
+
+    // Prepare player data
+    const playerData: any = {
+      name,
+      phone: actualPhone,
+      email: email || null,
+      gender: gender || null,
+      dob,
+      residence: district,
+      city_village: cityVillage,
       qr_hash: qrHash,
       age_group: calculateAgeGroup(new Date(dob)),
-      password_hash: password
-    });
-    
-    if (!player) {
-      req.flash('error_msg', 'Failed to create account');
-      return res.redirect('/auth/register');
+      password_hash: password,
+      is_child_account: isChild,
+      parent_phone: parentPhone,
+    };
+
+    // Add photo path if file was uploaded
+    if (req.file) {
+      playerData.photo_path = "/uploads/" + req.file.filename;
     }
-    
-    req.flash('success_msg', 'Account created successfully. You can now log in.');
-    res.redirect('/auth/login');
+
+    // Create new player
+    const player = await Player.create(playerData);
+
+    if (!player) {
+      req.flash("error_msg", "Failed to create account");
+      return res.redirect("/auth/register");
+    }
+
+    // Insert upload record if photo was uploaded
+    if (req.file) {
+      try {
+        await pool.query(
+          "INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)",
+          [
+            player.id,
+            req.file.filename,
+            playerData.photo_path,
+            req.file.mimetype,
+            req.file.size,
+          ]
+        );
+      } catch (uploadError) {
+        console.error("Error recording upload:", uploadError);
+        // Continue anyway - the photo is saved, just not tracked in uploads table
+      }
+    }
+
+    req.flash(
+      "success_msg",
+      "Account created successfully. You can now log in."
+    );
+    res.redirect("/auth/login");
   } catch (error) {
-    console.error('Registration error:', error);
-    req.flash('error_msg', 'An error occurred during registration');
-    res.redirect('/auth/register');
+    console.error("Registration error:", error);
+    req.flash("error_msg", "An error occurred during registration");
+    res.redirect("/auth/register");
   }
 };
 
 // Logout
 export const logout = (req: Request, res: Response): void => {
-  req.session.destroy((err) => {
+  (req.session as any).destroy((err: any) => {
     if (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
     }
-    res.redirect('/auth/login');
+    res.redirect("/auth/login");
   });
 };
 
@@ -174,16 +302,20 @@ function calculateAgeGroup(dob: Date): string {
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
   const monthDiff = today.getMonth() - dob.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
     age--;
   }
-  
-  if (age < 13) {
-    return 'under13';
-  } else if (age < 18) {
-    return '13-18';
+
+  if (age <= 10) {
+    return "Up to 10 years";
+  } else if (age <= 17) {
+    return "Teens 11-17 years";
+  } else if (age <= 30) {
+    return "Young Adults 18-30 years";
+  } else if (age <= 50) {
+    return "Adults 31-50 years";
   } else {
-    return 'adult';
+    return "Seniors 51+ years";
   }
 }

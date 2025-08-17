@@ -1,0 +1,632 @@
+<%- contentFor('title') %>Live Solo Competition<% include('partials/header') %>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            Live Solo: <%= soloComp.name %>
+            <span class="badge bg-light text-dark ms-2" id="comp-status"
+              ><%= soloComp.status %></span
+            >
+          </h4>
+          <p class="mb-0 mt-2">
+            <strong>Started:</strong>
+            <span id="comp-time"
+              ><%= soloComp.start_time ? new
+              Date(soloComp.start_time).toLocaleString() : 'Not started'
+              %></span
+            >
+          </p>
+        </div>
+        <div class="card-body">
+          <!-- Competition Controls -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <% if (soloComp.status === 'pending') { %>
+              <button
+                class="btn btn-success btn-lg"
+                id="start-comp"
+                onclick="startCompetition()"
+              >
+                <i class="fas fa-play"></i> Start Competition
+              </button>
+              <% } else if (soloComp.status === 'active') { %>
+              <button
+                class="btn btn-warning btn-lg"
+                id="pause-comp"
+                onclick="pauseCompetition()"
+              >
+                <i class="fas fa-pause"></i> Pause Competition
+              </button>
+              <button
+                class="btn btn-danger btn-lg ms-2"
+                id="end-comp"
+                onclick="endCompetition()"
+              >
+                <i class="fas fa-stop"></i> End Competition
+              </button>
+              <% } else if (soloComp.status === 'paused') { %>
+              <button
+                class="btn btn-success btn-lg"
+                id="resume-comp"
+                onclick="resumeCompetition()"
+              >
+                <i class="fas fa-play"></i> Resume Competition
+              </button>
+              <button
+                class="btn btn-danger btn-lg ms-2"
+                id="end-comp"
+                onclick="endCompetition()"
+              >
+                <i class="fas fa-stop"></i> End Competition
+              </button>
+              <% } %>
+            </div>
+            <div class="col-md-6 text-end">
+              <div class="comp-timer">
+                <h3 class="text-success mb-0" id="timer">00:00</h3>
+                <small class="text-muted">Competition Time</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Participants Display -->
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-users"></i> Participants
+                    <span class="badge bg-primary ms-2"
+                      ><%= participants.length %> players</span
+                    >
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <% participants.forEach((participant, index) => { %>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                      <div
+                        class="card participant-card"
+                        id="participant-<%= participant.player_id %>"
+                      >
+                        <div class="card-body">
+                          <div
+                            class="d-flex justify-content-between align-items-start mb-3"
+                          >
+                            <div>
+                              <h6 class="card-title mb-1">
+                                <%= participant.first_name %> <%=
+                                participant.last_name %>
+                              </h6>
+                              <small class="text-muted"
+                                >ID: <%= participant.player_id %></small
+                              >
+                            </div>
+                            <div class="text-end">
+                              <div
+                                class="badge bg-primary fs-6"
+                                id="score-<%= participant.player_id %>"
+                              >
+                                <%= participant.score || 0 %>
+                              </div>
+                              <small class="d-block text-muted">Score</small>
+                            </div>
+                          </div>
+
+                          <div class="progress mb-3" style="height: 8px">
+                            <div
+                              class="progress-bar"
+                              id="progress-<%= participant.player_id %>"
+                              role="progressbar"
+                              style="
+                                width: <%= ((participant.kick_count || 0) / 5) *
+                                  100 %>%;
+                              "
+                              aria-valuenow="<%= participant.kick_count || 0 %>"
+                              aria-valuemin="0"
+                              aria-valuemax="5"
+                            ></div>
+                          </div>
+
+                          <div
+                            class="d-flex justify-content-between align-items-center mb-2"
+                          >
+                            <span
+                              class="badge bg-success"
+                              id="kicks-<%= participant.player_id %>"
+                            >
+                              <%= participant.kick_count || 0 %>/5 kicks
+                            </span>
+                            <span
+                              class="text-muted small"
+                              id="accuracy-<%= participant.player_id %>"
+                            >
+                              <%= participant.kick_count > 0 ?
+                              Math.round(((participant.score || 0) /
+                              (participant.kick_count || 1)) * 100) : 0 %>%
+                              accuracy
+                            </span>
+                          </div>
+
+                          <% if (soloComp.status === 'active') { %>
+                          <div class="kick-buttons">
+                            <% if ((participant.kick_count || 0) < 5) { %>
+                            <div class="btn-group w-100" role="group">
+                              <button
+                                class="btn btn-success btn-sm"
+                                onclick="logKick(<%= participant.player_id %>, true)"
+                              >
+                                <i class="fas fa-check"></i> Success
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="logKick(<%= participant.player_id %>, false)"
+                              >
+                                <i class="fas fa-times"></i> Miss
+                              </button>
+                            </div>
+                            <% } else { %>
+                            <div class="alert alert-warning mb-0 py-2">
+                              <small
+                                ><i class="fas fa-flag-checkered"></i>
+                                Completed</small
+                              >
+                            </div>
+                            <% } %>
+                          </div>
+                          <% } %>
+                        </div>
+                      </div>
+                    </div>
+                    <% }); %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leaderboard -->
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-trophy"></i> Live Leaderboard
+                    <button
+                      class="btn btn-sm btn-outline-primary float-end"
+                      onclick="refreshLeaderboard()"
+                    >
+                      <i class="fas fa-refresh"></i> Refresh
+                    </button>
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div id="leaderboard">
+                    <!-- Will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Kicks Log -->
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Recent Kicks
+                    <button
+                      class="btn btn-sm btn-outline-primary float-end"
+                      onclick="refreshKickLog()"
+                    >
+                      <i class="fas fa-refresh"></i> Refresh
+                    </button>
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div
+                    class="kick-log-container"
+                    style="max-height: 400px; overflow-y: auto"
+                  >
+                    <div id="kick-log">
+                      <!-- Will be populated by JavaScript -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalTitle">Message</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="messageModalBody">
+        <!-- Message content -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let compTimer;
+  let startTime = <%= soloComp.start_time ? `new Date('${soloComp.start_time}')` : 'null' %>;
+  let isPaused = <%= soloComp.status === 'paused' ? 'true' : 'false' %>;
+
+  // Initialize page
+  document.addEventListener('DOMContentLoaded', function() {
+      if (startTime && !isPaused) {
+          startTimer();
+      }
+      refreshLeaderboard();
+      refreshKickLog();
+
+      // Auto-refresh every 10 seconds
+      setInterval(refreshData, 10000);
+  });
+
+  function startTimer() {
+      compTimer = setInterval(function() {
+          if (startTime && !isPaused) {
+              const now = new Date();
+              const elapsed = Math.floor((now - startTime) / 1000);
+              const minutes = Math.floor(elapsed / 60);
+              const seconds = elapsed % 60;
+              document.getElementById('timer').textContent =
+                  String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+          }
+      }, 1000);
+  }
+
+  function stopTimer() {
+      if (compTimer) {
+          clearInterval(compTimer);
+      }
+  }
+
+  async function startCompetition() {
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/start`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to start competition', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to start competition', 'error');
+      }
+  }
+
+  async function pauseCompetition() {
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/pause`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              isPaused = true;
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to pause competition', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to pause competition', 'error');
+      }
+  }
+
+  async function resumeCompetition() {
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/resume`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              isPaused = false;
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to resume competition', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to resume competition', 'error');
+      }
+  }
+
+  async function endCompetition() {
+      if (!confirm('Are you sure you want to end this competition?')) return;
+
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/end`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+              stopTimer();
+              location.reload();
+          } else {
+              showMessage('Error', 'Failed to end competition', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to end competition', 'error');
+      }
+  }
+
+  async function logKick(playerId, successful) {
+      try {
+          const response = await fetch('/staff/live/log-kick', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  solo_comp_id: <%= soloComp.id %>,
+                  player_id: playerId,
+                  successful: successful
+              })
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+              // Update UI immediately for better UX
+              updatePlayerStats(playerId, result.kickCount, result.score);
+              refreshLeaderboard();
+              refreshKickLog();
+
+              showMessage('Success', `Kick logged: ${successful ? 'Success' : 'Miss'}`, 'success');
+          } else {
+              showMessage('Error', result.message || 'Failed to log kick', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to log kick', 'error');
+      }
+  }
+
+  function updatePlayerStats(playerId, kickCount, score) {
+      const kickBadge = document.getElementById(`kicks-${playerId}`);
+      const scoreBadge = document.getElementById(`score-${playerId}`);
+      const progressBar = document.getElementById(`progress-${playerId}`);
+      const accuracySpan = document.getElementById(`accuracy-${playerId}`);
+
+      if (kickBadge) {
+          kickBadge.textContent = `${kickCount}/5 kicks`;
+          if (kickCount >= 5) {
+              kickBadge.classList.remove('bg-success');
+              kickBadge.classList.add('bg-danger');
+
+              // Hide kick buttons and show completion message
+              const participantCard = document.getElementById(`participant-${playerId}`);
+              const kickButtons = participantCard.querySelector('.kick-buttons');
+              if (kickButtons) {
+                  kickButtons.innerHTML = `
+                      <div class="alert alert-warning mb-0 py-2">
+                          <small><i class="fas fa-flag-checkered"></i> Completed</small>
+                      </div>
+                  `;
+              }
+          }
+      }
+
+      if (scoreBadge) {
+          scoreBadge.textContent = score;
+      }
+
+      if (progressBar) {
+          const percentage = (kickCount / 5) * 100;
+          progressBar.style.width = `${percentage}%`;
+          progressBar.setAttribute('aria-valuenow', kickCount);
+      }
+
+      if (accuracySpan) {
+          const accuracy = kickCount > 0 ? Math.round((score / kickCount) * 100) : 0;
+          accuracySpan.textContent = `${accuracy}% accuracy`;
+      }
+  }
+
+  async function refreshLeaderboard() {
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/leaderboard`);
+          const leaderboard = await response.json();
+
+          const container = document.getElementById('leaderboard');
+          container.innerHTML = '';
+
+          leaderboard.forEach((participant, index) => {
+              const item = document.createElement('div');
+              item.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+              item.innerHTML = `
+                  <div class="d-flex align-items-center">
+                      <span class="badge bg-${index === 0 ? 'warning' : index === 1 ? 'secondary' : index === 2 ? 'dark' : 'light'} me-2">
+                          ${index + 1}
+                      </span>
+                      <strong>${participant.player_name}</strong>
+                  </div>
+                  <div class="text-end">
+                      <span class="badge bg-primary">${participant.score}</span>
+                      <small class="text-muted d-block">${participant.kick_count}/5 kicks</small>
+                  </div>
+              `;
+              container.appendChild(item);
+          });
+      } catch (error) {
+          console.error('Failed to refresh leaderboard:', error);
+      }
+  }
+
+  async function refreshKickLog() {
+      try {
+          const response = await fetch(`/staff/live/solo/<%= soloComp.id %>/kicks`);
+          const kicks = await response.json();
+
+          const container = document.getElementById('kick-log');
+          container.innerHTML = '';
+
+          kicks.slice(0, 10).forEach(kick => { // Show only last 10 kicks
+              const item = document.createElement('div');
+              item.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border-start border-3 border-primary bg-light';
+              item.innerHTML = `
+                  <div>
+                      <strong>${kick.player_name}</strong>
+                      <small class="text-muted d-block">${new Date(kick.created_at).toLocaleTimeString()}</small>
+                  </div>
+                  <div class="text-end">
+                      <span class="badge ${kick.successful ? 'bg-success' : 'bg-danger'}">
+                          ${kick.successful ? 'Success' : 'Miss'}
+                      </span>
+                      <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteKick(${kick.id})">
+                          <i class="fas fa-trash"></i>
+                      </button>
+                  </div>
+              `;
+              container.appendChild(item);
+          });
+      } catch (error) {
+          console.error('Failed to refresh kick log:', error);
+      }
+  }
+
+  async function deleteKick(kickId) {
+      if (!confirm('Are you sure you want to delete this kick?')) return;
+
+      try {
+          const response = await fetch(`/staff/live/kick/${kickId}`, {
+              method: 'DELETE'
+          });
+
+          if (response.ok) {
+              refreshKickLog();
+              refreshLeaderboard();
+              refreshData(); // Refresh participant stats
+              showMessage('Success', 'Kick deleted successfully', 'success');
+          } else {
+              showMessage('Error', 'Failed to delete kick', 'error');
+          }
+      } catch (error) {
+          showMessage('Error', 'Failed to delete kick', 'error');
+      }
+  }
+
+  async function refreshData() {
+      try {
+          const response = await fetch(`/staff/competitions/solo/<%= soloComp.id %>/live-data`);
+          const data = await response.json();
+
+          // Update participant stats
+          data.participants.forEach(participant => {
+              updatePlayerStats(participant.player_id, participant.kick_count || 0, participant.score || 0);
+          });
+
+          // Update competition status
+          const statusElement = document.getElementById('comp-status');
+          if (statusElement) {
+              statusElement.textContent = data.status;
+          }
+
+      } catch (error) {
+          console.error('Failed to refresh data:', error);
+      }
+  }
+
+  function showMessage(title, message, type) {
+      const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+      document.getElementById('messageModalTitle').textContent = title;
+      document.getElementById('messageModalBody').innerHTML = `
+          <div class="alert alert-${type === 'error' ? 'danger' : type} mb-0">
+              ${message}
+          </div>
+      `;
+      modal.show();
+  }
+</script>
+
+<style>
+  .participant-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+
+  .participant-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: #007bff;
+  }
+
+  .comp-timer {
+    text-align: center;
+    padding: 10px;
+    border: 2px solid #28a745;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+
+  .kick-buttons .btn-group {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .kick-log-container {
+    scrollbar-width: thin;
+    scrollbar-color: #007bff #f8f9fa;
+  }
+
+  .kick-log-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .kick-log-container::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+  }
+
+  .kick-log-container::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 3px;
+  }
+
+  .progress {
+    background-color: #e9ecef;
+  }
+
+  .progress-bar {
+    background: linear-gradient(90deg, #28a745 0%, #20c997 50%, #17a2b8 100%);
+    transition: width 0.6s ease;
+  }
+
+  .badge.bg-warning {
+    color: #000;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .participant-card {
+    animation: slideIn 0.5s ease-out;
+  }
+</style>

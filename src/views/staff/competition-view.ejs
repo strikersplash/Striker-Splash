@@ -1,0 +1,490 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+          <i class="bi bi-info-circle"></i> Competition Details: <%=
+          competition.name %>
+        </h2>
+        <div>
+          <a href="/staff/competition-setup" class="btn btn-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Setup
+          </a>
+          <% if (competition.status === 'waiting') { %>
+          <button
+            class="btn btn-success me-2"
+            onclick="startCompetition('<%= competition.id %>')"
+          >
+            <i class="bi bi-play-circle"></i> Start Competition
+          </button>
+          <% } %> <% if (competition.status === 'active') { %>
+          <a
+            href="/staff/competition-live/<%= competition.id %>"
+            class="btn btn-primary me-2"
+          >
+            <i class="bi bi-broadcast"></i> Live View
+          </a>
+          <% } %> <% if (competition.status === 'waiting' || competition.status
+          === 'active') { %>
+          <button
+            class="btn btn-outline-danger"
+            onclick="cancelCompetition('<%= competition.id %>')"
+          >
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Competition Info -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Competition Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <strong>Type:</strong><br />
+              <span class="badge bg-info"><%= competition.type %></span>
+            </div>
+            <div class="col-md-3">
+              <strong>Format:</strong><br />
+              <%= competition.format || (competition.team_size + 'v' +
+              competition.team_size) %>
+            </div>
+            <div class="col-md-3">
+              <strong>Status:</strong><br />
+              <% let statusColor = 'secondary'; if (competition.status ===
+              'waiting') statusColor = 'warning'; else if (competition.status
+              === 'active') statusColor = 'success'; else if (competition.status
+              === 'completed') statusColor = 'info'; else if (competition.status
+              === 'cancelled') statusColor = 'danger'; %>
+              <span class="badge bg-<%= statusColor %>"
+                ><%= competition.status %></span
+              >
+            </div>
+            <div class="col-md-3">
+              <strong>Entry Cost:</strong><br />
+              $<%= competition.cost %>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-3">
+              <strong>Kicks per Player:</strong><br />
+              <%= competition.kicks_per_player %>
+            </div>
+            <div class="col-md-3">
+              <strong>Created:</strong><br />
+              <%= new Date(competition.created_at).toLocaleDateString() %>
+            </div>
+            <% if (competition.started_at) { %>
+            <div class="col-md-3">
+              <strong>Started:</strong><br />
+              <%= new Date(competition.started_at).toLocaleString() %>
+            </div>
+            <% } %> <% if (competition.ended_at) { %>
+            <div class="col-md-3">
+              <strong>Ended:</strong><br />
+              <%= new Date(competition.ended_at).toLocaleString() %>
+            </div>
+            <% } %>
+          </div>
+          <% if (competition.description) { %>
+          <div class="row mt-3">
+            <div class="col-12">
+              <strong>Description:</strong><br />
+              <%= competition.description %>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if (competition.type === 'individual') { %>
+  <!-- Individual Competition Participants -->
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Participants (<%= participants.length %>)</h5>
+        </div>
+        <div class="card-body">
+          <% if (participants.length === 0) { %>
+          <p class="text-muted">No participants registered yet.</p>
+          <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Player</th>
+                  <th>Age Group</th>
+                  <th>Goals</th>
+                  <th>Kicks Taken</th>
+                  <th>Accuracy</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% participants.forEach((participant, index) => { %>
+                <tr>
+                  <td>
+                    <% let rankBadge = 'secondary'; if (index === 0) rankBadge =
+                    'warning'; else if (index === 1) rankBadge = 'secondary';
+                    else if (index === 2) rankBadge = 'warning'; %>
+                    <span class="badge bg-<%= rankBadge %>"
+                      >#<%= index + 1 %></span
+                    >
+                  </td>
+                  <td>
+                    <strong><%= participant.name %></strong><br />
+                    <small class="text-muted"
+                      ><%= participant.residence %></small
+                    >
+                  </td>
+                  <td><%= participant.age_group %></td>
+                  <td>
+                    <span class="badge bg-success"
+                      ><%= participant.goals %></span
+                    >
+                  </td>
+                  <td>
+                    <%= participant.kicks_taken %>/<%=
+                    competition.kicks_per_player %>
+                  </td>
+                  <td>
+                    <% const accuracy = participant.kicks_taken > 0 ?
+                    Math.round((participant.goals / participant.kicks_taken) *
+                    100) : 0; %> <%= accuracy %>%
+                  </td>
+                  <td>
+                    <% let statusColor = 'secondary'; if (participant.status ===
+                    'registered') statusColor = 'warning'; else if
+                    (participant.status === 'active') statusColor = 'success';
+                    else if (participant.status === 'completed') statusColor =
+                    'info'; %>
+                    <span class="badge bg-<%= statusColor %>"
+                      ><%= participant.status %></span
+                    >
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Statistics</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-12 mb-3">
+              <h3 class="text-primary"><%= participants.length %></h3>
+              <small class="text-muted">Total Participants</small>
+            </div>
+            <div class="col-6 mb-3">
+              <h4 class="text-success">
+                <%= participants.reduce((sum, p) => sum + p.goals, 0) %>
+              </h4>
+              <small class="text-muted">Total Goals</small>
+            </div>
+            <div class="col-6 mb-3">
+              <h4 class="text-warning">
+                <%= participants.reduce((sum, p) => sum + p.kicks_taken, 0) %>
+              </h4>
+              <small class="text-muted">Total Kicks</small>
+            </div>
+            <div class="col-12">
+              <% const totalGoals = participants.reduce((sum, p) => sum +
+              p.goals, 0); const totalKicks = participants.reduce((sum, p) =>
+              sum + p.kicks_taken, 0); const overallAccuracy = totalKicks > 0 ?
+              Math.round((totalGoals / totalKicks) * 100) : 0; %>
+              <h4 class="text-info"><%= overallAccuracy %>%</h4>
+              <small class="text-muted">Overall Accuracy</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } else { %>
+  <!-- Team Competition Teams -->
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Teams (<%= teams.length %>)</h5>
+        </div>
+        <div class="card-body">
+          <% if (teams.length === 0) { %>
+          <p class="text-muted">No teams registered yet.</p>
+          <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Team</th>
+                  <th>Captain</th>
+                  <th>Members</th>
+                  <th>Goals</th>
+                  <th>Kicks Taken</th>
+                  <th>Accuracy</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% teams.forEach((team, index) => { %>
+                <tr>
+                  <td>
+                    <% let rankBadge = 'secondary'; if (index === 0) rankBadge =
+                    'warning'; else if (index === 1) rankBadge = 'secondary';
+                    else if (index === 2) rankBadge = 'warning'; %>
+                    <span class="badge bg-<%= rankBadge %>"
+                      >#<%= index + 1 %></span
+                    >
+                  </td>
+                  <td><strong><%= team.name %></strong></td>
+                  <td><%= team.captain_name %></td>
+                  <td><%= team.member_count %></td>
+                  <td>
+                    <span class="badge bg-success"
+                      ><%= team.total_goals %></span
+                    >
+                  </td>
+                  <td>
+                    <%= team.total_kicks %>/<%= team.member_count *
+                    competition.kicks_per_player %>
+                  </td>
+                  <td>
+                    <% const accuracy = team.total_kicks > 0 ?
+                    Math.round((team.total_goals / team.total_kicks) * 100) : 0;
+                    %> <%= accuracy %>%
+                  </td>
+                  <td>
+                    <% let statusColor = 'secondary'; if (team.status ===
+                    'registered') statusColor = 'warning'; else if (team.status
+                    === 'active') statusColor = 'success'; else if (team.status
+                    === 'completed') statusColor = 'info'; %>
+                    <span class="badge bg-<%= statusColor %>"
+                      ><%= team.status %></span
+                    >
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Statistics</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-12 mb-3">
+              <h3 class="text-primary"><%= teams.length %></h3>
+              <small class="text-muted">Total Teams</small>
+            </div>
+            <div class="col-6 mb-3">
+              <h4 class="text-success">
+                <%= teams.reduce((sum, t) => sum + t.total_goals, 0) %>
+              </h4>
+              <small class="text-muted">Total Goals</small>
+            </div>
+            <div class="col-6 mb-3">
+              <h4 class="text-warning">
+                <%= teams.reduce((sum, t) => sum + t.total_kicks, 0) %>
+              </h4>
+              <small class="text-muted">Total Kicks</small>
+            </div>
+            <div class="col-12">
+              <% const totalGoals = teams.reduce((sum, t) => sum +
+              t.total_goals, 0); const totalKicks = teams.reduce((sum, t) => sum
+              + t.total_kicks, 0); const overallAccuracy = totalKicks > 0 ?
+              Math.round((totalGoals / totalKicks) * 100) : 0; %>
+              <h4 class="text-info"><%= overallAccuracy %>%</h4>
+              <small class="text-muted">Overall Accuracy</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Recent Activity -->
+  <% if (competition.status === 'active' || competition.status === 'completed')
+  { %>
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          <div id="recent-activity">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const competitionId = "<%= competition.id %>";
+    const competitionStatus = "<%= competition.status %>";
+
+    // Load recent activity if competition is active or completed
+    if (competitionStatus === "active" || competitionStatus === "completed") {
+      loadRecentActivity();
+    }
+
+    function loadRecentActivity() {
+      fetch(`/staff/competition-setup/${competitionId}/activity`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            displayRecentActivity(data.activity);
+          } else {
+            document.getElementById("recent-activity").innerHTML =
+              '<p class="text-muted">No activity yet</p>';
+          }
+        })
+        .catch((error) => {
+          console.error("Error loading recent activity:", error);
+          document.getElementById("recent-activity").innerHTML =
+            '<p class="text-danger">Error loading activity</p>';
+        });
+    }
+
+    function displayRecentActivity(activity) {
+      const container = document.getElementById("recent-activity");
+      container.innerHTML = "";
+
+      if (activity.length === 0) {
+        container.innerHTML = '<p class="text-muted">No activity yet</p>';
+        return;
+      }
+
+      activity.slice(0, 15).forEach((item) => {
+        const activityItem = document.createElement("div");
+        activityItem.className = "border-bottom pb-2 mb-2";
+
+        const timeAgo = new Date(item.logged_at).toLocaleString();
+
+        activityItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${item.player_name}</strong> scored ${item.goals} goals
+            ${item.team_name ? ` for <strong>${item.team_name}</strong>` : ""}
+            ${
+              item.consecutive_kicks
+                ? ` (${item.consecutive_kicks} consecutive!)`
+                : ""
+            }
+          </div>
+          <small class="text-muted">${timeAgo}</small>
+        </div>
+        ${
+          item.notes
+            ? `<div class="mt-1"><small class="text-muted">${item.notes}</small></div>`
+            : ""
+        }
+      `;
+        container.appendChild(activityItem);
+      });
+    }
+
+    window.startCompetition = function (competitionId) {
+      if (confirm("Are you sure you want to start this competition?")) {
+        fetch(`/staff/competition-setup/${competitionId}/start`, {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert("Competition started!");
+              window.location.reload();
+            } else {
+              alert("Error starting competition: " + data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error starting competition:", error);
+            alert("Error starting competition.");
+          });
+      }
+    };
+
+    window.cancelCompetition = function (competitionId) {
+      if (confirm("Are you sure you want to cancel this competition?")) {
+        fetch(`/staff/competition-setup/${competitionId}/cancel`, {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert("Competition cancelled!");
+              window.location.href = "/staff/competition-setup";
+            } else {
+              alert("Error cancelling competition: " + data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error cancelling competition:", error);
+            alert("Error cancelling competition.");
+          });
+      }
+    };
+  });
+</script>
+
+<style>
+  .badge {
+    font-size: 0.9em;
+  }
+
+  .table th {
+    border-top: none;
+    font-weight: 600;
+  }
+
+  .card-header {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  }
+
+  #recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .text-center h3,
+  .text-center h4 {
+    margin-bottom: 5px;
+  }
+</style>
+
+<%- include('../layouts/footer') %>

@@ -1,9 +1,15 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand" href="/">
-      Striker Splash
-    </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <a class="navbar-brand" href="/"> Striker Splash </a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
@@ -22,48 +28,110 @@
         </li>
       </ul>
       <ul class="navbar-nav">
-        <% if (locals.user) { %>
-          <% if (locals.user.role === 'admin') { %>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <%= user.name %> (Admin)
+        <% if (locals.user) { %> <% if (locals.user.role === 'admin') { %>
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle"
+            href="#"
+            id="navbarDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <%= user.name %> (Admin)
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li>
+              <a class="dropdown-item" href="/admin/dashboard"
+                >Admin Dashboard</a
+              >
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
+          </ul>
+        </li>
+        <% } else if (locals.user.role === 'staff') { %>
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle"
+            href="#"
+            id="staffDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <%= user.name %> (Staff)
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="staffDropdown">
+            <li>
+              <a class="dropdown-item" href="/staff/interface">
+                <i class="bi bi-speedometer2"></i> Staff Dashboard
               </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
-              </ul>
             </li>
-          <% } else if (locals.user.role === 'staff') { %>
-            <li class="nav-item me-2">
-              <a class="nav-link btn btn-outline-light" href="/player/transaction">Sell Kicks</a>
-            </li>
-            <li class="nav-item me-2">
-              <a class="nav-link btn btn-outline-light" href="/staff/interface">Log Goals</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link btn btn-danger" href="/auth/logout">Logout</a>
-            </li>
-          <% } else { %>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <%= user.name %>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item" href="/staff/interface">
+                <i class="bi bi-bullseye"></i> Log Goals
               </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="/player/dashboard">My Dashboard</a></li>
-                <li><a class="dropdown-item" href="/player/edit-profile">Edit Profile</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
-              </ul>
             </li>
-          <% } %>
+            <li>
+              <a class="dropdown-item" href="/player/transaction">
+                <i class="bi bi-cart"></i> Sell Kicks
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="/staff/event-registration-management"
+              >
+                <i class="bi bi-calendar-event"></i> Event Registration
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/staff/name-change">
+                <i class="bi bi-person-gear"></i> Edit Player Profiles
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/staff/competition-setup">
+                <i class="bi bi-trophy"></i> Competition Setup
+              </a>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item text-danger" href="/auth/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
+        </li>
         <% } else { %>
-          <li class="nav-item">
-            <a class="nav-link" href="/auth/login">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/auth/register">Register</a>
-          </li>
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle"
+            href="#"
+            id="navbarDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <%= user.name %>
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li>
+              <a class="dropdown-item" href="/player/dashboard">My Dashboard</a>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
+          </ul>
+        </li>
+        <% } %> <% } else { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/auth/login">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/auth/register">Register</a>
+        </li>
         <% } %>
       </ul>
     </div>

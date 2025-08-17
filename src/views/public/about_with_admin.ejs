@@ -1,0 +1,358 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <!-- Admin Edit Button for About Section -->
+          <% if (locals.user && locals.user.role === 'admin') { %>
+          <div class="admin-controls mb-3">
+            <button
+              class="btn btn-outline-light btn-sm admin-edit-btn"
+              data-section="about_main"
+            >
+              <i class="bi bi-pencil-square"></i> Edit About Content
+            </button>
+          </div>
+          <% } %>
+
+          <h3 class="mb-0" data-editable="about_main" data-key="title">
+            <%= aboutContent.title || 'About Striker Splash' %>
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-12">
+              <h4 data-editable="about_main" data-key="subtitle">
+                <%- aboutContent.subtitle || 'The Ultimate Football Challenge'
+                %>
+              </h4>
+              <p data-editable="about_main" data-key="description1">
+                <%- aboutContent.description1 || 'Striker Splash is Belize\'s
+                premier football skills competition, bringing together players
+                of all ages and skill levels to test their accuracy and
+                technique.' %>
+              </p>
+              <p data-editable="about_main" data-key="description2">
+                <%- aboutContent.description2 || 'Founded in 2024, our upcoming
+                competition is designed to provide football enthusiasts across
+                the country with an exciting new way to test their skills in a
+                fun and competitive environment.' %>
+              </p>
+
+              <hr class="my-5" />
+
+              <h4 class="mt-4">How It Works</h4>
+              <p data-editable="about_main" data-key="how_it_works">
+                <%- aboutContent.how_it_works || 'Participants purchase "kicks"
+                for $1 BZD each, with a maximum of 5 kicks per turn. Each kick
+                is recorded on our leaderboard, helping players climb the
+                rankings with every successful attempt.' %>
+              </p>
+
+              <p data-editable="about_main" data-key="competition_vs_practice">
+                <strong>Competition vs. Practice:</strong>
+                <%- aboutContent.competition_vs_practice || 'When registering
+                for an event, players can decide if they want to play
+                competitively or just for practice. Both options cost the same
+                ($1 per kick), but competition kicks will be counted for
+                tournament rankings and official records.' %>
+              </p>
+
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <i
+                        class="bi bi-bullseye"
+                        style="font-size: 3rem; color: #dc3545"
+                      ></i>
+                      <h5 class="mt-3">Accuracy Challenge</h5>
+                      <p>
+                        Test your precision by hitting targets in the goal.
+                        Points are awarded based on difficulty and placement.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <i
+                        class="bi bi-lightning"
+                        style="font-size: 3rem; color: #fd7e14"
+                      ></i>
+                      <h5 class="mt-3">Speed Challenge</h5>
+                      <p>
+                        How fast can you score? Players compete to record the
+                        fastest successful kicks.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <i
+                        class="bi bi-trophy"
+                        style="font-size: 3rem; color: #ffc107"
+                      ></i>
+                      <h5 class="mt-3">Juggling Challenge</h5>
+                      <p>
+                        Show off your ball control skills by keeping the ball in
+                        the air as long as possible.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upcoming Events Section -->
+              <h4 class="mt-5" id="events">Upcoming Events</h4>
+              <div class="card mb-4">
+                <div class="card-body">
+                  <div id="events-loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading upcoming events...</p>
+                  </div>
+                  <div id="events-container" style="display: none">
+                    <div class="table-responsive">
+                      <table class="table table-hover" id="events-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Event</th>
+                            <th>Pricing</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <!-- This will be filled dynamically -->
+                        </tbody>
+                      </table>
+                    </div>
+                    <div
+                      id="no-events"
+                      class="text-center"
+                      style="display: none"
+                    >
+                      <p>
+                        No upcoming events scheduled at this time. Check back
+                        soon!
+                      </p>
+                    </div>
+                  </div>
+
+                  <% if (loggedIn && user && user.role === 'player') { %>
+                  <!-- Player Event Registration Modal -->
+                  <div
+                    class="modal fade"
+                    id="eventRegistrationModal"
+                    tabindex="-1"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                          <h5 class="modal-title" id="eventModalTitle">
+                            Register for Event
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          <p id="event-details"></p>
+                          <p id="event-dates"></p>
+
+                          <div class="alert alert-info">
+                            <strong>Available Kicks:</strong>
+                            <span id="available-tickets">0</span>
+                          </div>
+
+                          <form id="event-registration-form">
+                            <input type="hidden" id="event-id" name="eventId" />
+
+                            <div class="mb-3">
+                              <label for="kicks-requested" class="form-label"
+                                >Number of Kicks:</label
+                              >
+                              <select
+                                class="form-select"
+                                id="kicks-requested"
+                                name="kicksRequested"
+                                required
+                              >
+                                <option value="">Select number of kicks</option>
+                                <option value="1">1 kick</option>
+                                <option value="2">2 kicks</option>
+                                <option value="3">3 kicks</option>
+                                <option value="4">4 kicks</option>
+                                <option value="5">5 kicks</option>
+                              </select>
+                              <small class="text-muted"
+                                >Each kick requires ticket(s).</small
+                              >
+                            </div>
+
+                            <div class="mb-3">
+                              <div class="form-check">
+                                <input
+                                  class="form-check-input"
+                                  type="checkbox"
+                                  id="is-competition"
+                                  name="isCompetition"
+                                />
+                                <label
+                                  class="form-check-label"
+                                  for="is-competition"
+                                >
+                                  Register for Competition (check for
+                                  competition play, uncheck for practice only)
+                                </label>
+                              </div>
+                            </div>
+
+                            <div class="alert alert-warning">
+                              <strong>Total Kicks Required:</strong>
+                              <span id="tickets-required">0</span>
+                            </div>
+                          </form>
+                        </div>
+                        <div class="modal-footer">
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="register-button"
+                          >
+                            Register
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- My Registrations Modal -->
+                  <div
+                    class="modal fade"
+                    id="myRegistrationsModal"
+                    tabindex="-1"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog modal-lg">
+                      <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                          <h5 class="modal-title">My Event Registrations</h5>
+                          <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          <div id="registrations-loading" class="text-center">
+                            <div
+                              class="spinner-border text-primary"
+                              role="status"
+                            >
+                              <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading your registrations...</p>
+                          </div>
+                          <div
+                            id="registrations-container"
+                            style="display: none"
+                          >
+                            <!-- This will be filled dynamically -->
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <% } %>
+                </div>
+              </div>
+
+              <% if (loggedIn && user && user.role === 'player') { %>
+              <div class="d-flex justify-content-end">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary me-2"
+                  id="view-registrations-btn"
+                >
+                  <i class="bi bi-calendar-check"></i> My Registrations
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="refresh-events-btn"
+                >
+                  <i class="bi bi-arrow-clockwise"></i> Refresh Events
+                </button>
+              </div>
+              <% } %>
+
+              <h4 class="mt-4">Our Mission</h4>
+              <p data-editable="about_main" data-key="mission">
+                <%- aboutContent.mission || 'At Striker Splash, our mission is
+                to promote football skills development while creating a fun,
+                competitive environment for players of all ages. We believe in:'
+                %>
+              </p>
+              <ul>
+                <li>Encouraging healthy competition</li>
+                <li>Developing technical football skills</li>
+                <li>Creating community events that bring people together</li>
+                <li>
+                  Providing a platform for players to showcase their talents
+                </li>
+              </ul>
+
+              <hr class="my-5" />
+              <h4 class="mt-4">Join Us</h4>
+              <p data-editable="about_main" data-key="join_us">
+                <%- aboutContent.join_us || 'Whether you\'re a seasoned
+                footballer or just looking for a fun challenge, Striker Splash
+                welcomes players of all skill levels. Check our events calendar
+                for upcoming competitions in your area!' %>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include the events.js script for all users -->
+<script src="/js/events.js"></script>
+<% if (locals.loggedIn && locals.user && locals.user.role === 'player') { %>
+<script>
+  window.isPlayerLoggedIn = true;
+</script>
+<% } else { %>
+<script>
+  window.isPlayerLoggedIn = false;
+</script>
+<% } %>

@@ -271,4 +271,4 @@ Deployment
 
     Enable HTTPS with SSL
 
-    Set up .env with production DB, session secrets
+    Set up .env with production DB, session secrets 

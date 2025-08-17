@@ -1,47 +1,137 @@
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-3">
   <div class="row">
     <!-- Sidebar -->
-    <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="col-lg-2 col-md-3 d-none d-md-block bg-light sidebar">
       <div class="position-sticky pt-3">
         <ul class="nav flex-column">
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" href="/admin/dashboard">
+            <a
+              class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>"
+              href="/admin/dashboard"
+            >
               <i class="bi bi-speedometer2"></i> Dashboard
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'staff' ? 'active' : '' %>" href="/admin/staff">
+            <a
+              class="nav-link <%= activePage === 'staff' ? 'active' : '' %>"
+              href="/admin/staff"
+            >
               <i class="bi bi-people"></i> Manage Staff
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'players' ? 'active' : '' %>" href="/admin/players">
+            <a
+              class="nav-link <%= activePage === 'players' ? 'active' : '' %>"
+              href="/admin/players"
+            >
               <i class="bi bi-person-badge"></i> Manage Players
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'tickets' ? 'active' : '' %>" href="/admin/tickets">
+            <a
+              class="nav-link <%= activePage === 'sales-reports' ? 'active' : '' %>"
+              href="/admin/sales-reports"
+            >
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= activePage === 'tickets' ? 'active' : '' %>"
+              href="/admin/tickets"
+            >
               <i class="bi bi-ticket-perforated"></i> Ticket Management
             </a>
           </li>
+
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'staff-duty' ? 'active' : '' %>" href="/admin/staff-duty">
-              <i class="bi bi-calendar-check"></i> Staff on Duty
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <%= activePage === 'raffle' ? 'active' : '' %>" href="/admin/raffle">
+            <a
+              class="nav-link <%= activePage === 'raffle' ? 'active' : '' %>"
+              href="/admin/raffle"
+            >
               <i class="bi bi-trophy"></i> Daily Raffle
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link <%= activePage === 'reports' ? 'active' : '' %>" href="/admin/reports">
-              <i class="bi bi-graph-up"></i> Reports
+            <a
+              class="nav-link <%= activePage === 'event-locations' ? 'active' : '' %>"
+              href="/admin/event-locations"
+            >
+              <i class="bi bi-calendar-event"></i> Event Locations
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link <%= activePage === 'settings' ? 'active' : '' %>" href="/admin/settings">
-              <i class="bi bi-gear"></i> Settings
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Dropdown -->
+    <div class="col-12 d-md-none mb-3">
+      <div class="dropdown">
+        <button
+          class="btn btn-primary dropdown-toggle w-100"
+          type="button"
+          id="mobileNavDropdown"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          <i class="bi bi-list"></i> Admin Menu
+        </button>
+        <ul class="dropdown-menu w-100" aria-labelledby="mobileNavDropdown">
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'dashboard' ? 'active' : '' %>"
+              href="/admin/dashboard"
+            >
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'staff' ? 'active' : '' %>"
+              href="/admin/staff"
+            >
+              <i class="bi bi-people"></i> Manage Staff
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'players' ? 'active' : '' %>"
+              href="/admin/players"
+            >
+              <i class="bi bi-person-badge"></i> Manage Players
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'sales-reports' ? 'active' : '' %>"
+              href="/admin/sales-reports"
+            >
+              <i class="bi bi-graph-up"></i> Sales Reports
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'tickets' ? 'active' : '' %>"
+              href="/admin/tickets"
+            >
+              <i class="bi bi-ticket-perforated"></i> Ticket Management
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'raffle' ? 'active' : '' %>"
+              href="/admin/raffle"
+            >
+              <i class="bi bi-trophy"></i> Daily Raffle
+            </a>
+          </li>
+          <li>
+            <a
+              class="dropdown-item <%= activePage === 'event-locations' ? 'active' : '' %>"
+              href="/admin/event-locations"
+            >
+              <i class="bi bi-calendar-event"></i> Event Locations
             </a>
           </li>
         </ul>
@@ -49,8 +139,6 @@
     </div>
 
     <!-- Main Content -->
-    <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <%- body %>
-    </div>
+    <div class="col-lg-10 col-md-9 px-md-4"><%- body %></div>
   </div>
 </div>

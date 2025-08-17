@@ -1,0 +1,462 @@
+<div class="container-fluid py-3">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-3">Player Dashboard</h2>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Left Column: Player Info & QR Code -->
+    <div class="col-lg-4 col-md-6 col-12">
+      <!-- Player Profile Card -->
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Player Profile</h5>
+        </div>
+        <div class="card-body text-center">
+          <div id="player-avatar-container" class="mb-3"></div>
+          <h4><%= player.name %></h4>
+          <% if (player.is_child_account) { %>
+          <span class="badge bg-info mb-2">Child Account</span>
+          <% } %>
+          <p class="text-muted mb-1"><%= player.phone %></p>
+          <% if (player.email) { %>
+          <p class="text-muted mb-1"><%= player.email %></p>
+          <% } %>
+          <p class="small text-muted mb-2">
+            <strong>Location:</strong>
+            <% if (player.city_village) { %><%= player.city_village %>, <% } %>
+            <%= player.residence %>
+          </p>
+          <p class="small text-muted mb-3">
+            <strong>Age Group:</strong> <%= player.age_group %>
+          </p>
+          <a href="/player/edit-profile" class="btn btn-outline-primary"
+            >Edit Profile</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle Column: Stats & Teams -->
+    <div class="col-lg-4 col-md-6 col-12">
+      <!-- Stats Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Your Stats</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-4">
+              <h3 class="text-primary"><%= stats.total_goals || 0 %></h3>
+              <small>Goals</small>
+            </div>
+            <div class="col-4">
+              <h3 class="text-info"><%= stats.total_attempts || 0 %></h3>
+              <small>Attempts</small>
+            </div>
+            <div class="col-4">
+              <h3 class="text-warning">
+                <%= stats.total_attempts ? ((stats.total_goals /
+                stats.total_attempts) * 100).toFixed(1) : 0 %>%
+              </h3>
+              <small>Accuracy</small>
+            </div>
+          </div>
+          <hr />
+          <div class="row text-center">
+            <div class="col-6">
+              <h4 class="text-success">
+                <% if (stats.best_consecutive_kicks &&
+                stats.best_consecutive_kicks > 0) { %> <%=
+                stats.best_consecutive_kicks %> <% } else { %> 0 <% } %>
+              </h4>
+              <small>Best Streak</small>
+            </div>
+            <div class="col-6">
+              <h4 class="text-primary"><%= player.kicks_balance || 0 %></h4>
+              <small>Kicks Available</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teams Card -->
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Teams</h5>
+        </div>
+        <div class="card-body">
+          <% if (allTeams && allTeams.length > 0) { %> <%
+          allTeams.forEach((team, index) => { %>
+          <div class="alert alert-success mb-2">
+            <h6 class="mb-1">
+              <strong><%= team.name %></strong>
+              <% if (team.slug) { %>
+              <small class="text-muted">@<%= team.slug %></small>
+              <% } %>
+            </h6>
+            <small>Size: <%= team.team_size %> players</small>
+            <% if (team.description) { %>
+            <br /><small class="text-muted"><%= team.description %></small>
+            <% } %>
+          </div>
+          <% }); %>
+
+          <div class="d-grid gap-2">
+            <% if (allTeams.length === 1) { %>
+            <a href="/player/team/view" class="btn btn-primary btn-sm">
+              View Team
+            </a>
+            <% } else { %>
+            <a href="/player/teams/browse" class="btn btn-primary btn-sm">
+              Manage My Teams (<%= allTeams.length %>)
+            </a>
+            <% } %>
+            <a
+              href="/player/teams/browse"
+              class="btn btn-outline-secondary btn-sm"
+            >
+              Browse More Teams
+            </a>
+          </div>
+          <% } else { %>
+          <div class="alert alert-light text-center">
+            <p class="mb-2">You're not part of any team yet</p>
+            <small class="text-muted"
+              >Join a team to participate in competitions!</small
+            >
+          </div>
+          <div class="d-grid gap-2">
+            <a href="/player/teams/create" class="btn btn-success btn-sm"
+              >Create Team</a
+            >
+            <a
+              href="/player/teams/browse"
+              class="btn btn-outline-primary btn-sm"
+              >Browse Teams</a
+            >
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: QR, Queue, Activity -->
+    <div class="col-lg-4 col-12">
+      <!-- QR Code Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Your QR Code</h5>
+        </div>
+        <div class="card-body text-center">
+          <% if (player.qr_code_path) { %>
+          <img
+            src="<%= player.qr_code_path %>"
+            alt="QR Code"
+            class="img-fluid mb-3"
+            style="max-width: 150px"
+          />
+          <% } else { %>
+          <img
+            src="/qr/<%= player.id %>"
+            alt="QR Code"
+            class="img-fluid mb-3"
+            style="max-width: 150px"
+          />
+          <% } %>
+          <p class="small mb-3">
+            Show this QR code to the referee to log your goals.
+          </p>
+          <a href="/player/download-qr" class="btn btn-outline-success"
+            >Download QR Code</a
+          >
+        </div>
+      </div>
+
+      <!-- Queue Status Card -->
+      <div class="card mb-3">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Queue Status</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="bg-info text-white p-2 rounded">
+                <small>Now Serving</small>
+                <h4 id="current-queue-number">
+                  <%= currentQueuePosition || 'None' %>
+                </h4>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-primary text-white p-2 rounded">
+                <small>Your Position</small>
+                <h4 id="queue-position">
+                  <% if (activeTickets && activeTickets.length > 0) { %> <%
+                  const nextTicket = activeTickets.find(t => t.ticket_number >=
+                  (currentQueuePosition || 0)) %> <% if (nextTicket &&
+                  currentQueuePosition) { %> <%= nextTicket.ticket_number -
+                  currentQueuePosition %> ahead <% } else { %> Ready! <% } %> <%
+                  } else { %> No tickets <% } %>
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          <h6>Your Active Tickets:</h6>
+          <div id="tickets-container">
+            <% if (activeTickets && activeTickets.length > 0) { %> <%
+            activeTickets.forEach(ticket => { %>
+            <div
+              class="d-flex justify-content-between align-items-center border-bottom py-1"
+            >
+              <div>
+                <strong>Ticket #<%= ticket.ticket_number %></strong>
+                <br /><small class="text-muted"
+                  ><%= ticket.competition_type === 'competition' ? 'Competition'
+                  : 'Practice' %></small
+                >
+              </div>
+              <% if (currentQueuePosition && ticket.ticket_number <=
+              currentQueuePosition) { %>
+              <span class="badge bg-success">Ready!</span>
+              <% } else if (currentQueuePosition) { %>
+              <span class="badge bg-secondary"
+                ><%= ticket.ticket_number - currentQueuePosition %> ahead</span
+              >
+              <% } else { %>
+              <span class="badge bg-info">In Queue</span>
+              <% } %>
+            </div>
+            <% }) %> <% } else { %>
+            <div class="alert alert-light text-center">
+              <small>No active queue tickets</small>
+            </div>
+            <% } %>
+          </div>
+          <small class="text-muted d-block mt-2"
+            >Updates every 10 seconds</small
+          >
+        </div>
+      </div>
+
+      <!-- Notifications Card -->
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="bi bi-bell"></i> Notifications
+            <span id="unread-count" class="badge bg-danger"></span>
+          </h5>
+          <button
+            id="clear-all-notifications-btn"
+            class="btn btn-sm btn-outline-danger"
+            style="display: none"
+          >
+            Clear All
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="notifications-container">
+            <div class="text-center">
+              <div class="spinner-border spinner-border-sm" role="status"></div>
+              <span class="ms-2">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity Row -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Goals</th>
+                  <th>Location</th>
+                  <th>Referee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (recentActivity && recentActivity.length > 0) { %> <%
+                recentActivity.forEach(activity => { %>
+                <tr>
+                  <td>
+                    <%= new Date(activity.timestamp).toLocaleDateString() %>
+                  </td>
+                  <td><%= activity.goals %></td>
+                  <td><%= activity.location %></td>
+                  <td><%= activity.staff_name || 'Unknown' %></td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr>
+                  <td colspan="4" class="text-center text-muted">
+                    No recent activity
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Avatar Script -->
+<script src="/js/avatar.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Create avatar
+    const avatarContainer = document.getElementById("player-avatar-container");
+    const avatar = createAvatar(
+      "<%= player.name %>",
+      100,
+      '<%= player.photo_path || "" %>'
+    );
+    avatar.classList.add("d-block", "mx-auto");
+    avatarContainer.appendChild(avatar);
+
+    // Auto-refresh queue status every 10 seconds
+    function updateQueueStatus() {
+      fetch("/player/api/queue-status")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            document.getElementById("current-queue-number").textContent =
+              data.currentQueuePosition || "None";
+
+            // Update player position
+            if (data.playerTickets && data.playerTickets.length > 0) {
+              const nextTicket = data.playerTickets.find(
+                (t) => t.ticket_number >= (data.currentQueuePosition || 0)
+              );
+              let positionText = "Ready!";
+              if (nextTicket && data.currentQueuePosition) {
+                const ahead =
+                  nextTicket.ticket_number - data.currentQueuePosition;
+                if (ahead > 0) {
+                  positionText = `${ahead} ahead`;
+                }
+              }
+              document.getElementById("queue-position").textContent =
+                positionText;
+            } else {
+              document.getElementById("queue-position").textContent =
+                "No tickets";
+            }
+          }
+        })
+        .catch((error) => console.error("Error updating queue status:", error));
+    }
+
+    // Load notifications
+    function loadNotifications() {
+      fetch("/player/api/notifications")
+        .then((response) => response.json())
+        .then((data) => {
+          const container = document.getElementById("notifications-container");
+          const unreadCount = document.getElementById("unread-count");
+
+          if (
+            data.success &&
+            data.notifications &&
+            data.notifications.length > 0
+          ) {
+            let html = "";
+            let unreadCounter = 0;
+
+            data.notifications.forEach((notification) => {
+              if (!notification.read) unreadCounter++;
+              html += `
+              <div class="alert alert-${
+                notification.type === "success" ? "success" : "info"
+              } alert-dismissible fade show py-2">
+                <small>${notification.message}</small>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+              </div>
+            `;
+            });
+
+            container.innerHTML = html;
+            unreadCount.textContent = unreadCounter > 0 ? unreadCounter : "";
+
+            if (unreadCounter > 0) {
+              document.getElementById(
+                "clear-all-notifications-btn"
+              ).style.display = "block";
+            }
+          } else {
+            container.innerHTML =
+              '<small class="text-muted">No notifications</small>';
+            unreadCount.textContent = "";
+          }
+        })
+        .catch((error) => {
+          console.error("Error loading notifications:", error);
+          document.getElementById("notifications-container").innerHTML =
+            '<small class="text-muted">Unable to load notifications</small>';
+        });
+    }
+
+    // Initialize
+    loadNotifications();
+    updateQueueStatus();
+
+    // Set intervals
+    setInterval(updateQueueStatus, 10000);
+    setInterval(loadNotifications, 30000);
+  });
+</script>
+
+<style>
+  /* Dashboard specific styles */
+  .card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+  }
+
+  #player-avatar-container img,
+  #player-avatar-container canvas {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+  }
+
+  .table th {
+    border-top: none;
+    font-weight: 600;
+  }
+
+  .alert {
+    border-radius: 0.375rem;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .container-fluid {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    #player-avatar-container img,
+    #player-avatar-container canvas {
+      width: 80px;
+      height: 80px;
+    }
+  }
+</style>

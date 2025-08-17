@@ -1,152 +1,165 @@
-<div class="container mt-5">
+<div class="container-fluid mt-3">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Striker Splash Leaderboard</h3>
-        </div>
-        <div class="card-body">
-          <!-- View Toggle -->
-          <div class="row mb-4">
-            <div class="col-12">
-              <div class="btn-group w-100" role="group">
-                <a href="/leaderboard" class="btn btn-primary">Player Leaderboard</a>
-                <a href="/leaderboard?view=teams" class="btn btn-outline-primary">Team Leaderboard</a>
-              </div>
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <h3 class="mb-2 mb-md-0">🏆 Leaderboard</h3>
+            <div class="btn-group" role="group">
+              <input type="radio" class="btn-check" name="leaderboard-type" id="individual-radio" autocomplete="off" <%= (!filters.type || filters.type === 'individual') ? 'checked' : '' %>>
+              <label class="btn btn-outline-light btn-sm" for="individual-radio">Individual</label>
+              
+              <input type="radio" class="btn-check" name="leaderboard-type" id="team-radio" autocomplete="off" <%= (filters.type === 'team') ? 'checked' : '' %>>
+              <label class="btn btn-outline-light btn-sm" for="team-radio">Teams</label>
             </div>
           </div>
-          
+        </div>
+        
+        <div class="card-body">
           <!-- Filters -->
-          <div class="row mb-4">
-            <div class="col-md-2">
-              <label for="gender-filter" class="form-label">Gender</label>
+          <div class="row mb-3">
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">Gender</label>
               <select class="form-select" id="gender-filter">
-                <option value="all" <%= filters.gender === 'all' ? 'selected' : '' %>>All</option>
-                <option value="male" <%= filters.gender === 'male' ? 'selected' : '' %>>Men</option>
-                <option value="female" <%= filters.gender === 'female' ? 'selected' : '' %>>Women</option>
+                <option value="">All</option>
+                <option value="male" <%= filters.gender === 'male' ? 'selected' : '' %>>Male</option>
+                <option value="female" <%= filters.gender === 'female' ? 'selected' : '' %>>Female</option>
               </select>
             </div>
-            <div class="col-md-2">
-              <label for="age-filter" class="form-label">Age Bracket</label>
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">Age</label>
               <select class="form-select" id="age-filter">
-                <option value="all" <%= filters.ageGroup === 'all' ? 'selected' : '' %>>All Ages</option>
+                <option value="">All Ages</option>
                 <% ageBrackets.forEach(bracket => { %>
                   <option value="<%= bracket.name %>" <%= filters.ageGroup === bracket.name ? 'selected' : '' %>><%= bracket.name %></option>
                 <% }); %>
               </select>
             </div>
-            <div class="col-md-3">
-              <label for="district-filter" class="form-label">District</label>
-              <input type="text" class="form-control" id="district-filter" placeholder="Filter by district" value="<%= filters.residence !== 'all' ? filters.residence : '' %>">
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">Location</label>
+              <input type="text" class="form-control" id="district-filter" placeholder="Location" value="<%= filters.residence || '' %>">
             </div>
-            <div class="col-md-3">
-              <label for="time-filter" class="form-label">Time Range</label>
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">Time</label>
               <select class="form-select" id="time-filter">
-                <option value="all" <%= filters.timeRange === 'all' ? 'selected' : '' %>>All Time</option>
+                <option value="">All Time</option>
                 <option value="day" <%= filters.timeRange === 'day' ? 'selected' : '' %>>Today</option>
                 <option value="week" <%= filters.timeRange === 'week' ? 'selected' : '' %>>This Week</option>
                 <option value="month" <%= filters.timeRange === 'month' ? 'selected' : '' %>>This Month</option>
                 <option value="year" <%= filters.timeRange === 'year' ? 'selected' : '' %>>This Year</option>
               </select>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
-              <button type="button" class="btn btn-primary w-100" id="apply-filters">
-                <i class="bi bi-funnel"></i> Apply Filters
-              </button>
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">Sort</label>
+              <select class="form-select" id="sort-filter">
+                <option value="goals">Goals</option>
+                <option value="streak" <%= filters.sortBy === 'streak' ? 'selected' : '' %>>Streak</option>
+              </select>
             </div>
-          </div>
-          
-          <!-- Reset Filters Button -->
-          <div class="row mb-4">
-            <div class="col-12">
-              <button type="button" class="btn btn-outline-secondary" id="reset-filters">
-                <i class="bi bi-x-circle"></i> Reset Filters
-              </button>
-            </div>
-          </div>
-          
-          <!-- Leaderboard Table -->
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Name</th>
-                  <th>District</th>
-                  <th>Gender</th>
-                  <th>Age Group</th>
-                  <th>Goals</th>
-                  <th>Attempts</th>
-                  <th>Referees</th>
-                  <th>Percentile</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-data">
-                <% if (leaderboard && leaderboard.length > 0) { %>
-                  <% leaderboard.forEach((player, index) => { %>
-                    <tr>
-                      <td><%= index + 1 %></td>
-                      <td><%= player.name %></td>
-                      <td><%= player.residence %></td>
-                      <td><%= player.gender || 'Unknown' %></td>
-                      <td><%= player.age_group %></td>
-                      <td><%= player.total_goals %></td>
-                      <td><%= player.total_attempts %></td>
-                      <td><small><%= player.referees || 'Unknown' %></small></td>
-                      <td>
-                        <% if (player.percentile <= 10) { %>
-                          <span class="badge bg-danger">Top 10%</span>
-                        <% } else if (player.percentile <= 25) { %>
-                          <span class="badge bg-warning">Top 25%</span>
-                        <% } else if (player.percentile <= 50) { %>
-                          <span class="badge bg-info">Top 50%</span>
-                        <% } else { %>
-                          <span class="badge bg-secondary"><%= player.percentile %>%</span>
-                        <% } %>
-                      </td>
-                    </tr>
-                  <% }); %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="9" class="text-center">No data available</td>
-                  </tr>
-                <% } %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Staff on Duty -->
-      <div class="card">
-        <div class="card-header bg-secondary text-white">
-          <h5 class="mb-0">Today's Staff on Duty</h5>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <% if (staffOnDuty && staffOnDuty.length > 0) { %>
-              <% staffOnDuty.forEach(staff => { %>
-                <div class="col-md-4 mb-3">
-                  <div class="card h-100">
-                    <div class="card-body">
-                      <h5 class="card-title"><%= staff.name %></h5>
-                      <p class="card-text">
-                        <span class="badge 
-                          <%= staff.role === 'cashier' ? 'bg-primary' : 
-                             staff.role === 'referee' ? 'bg-success' : 
-                             'bg-info' %>">
-                          <%= staff.role.charAt(0).toUpperCase() + staff.role.slice(1) %>
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              <% }); %>
-            <% } else { %>
-              <div class="col-12">
-                <p class="text-center">No staff on duty today</p>
+            <div class="col-md-2 col-sm-6 mb-2 mb-md-0">
+              <label class="form-label">&nbsp;</label>
+              <div>
+                <button type="button" class="btn btn-primary btn-sm w-100 mb-1" onclick="applyFilters()">Apply</button>
+                <button type="button" class="btn btn-secondary btn-sm w-100" onclick="resetFilters()">Reset</button>
               </div>
-            <% } %>
+            </div>
+          </div>
+          
+          <!-- Individual Leaderboard -->
+          <div id="individual-leaderboard" class="<%= filters.type === 'team' ? 'd-none' : '' %>">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Location</th>
+                    <th>Gender</th>
+                    <th>Age Group</th>
+                    <th>Goals</th>
+                    <th>Attempts</th>
+                    <th>Best Streak</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (leaderboard && leaderboard.length > 0) { %>
+                    <% leaderboard.forEach((player, index) => { %>
+                      <tr>
+                        <td>
+                          <span class="badge bg-secondary">#<%= index + 1 %></span>
+                        </td>
+                        <td><strong><%= player.name %></strong></td>
+                        <td><%= player.city_village || player.residence %></td>
+                        <td><%= player.gender %></td>
+                        <td><%= player.age_group %></td>
+                        <td><span class="badge bg-success"><%= player.total_goals %></span></td>
+                        <td><%= player.total_attempts %></td>
+                        <td>
+                          <% if (player.best_streak > 0) { %>
+                            <span class="badge bg-warning text-dark"><%= player.best_streak %></span>
+                          <% } else { %>
+                            -
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" class="text-center">No players found</td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Team Leaderboard -->
+          <div id="team-leaderboard" class="<%= filters.type === 'team' ? '' : 'd-none' %>">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Team Name</th>
+                    <th>Members</th>
+                    <th>Total Goals</th>
+                    <th>Total Attempts</th>
+                    <th>Last Activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (teamLeaderboard && teamLeaderboard.length > 0) { %>
+                    <% teamLeaderboard.forEach((team, index) => { %>
+                      <tr>
+                        <td>
+                          <span class="badge bg-secondary">#<%= index + 1 %></span>
+                        </td>
+                        <td>
+                          <strong><%= team.name %></strong>
+                          <% if (team.slug) { %>
+                            <br><small class="text-muted">@<%= team.slug %></small>
+                          <% } %>
+                        </td>
+                        <td><%= team.member_count %></td>
+                        <td><span class="badge bg-success"><%= team.total_goals || 0 %></span></td>
+                        <td><%= team.total_attempts || 0 %></td>
+                        <td>
+                          <% if (team.last_activity) { %>
+                            <%= new Date(team.last_activity).toLocaleDateString() %>
+                          <% } else { %>
+                            No activity
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="6" class="text-center">No teams found</td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -155,28 +168,126 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Apply filters button
-    document.getElementById('apply-filters').addEventListener('click', function() {
-      const gender = document.getElementById('gender-filter').value;
-      const ageGroup = document.getElementById('age-filter').value;
-      const residence = document.getElementById('district-filter').value;
-      const timeRange = document.getElementById('time-filter').value;
+function applyFilters() {
+  const type = document.querySelector('input[name="leaderboard-type"]:checked').id === 'team-radio' ? 'team' : 'individual';
+  const gender = document.getElementById('gender-filter').value;
+  const ageGroup = document.getElementById('age-filter').value;
+  const residence = document.getElementById('district-filter').value.trim();
+  const timeRange = document.getElementById('time-filter').value;
+  const sortBy = document.getElementById('sort-filter').value;
+  
+  const params = new URLSearchParams();
+  params.set('type', type);
+  
+  if (gender) params.set('gender', gender);
+  if (ageGroup) params.set('ageGroup', ageGroup);
+  if (residence) params.set('residence', residence);
+  if (timeRange) params.set('timeRange', timeRange);
+  if (sortBy !== 'goals') params.set('sortBy', sortBy);
+  
+  window.location.href = '/leaderboard?' + params.toString();
+}
+
+function resetFilters() {
+  const type = document.querySelector('input[name="leaderboard-type"]:checked').id === 'team-radio' ? 'team' : 'individual';
+  window.location.href = '/leaderboard?type=' + type;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const individualRadio = document.getElementById('individual-radio');
+  const teamRadio = document.getElementById('team-radio');
+  const individualBoard = document.getElementById('individual-leaderboard');
+  const teamBoard = document.getElementById('team-leaderboard');
+  
+  // Get filter elements - separate individual-only from team-accessible
+  const individualOnlyFilters = [
+    document.getElementById('gender-filter'),
+    document.getElementById('age-filter'),
+    document.getElementById('district-filter'),
+    document.getElementById('sort-filter')
+  ];
+  
+  const teamAccessibleFilters = [
+    document.getElementById('time-filter')
+  ];
+  
+  const applyButton = document.querySelector('button[onclick="applyFilters()"]');
+  const resetButton = document.querySelector('button[onclick="resetFilters()"]');
+  
+  function toggleLeaderboard() {
+    if (teamRadio.checked) {
+      individualBoard.classList.add('d-none');
+      teamBoard.classList.remove('d-none');
       
-      // Build query string
-      let queryParams = [];
-      if (gender !== 'all') queryParams.push(`gender=${gender}`);
-      if (ageGroup !== 'all') queryParams.push(`ageGroup=${ageGroup}`);
-      if (residence) queryParams.push(`residence=${residence}`);
-      if (timeRange !== 'all') queryParams.push(`timeRange=${timeRange}`);
+      // Disable individual-only filters for team view
+      individualOnlyFilters.forEach(element => {
+        if (element) {
+          element.disabled = true;
+          element.style.opacity = '0.5';
+          element.style.cursor = 'not-allowed';
+        }
+      });
       
-      // Redirect with filters
-      window.location.href = `/leaderboard?${queryParams.join('&')}`;
-    });
-    
-    // Reset filters button
-    document.getElementById('reset-filters').addEventListener('click', function() {
-      window.location.href = '/leaderboard';
-    });
+      // Keep team-accessible filters enabled
+      teamAccessibleFilters.forEach(element => {
+        if (element) {
+          element.disabled = false;
+          element.style.opacity = '1';
+          element.style.cursor = 'auto';
+        }
+      });
+      
+      // Keep filter buttons enabled for teams
+      if (applyButton) {
+        applyButton.disabled = false;
+        applyButton.style.opacity = '1';
+        applyButton.style.cursor = 'pointer';
+      }
+      if (resetButton) {
+        resetButton.disabled = false;
+        resetButton.style.opacity = '1';
+        resetButton.style.cursor = 'pointer';
+      }
+      
+    } else {
+      individualBoard.classList.remove('d-none');
+      teamBoard.classList.add('d-none');
+      
+      // Enable all filters for individual view
+      [...individualOnlyFilters, ...teamAccessibleFilters].forEach(element => {
+        if (element) {
+          element.disabled = false;
+          element.style.opacity = '1';
+          element.style.cursor = 'auto';
+        }
+      });
+      
+      // Enable filter buttons
+      if (applyButton) {
+        applyButton.disabled = false;
+        applyButton.style.opacity = '1';
+        applyButton.style.cursor = 'pointer';
+      }
+      if (resetButton) {
+        resetButton.disabled = false;
+        resetButton.style.opacity = '1';
+        resetButton.style.cursor = 'pointer';
+      }
+    }
+  }
+  
+  // Initialize on page load
+  toggleLeaderboard();
+  
+  individualRadio.addEventListener('change', toggleLeaderboard);
+  teamRadio.addEventListener('change', toggleLeaderboard);
+  
+  individualRadio.addEventListener('change', function() {
+    if (this.checked) applyFilters();
   });
+  
+  teamRadio.addEventListener('change', function() {
+    if (this.checked) applyFilters();
+  });
+});
 </script>

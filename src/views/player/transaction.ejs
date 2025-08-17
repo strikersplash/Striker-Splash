@@ -2,175 +2,383 @@
   <div class="row">
     <div class="col-md-8 offset-md-2">
       <% if (step === 'registration') { %>
-        <!-- Registration Form -->
-        <div class="form-container">
-          <h2 class="text-center mb-4">Sell Kicks</h2>
-          
-          <form action="/player/transaction" method="POST">
-            <div class="row">
-              <div class="col-md-12 mb-3">
-                <label for="name" class="form-label">Player Name</label>
-                <input type="text" class="form-control" id="name" name="name" list="playerNames" autocomplete="off" required>
-                <datalist id="playerNames">
-                  <!-- Will be populated by JavaScript -->
-                </datalist>
-              </div>
+      <!-- Registration Form -->
+      <div class="form-container">
+        <h2 class="text-center mb-4">Sell Kicks</h2>
+
+        <form action="/player/transaction" method="POST">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label for="name" class="form-label">Player Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                list="playerNames"
+                autocomplete="off"
+                required
+              />
+              <datalist id="playerNames">
+                <!-- Will be populated by JavaScript -->
+              </datalist>
             </div>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control" id="phone" name="phone" required>
-                <div class="form-text">For children without phones, use parent's phone + child ID (e.g., 5011234567-C1)</div>
-              </div>
-              
-              <div class="col-md-6 mb-3">
-                <label for="residence" class="form-label">Town/City</label>
-                <select class="form-select" id="residence" name="residence" required>
-                  <option value="" selected disabled>Select location</option>
-                  <option value="Belize City">Belize City</option>
-                  <option value="San Pedro">San Pedro</option>
-                  <option value="Belmopan">Belmopan</option>
-                  <option value="Placencia">Placencia</option>
-                  <option value="Dangriga">Dangriga</option>
-                  <option value="Orange Walk">Orange Walk</option>
-                  <option value="Corozal">Corozal</option>
-                  <option value="Punta Gorda">Punta Gorda</option>
-                  <option value="San Ignacio">San Ignacio</option>
-                  <option value="Benque Viejo">Benque Viejo</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="shotsQuantity" class="form-label">Number of Kicks ($2 BZD each)</label>
-                <select class="form-select" id="shotsQuantity" name="shotsQuantity" required>
-                  <option value="1">1 Kick - $2 BZD</option>
-                  <option value="3">3 Kicks - $6 BZD</option>
-                  <option value="5" selected>5 Kicks - $10 BZD</option>
-                  <option value="10">10 Kicks - $20 BZD</option>
-                </select>
-              </div>
-              
-              <div class="col-md-6 mb-3">
-                <label for="playerType" class="form-label">Player Type</label>
-                <select class="form-select" id="playerType" name="playerType">
-                  <option value="adult" selected>Adult</option>
-                  <option value="teen">Teen (13-18)</option>
-                  <option value="child">Child (Under 13)</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="mb-3 form-check">
-              <input type="checkbox" class="form-check-input" id="terms" required>
-              <label class="form-check-label" for="terms">I confirm payment has been received</label>
-            </div>
-            
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary">Process Sale</button>
-            </div>
-          </form>
-          
-          <div class="mt-3 text-center">
-            <p>Already registered a player? <a href="/player/qrcode">Look up QR code</a></p>
           </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="phone" class="form-label">Phone Number</label>
+              <input
+                type="tel"
+                class="form-control"
+                id="phone"
+                name="phone"
+                required
+              />
+              <div class="form-text" id="phone-helper-transaction">
+                Enter phone number
+              </div>
+            </div>
+
+            <!-- Child Registration Checkbox for Transaction -->
+            <div class="col-md-6 mb-3">
+              <div class="form-check mt-4">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="isChildAccountTransaction"
+                  name="isChildAccount"
+                />
+                <label class="form-check-label" for="isChildAccountTransaction">
+                  <strong>Registering for a child</strong>
+                </label>
+              </div>
+              <div class="form-text">
+                Check if registering a child using parent's phone number
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="district" class="form-label">District</label>
+              <select
+                class="form-select"
+                id="district"
+                name="district"
+                required
+              >
+                <option value="" selected disabled>Select District</option>
+                <option value="Belize">Belize</option>
+                <option value="Cayo">Cayo</option>
+                <option value="Corozal">Corozal</option>
+                <option value="Orange Walk">Orange Walk</option>
+                <option value="Stann Creek">Stann Creek</option>
+                <option value="Toledo">Toledo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="cityVillage" class="form-label">City/Village</label>
+              <select
+                class="form-select"
+                id="cityVillage"
+                name="cityVillage"
+                required
+              >
+                <option value="" selected disabled>Select City/Village</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="shotsQuantity" class="form-label"
+                >Number of Kicks ($2 BZD each)</label
+              >
+              <select
+                class="form-select"
+                id="shotsQuantity"
+                name="shotsQuantity"
+                required
+              >
+                <option value="1">1 Kick - $2 BZD</option>
+                <option value="3">3 Kicks - $6 BZD</option>
+                <option value="5" selected>5 Kicks - $10 BZD</option>
+                <option value="10">10 Kicks - $20 BZD</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="playerType" class="form-label">Player Type</label>
+              <select class="form-select" id="playerType" name="playerType">
+                <option value="Adults 31-50 years" selected>
+                  Adults 31-50 years
+                </option>
+                <option value="Young Adults 18-30 years">
+                  Young Adults 18-30 years
+                </option>
+                <option value="Teens 11-17 years">Teens 11-17 years</option>
+                <option value="Up to 10 years">Up to 10 years</option>
+                <option value="Seniors 51+ years">Seniors 51+ years</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="terms"
+              required
+            />
+            <label class="form-check-label" for="terms"
+              >I confirm payment has been received</label
+            >
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Process Sale</button>
+          </div>
+        </form>
+
+        <div class="mt-3 text-center">
+          <p>
+            Already registered a player?
+            <a href="/player/qrcode">Look up QR code</a>
+          </p>
         </div>
+      </div>
       <% } else if (step === 'confirmation') { %>
-        <!-- Registration Confirmation -->
-        <div class="card">
-          <div class="card-header bg-success text-white">
-            <h3 class="mb-0">Sale Successful!</h3>
+      <!-- Registration Confirmation -->
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h3 class="mb-0">Sale Successful!</h3>
+        </div>
+        <div class="card-body text-center">
+          <h4>Player: <%= player.name %></h4>
+          <p>
+            Purchased <%= shot.shots_quantity %> kicks for $<%= shot.amount %>
+            BZD.
+          </p>
+
+          <div class="qr-container mx-auto my-4">
+            <img
+              src="data:image/png;base64,<%= qrCodeBase64 %>"
+              alt="QR Code"
+              class="qr-code"
+            />
+            <p class="text-muted">Player QR Code</p>
           </div>
-          <div class="card-body text-center">
-            <h4>Player: <%= player.name %></h4>
-            <p>Purchased <%= shot.shots_quantity %> kicks for $<%= shot.amount %> BZD.</p>
-            
-            <div class="qr-container mx-auto my-4">
-              <img src="data:image/png;base64,<%= qrCodeBase64 %>" alt="QR Code" class="qr-code">
-              <p class="text-muted">Player QR Code</p>
-            </div>
-            
-            <div class="alert alert-info">
-              <p><strong>Important:</strong> Have the player take a photo of this QR code. They will need it to play.</p>
-            </div>
-            
-            <div class="mt-4">
-              <a href="/player/dashboard?phone=<%= player.phone %>" class="btn btn-primary">View Dashboard</a>
-              <a href="/player/transaction" class="btn btn-outline-secondary">Sell More Kicks</a>
-            </div>
+
+          <div class="alert alert-info">
+            <p>
+              <strong>Important:</strong> Have the player take a photo of this
+              QR code. They will need it to play.
+            </p>
+          </div>
+
+          <div class="mt-4">
+            <a
+              href="/player/dashboard?phone=<%= player.phone %>"
+              class="btn btn-primary"
+              >View Dashboard</a
+            >
+            <a href="/player/transaction" class="btn btn-outline-secondary"
+              >Sell More Kicks</a
+            >
           </div>
         </div>
+      </div>
       <% } else if (step === 'qrcode') { %>
-        <!-- QR Code Display -->
-        <div class="card">
-          <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Player QR Code</h3>
+      <!-- QR Code Display -->
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Player QR Code</h3>
+        </div>
+        <div class="card-body text-center">
+          <h4>Player: <%= player.name %></h4>
+
+          <div class="qr-container mx-auto my-4">
+            <img
+              src="data:image/png;base64,<%= qrCodeBase64 %>"
+              alt="QR Code"
+              class="qr-code"
+            />
+            <p class="text-muted">Player QR Code</p>
           </div>
-          <div class="card-body text-center">
-            <h4>Player: <%= player.name %></h4>
-            
-            <div class="qr-container mx-auto my-4">
-              <img src="data:image/png;base64,<%= qrCodeBase64 %>" alt="QR Code" class="qr-code">
-              <p class="text-muted">Player QR Code</p>
-            </div>
-            
-            <div class="alert alert-info">
-              <p><strong>Important:</strong> Have the player take a photo of this QR code. They will need it to play.</p>
-            </div>
-            
-            <div class="mt-4">
-              <a href="/player/dashboard?phone=<%= player.phone %>" class="btn btn-primary">View Dashboard</a>
-              <a href="/player/transaction" class="btn btn-outline-secondary">Sell More Kicks</a>
-            </div>
+
+          <div class="alert alert-info">
+            <p>
+              <strong>Important:</strong> Have the player take a photo of this
+              QR code. They will need it to play.
+            </p>
+          </div>
+
+          <div class="mt-4">
+            <a
+              href="/player/dashboard?phone=<%= player.phone %>"
+              class="btn btn-primary"
+              >View Dashboard</a
+            >
+            <a href="/player/transaction" class="btn btn-outline-secondary"
+              >Sell More Kicks</a
+            >
           </div>
         </div>
+      </div>
       <% } %>
     </div>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
+    // District to City/Village mapping
+    const cityVillageOptions = {
+      Belize: [
+        { value: "Belize City", label: "Belize City" },
+        { value: "Ladyville", label: "Ladyville" },
+        { value: "Burrell Boom", label: "Burrell Boom" },
+        { value: "Hattieville", label: "Hattieville" },
+        { value: "San Pedro", label: "San Pedro" },
+        { value: "Caye Caulker", label: "Caye Caulker" },
+      ],
+      Cayo: [
+        { value: "Belmopan", label: "Belmopan" },
+        { value: "San Ignacio", label: "San Ignacio" },
+        { value: "Santa Elena", label: "Santa Elena" },
+        { value: "Benque Viejo del Carmen", label: "Benque Viejo del Carmen" },
+        { value: "Spanish Lookout", label: "Spanish Lookout" },
+      ],
+      Corozal: [
+        { value: "Corozal Town", label: "Corozal Town" },
+        { value: "Sarteneja", label: "Sarteneja" },
+        { value: "Chunox", label: "Chunox" },
+        { value: "Consejo", label: "Consejo" },
+      ],
+      "Orange Walk": [
+        { value: "Orange Walk Town", label: "Orange Walk Town" },
+        { value: "San Estevan", label: "San Estevan" },
+        { value: "Shipyard", label: "Shipyard" },
+      ],
+      "Stann Creek": [
+        { value: "Dangriga", label: "Dangriga" },
+        { value: "Placencia", label: "Placencia" },
+        { value: "Hopkins", label: "Hopkins" },
+        { value: "Seine Bight", label: "Seine Bight" },
+        { value: "Independence", label: "Independence" },
+      ],
+      Toledo: [
+        { value: "Punta Gorda", label: "Punta Gorda" },
+        { value: "San Antonio", label: "San Antonio" },
+        { value: "Barranco", label: "Barranco" },
+      ],
+    };
+
+    // Handle district selection change
+    const districtSelect = document.getElementById("district");
+    const cityVillageSelect = document.getElementById("cityVillage");
+
+    if (districtSelect && cityVillageSelect) {
+      districtSelect.addEventListener("change", function () {
+        const selectedDistrict = this.value;
+
+        // Clear city/village options
+        cityVillageSelect.innerHTML =
+          '<option value="" disabled selected>Select City/Village</option>';
+
+        // Add options for selected district
+        if (selectedDistrict && cityVillageOptions[selectedDistrict]) {
+          cityVillageOptions[selectedDistrict].forEach((option) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option.value;
+            optionElement.textContent = option.label;
+            cityVillageSelect.appendChild(optionElement);
+          });
+        }
+      });
+    }
+
     // Player name autocomplete
-    const nameInput = document.getElementById('name');
-    const phoneInput = document.getElementById('phone');
-    
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+
     if (nameInput) {
-      nameInput.addEventListener('input', async function() {
+      nameInput.addEventListener("input", async function () {
         if (this.value.length < 2) return;
-        
+
         try {
-          const response = await fetch(`/api/players/search?name=${encodeURIComponent(this.value)}`);
+          const response = await fetch(
+            `/api/players/search?name=${encodeURIComponent(this.value)}`
+          );
           const data = await response.json();
-          
+
           // Clear existing options
-          const datalist = document.getElementById('playerNames');
-          datalist.innerHTML = '';
-          
+          const datalist = document.getElementById("playerNames");
+          datalist.innerHTML = "";
+
           // Add new options
-          data.forEach(player => {
-            const option = document.createElement('option');
+          data.forEach((player) => {
+            const option = document.createElement("option");
             option.value = player.name;
             option.dataset.phone = player.phone;
-            option.dataset.residence = player.residence;
+            option.dataset.district = player.residence; // residence is now district
+            option.dataset.cityVillage = player.city_village || "";
             datalist.appendChild(option);
           });
         } catch (error) {
-          console.error('Error fetching player data:', error);
+          console.error("Error fetching player data:", error);
         }
       });
-      
-      // When a name is selected, fill in the phone and residence
-      nameInput.addEventListener('change', function() {
-        const selectedOption = Array.from(document.getElementById('playerNames').options)
-          .find(option => option.value === this.value);
-          
+
+      // When a name is selected, fill in the phone and location
+      nameInput.addEventListener("change", function () {
+        const selectedOption = Array.from(
+          document.getElementById("playerNames").options
+        ).find((option) => option.value === this.value);
+
         if (selectedOption) {
           phoneInput.value = selectedOption.dataset.phone;
-          document.getElementById('residence').value = selectedOption.dataset.residence;
+
+          // Set district and trigger city/village update
+          if (selectedOption.dataset.district) {
+            districtSelect.value = selectedOption.dataset.district;
+            districtSelect.dispatchEvent(new Event("change"));
+
+            // Set city/village after district change
+            setTimeout(() => {
+              if (selectedOption.dataset.cityVillage) {
+                cityVillageSelect.value = selectedOption.dataset.cityVillage;
+              }
+            }, 100);
+          }
+        }
+      });
+    }
+
+    // Child registration functionality for transaction form
+    const isChildAccountCheckbox = document.getElementById(
+      "isChildAccountTransaction"
+    );
+    const phoneHelperTransaction = document.getElementById(
+      "phone-helper-transaction"
+    );
+
+    if (isChildAccountCheckbox && phoneHelperTransaction) {
+      isChildAccountCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+          phoneHelperTransaction.innerHTML = `
+            <strong>Child Registration:</strong> Enter parent's phone number. 
+            A unique identifier will be generated for the child automatically.
+            <br><small class="text-info">✓ Child account indicator will be shown on the profile</small>
+          `;
+          phoneHelperTransaction.classList.add("text-success");
+        } else {
+          phoneHelperTransaction.innerHTML = "Enter phone number";
+          phoneHelperTransaction.classList.remove("text-success");
         }
       });
     }

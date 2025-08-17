@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Event Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card mb-4">
+            <div
+              class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            >
+              <h3 class="mb-0">Super Simple Event List</h3>
+              <button type="button" class="btn btn-light" id="refresh-btn">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="response-debug" class="alert alert-info">
+                <p><strong>Response will appear here</strong></p>
+              </div>
+
+              <!-- Events List -->
+              <div id="events-list">
+                <h4 class="mb-3">Upcoming Events with Registrations</h4>
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                      <tr>
+                        <th>Event ID</th>
+                        <th>Event Name</th>
+                        <th>Location</th>
+                        <th>Date</th>
+                        <th>Total Registrations</th>
+                        <th>Pending Tickets</th>
+                      </tr>
+                    </thead>
+                    <tbody id="events-table">
+                      <tr>
+                        <td colspan="6" class="text-center">
+                          Loading events...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const eventsTable = document.getElementById("events-table");
+        const refreshBtn = document.getElementById("refresh-btn");
+        const responseDebug = document.getElementById("response-debug");
+
+        // Function to load events
+        function loadEvents() {
+          console.log("Loading events...");
+
+          eventsTable.innerHTML =
+            '<tr><td colspan="6" class="text-center">Loading events...</td></tr>';
+          responseDebug.innerHTML =
+            "<p>Making request to /staff/events-with-registrations...</p>";
+
+          fetch("/staff/events-with-registrations")
+            .then((response) => {
+              const status = response.status;
+              const statusText = response.statusText;
+              responseDebug.innerHTML += `<p>Response status: ${status} ${statusText}</p>`;
+
+              return response.json().catch((err) => {
+                throw new Error(`Failed to parse JSON: ${err.message}`);
+              });
+            })
+            .then((data) => {
+              responseDebug.innerHTML += `<p>Success: ${data.success}</p>`;
+              responseDebug.innerHTML += `<p>Events found: ${
+                data.events ? data.events.length : 0
+              }</p>`;
+              responseDebug.innerHTML += `<pre>${JSON.stringify(
+                data,
+                null,
+                2
+              )}</pre>`;
+
+              if (data.success && data.events && data.events.length > 0) {
+                eventsTable.innerHTML = "";
+
+                data.events.forEach((event) => {
+                  const startDate = new Date(
+                    event.start_date
+                  ).toLocaleDateString();
+                  const endDate = new Date(event.end_date).toLocaleDateString();
+
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
+                                    <td>${event.id}</td>
+                                    <td>${event.name}</td>
+                                    <td>${event.address}</td>
+                                    <td>${startDate} - ${endDate}</td>
+                                    <td>${event.total_registrations || 0}</td>
+                                    <td>${
+                                      event.pending_ticket_assignments || 0
+                                    }</td>
+                                `;
+
+                  eventsTable.appendChild(row);
+                });
+              } else {
+                eventsTable.innerHTML =
+                  '<tr><td colspan="6" class="text-center">No events found</td></tr>';
+              }
+            })
+            .catch((error) => {
+              const errorMsg = error.message || "Unknown error";
+              console.error("Error loading events:", error);
+              responseDebug.innerHTML += `<p class="text-danger">Error: ${errorMsg}</p>`;
+              eventsTable.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading events: ${errorMsg}</td></tr>`;
+            });
+        }
+
+        // Add event listener for refresh button
+        refreshBtn.addEventListener("click", loadEvents);
+
+        // Initial load
+        loadEvents();
+      });
+    </script>
+  </body>
+</html>
