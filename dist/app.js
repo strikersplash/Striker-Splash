@@ -25,7 +25,7 @@ const multer_1 = __importDefault(require("multer"));
 const fs_1 = __importDefault(require("fs"));
 const pg_1 = require("pg");
 // Import PostgreSQL session store
-const pgSession = require('connect-pg-simple')(express_session_1.default);
+const pgSession = require("connect-pg-simple")(express_session_1.default);
 // Import security middleware
 const security_1 = require("./middleware/security");
 // Import routes
@@ -115,7 +115,7 @@ const sessionPool = new pg_1.Pool({
 app.use((0, express_session_1.default)({
     store: new pgSession({
         pool: sessionPool,
-        tableName: 'session', // Table name for sessions
+        tableName: "session", // Table name for sessions
         createTableIfMissing: true, // Auto-create session table
     }),
     secret: process.env.SESSION_SECRET || "striker_splash_secret",
@@ -135,52 +135,6 @@ app.use((0, express_session_1.default)({
 }));
 // Flash messages
 app.use((0, express_flash_1.default)());
-// Session debugging middleware - to track session issues
-app.use((req, res, next) => {
-    const session = req.session;
-    console.log(`Session Debug - URL: ${req.url}`);
-    console.log(`Session ID: ${req.sessionID}`);
-    console.log(`Session User: ${(session === null || session === void 0 ? void 0 : session.user) ? "EXISTS" : "NONE"}`);
-    console.log(`Session User Details:`, session === null || session === void 0 ? void 0 : session.user);
-    console.log(`Cookies:`, req.headers.cookie);
-    console.log("---");
-    next();
-});
-// Session validation middleware - DISABLED for deployment stability
-// This was causing sessions to be invalidated too aggressively on DigitalOcean
-/*
-app.use((req, res, next) => {
-  const session = req.session as any;
-
-  // Check if session has a user but no server start time (old session)
-  if (session && session.user && !session.serverStartTime) {
-    // Old session from before this restart - invalidate it
-    session.destroy((err: any) => {
-      if (err) console.error("Error destroying old session:", err);
-    });
-    // Clear the session cookie
-    res.clearCookie("connect.sid");
-    return res.redirect("/auth/login");
-  }
-
-  // Check if session is from a different server instance
-  if (
-    session &&
-    session.user &&
-    session.serverStartTime &&
-    session.serverStartTime !== SERVER_START_TIME
-  ) {
-    session.destroy((err: any) => {
-      if (err) console.error("Error destroying session:", err);
-    });
-    // Clear the session cookie
-    res.clearCookie("connect.sid");
-    return res.redirect("/auth/login");
-  }
-
-  next();
-});
-*/
 // Global variables middleware
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
