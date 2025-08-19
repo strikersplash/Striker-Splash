@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeQuery = exports.pool = void 0;
 const pg_1 = require("pg");
-const dotenv_1 = require("dotenv");
+const dotenv = require("dotenv");
 // Load environment variables
-dotenv_1.default.config();
+dotenv.config();
 // Create connection pool with Supabase-optimized settings
 exports.pool = new pg_1.Pool({
     user: process.env.DB_USER || 'striker_splash',
