@@ -54,7 +54,6 @@ const router = express.Router();
 
 // Test admin login route (for development only)
 router.get("/test-login", (req, res) => {
-  console.log("Creating test admin session");
   (req.session as any).user = {
     id: 1,
     role: "admin",

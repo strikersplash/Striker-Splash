@@ -1,0 +1,38 @@
+# Update production environment for cloud deployment
+name: striker-splash
+services:
+  - name: web
+    source_dir: /
+    github:
+      repo: aoideee/striker-splash
+      branch: main
+    build_command: npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: ${striker-splash-db.DATABASE_URL}
+      - key: SESSION_SECRET
+        value: your_super_secure_production_session_secret_here
+      - key: ENABLE_HTTPS
+        value: "false"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: ENABLE_DEBUG_LOGGING
+        value: "false"
+      - key: ENABLE_SENSITIVE_LOGGING
+        value: "false"
+      - key: LOG_LEVEL
+        value: "warn"
+    http_port: 3000
+
+databases:
+  - engine: PG
+    name: striker-splash-db
+    version: "14"
+    production: false
+    cluster_name: striker-splash-cluster

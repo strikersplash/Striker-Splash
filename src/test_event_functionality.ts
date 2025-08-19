@@ -14,18 +14,14 @@ async function testEventFunctionality() {
       AND table_name IN ('event_locations', 'event_registrations')
     `;
     const tablesResult = await pool.query(tablesQuery);
-
     console.log(
-      "Found tables:",
+      "Available tables:",
       tablesResult.rows.map((row) => row.table_name)
     );
 
     // Get event locations
     const locationsQuery = "SELECT * FROM event_locations";
     const locationsResult = await pool.query(locationsQuery);
-    console.log("Events found:", locationsResult.rowCount);
-    console.log(locationsResult.rows);
-
     // Get any registrations
     const registrationsQuery = `
       SELECT er.*, el.name, el.address, el.start_date, el.event_type
@@ -33,9 +29,6 @@ async function testEventFunctionality() {
       JOIN event_locations el ON er.event_id = el.id
     `;
     const registrationsResult = await pool.query(registrationsQuery);
-    console.log("Registrations found:", registrationsResult.rowCount);
-    console.log(registrationsResult.rows);
-
     // Test adding a sample event
     const today = new Date();
     const tomorrow = new Date();
@@ -70,11 +63,8 @@ async function testEventFunctionality() {
       "This is a test event created by the test script",
     ]);
 
-    console.log("Added test event with ID:", insertResult.rows[0].id);
-
     // Check tables again to see the new event
     const updatedLocationsResult = await pool.query(locationsQuery);
-    console.log("Updated events count:", updatedLocationsResult.rowCount);
   } catch (error) {
     console.error("Error testing event functionality:", error);
   } finally {

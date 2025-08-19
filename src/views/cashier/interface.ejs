@@ -14,8 +14,6 @@
       <% if (user.role === 'sales' && typeof preloadedTransactions !== 'undefined' && preloadedTransactions.length > 0) { %>
         try {
           const preloadedData = <%- JSON.stringify(preloadedTransactions) %>;
-          console.log(`Initial page load: Found ${preloadedData.length} preloaded transactions from server`);
-
           // Process transactions to ensure proper data types
           const processedData = preloadedData.map(transaction => ({
             ...transaction,
@@ -33,14 +31,11 @@
           window.preloadedFromServer = true;
           window.pageLoadTime = Date.now();
 
-          console.log(`Stored ${processedData.length} preloaded transactions from server in storage with key: ${STORAGE_KEY}`);
-        } catch (e) {
+          } catch (e) {
           console.error('Error storing preloaded transactions:', e);
         }
       <% } else { %>
         // For sales users with no preloaded transactions, check storage instead of overwriting
-        console.log('No preloaded transactions available - checking storage for existing data');
-
         // Don't overwrite window.cachedTransactions, instead check if there's stored data
         let existingTransactions = [];
         try {
@@ -48,8 +43,7 @@
           const sessionData = sessionStorage.getItem(STORAGE_KEY);
           if (sessionData) {
             existingTransactions = JSON.parse(sessionData);
-            console.log(`Found ${existingTransactions.length} transactions in sessionStorage`);
-          }
+            }
           // Try localStorage as backup
           else {
             const localData = localStorage.getItem(STORAGE_KEY);
@@ -489,8 +483,6 @@
       try {
         const sessionData = sessionStorage.getItem(STORAGE_KEY);
         const sessionCount = sessionData ? JSON.parse(sessionData).length : 0;
-        console.log("SessionStorage transactions:", sessionCount);
-
         const localData = localStorage.getItem(STORAGE_KEY);
         const localCount = localData ? JSON.parse(localData).length : 0;
         console.log("LocalStorage transactions:", localCount);
@@ -529,8 +521,6 @@
     const userId = "<%= user.id %>";
     // Use consistent storage key that matches the initialization script
     const STORAGE_KEY = `cashierTransactions_${userRole}_${userId}`;
-    console.log("Current user:", userRole, userId, "Storage key:", STORAGE_KEY);
-
     let html5QrCode = null;
     let currentPlayerId = null;
 
@@ -675,11 +665,6 @@
 
         // Mark that we're starting a search operation
         window.currentSearchOperation = true;
-        console.log(
-          "Starting search for player with name:",
-          name,
-          "- setting window.currentSearchOperation=true"
-        );
         results.innerHTML =
           '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
@@ -722,10 +707,7 @@
                 '<div class="alert alert-warning">No players found matching your search</div>';
               // Reset search flag when no players found
               window.currentSearchOperation = false;
-              console.log(
-                "No players found - resetting window.currentSearchOperation=false"
-              );
-            }
+              }
           })
           .catch((error) => {
             console.error("Error searching for players:", error);
@@ -741,7 +723,6 @@
     } // Close the if (searchBtn) block
 
     function displayPlayerInfo(player) {
-      console.log("Displaying player info for:", player.name);
       const infoDiv = document.getElementById("player-info");
 
       // Clear previous content
@@ -1211,9 +1192,6 @@
 
         // For sales users, we don't reload the page, we update via JS
         if (userRole === "sales") {
-          console.log(
-            "Sales user: During search, updating transactions without page reload"
-          );
           // The addTransactionToTable function now expects an array
           addTransactionToTable([data.transaction]);
         } else {
@@ -1231,9 +1209,6 @@
       try {
         // For sales users, simply reload the page
         if (userRole === "sales") {
-          console.log(
-            "Sales user: Requeue transaction added, refreshing page to get updated data"
-          );
           setTimeout(() => {
             window.location.reload();
           }, 1000);
@@ -1353,13 +1328,6 @@
       }
 
       if (userRole === "sales") {
-        console.log(
-          "Sales user checking transactions. isFromSearch:",
-          isFromSearch,
-          "forceRefresh:",
-          forceRefresh
-        );
-
         // If this is not an explicit force refresh and we just loaded the page and have preloaded data
         const pageJustLoaded = Date.now() - window.pageLoadTime < 2000;
         if (
@@ -1384,8 +1352,6 @@
         }
 
         // For sales users: ALWAYS fetch fresh data from server in all other cases
-        console.log("Sales user: Getting fresh transactions from server");
-
         const timestamp = Date.now();
         const url = `/cashier/api/transactions/today?t=${timestamp}&nocache=${Math.random()}`;
 
@@ -1419,11 +1385,7 @@
 
             // If it's the new format, log additional info
             if (data.timestamp) {
-              console.log(
-                `[${timestamp}] Updated transactions for ${data.role} user ${data.userId}:`,
-                data.count,
-                "- Server timestamp:",
-                new Date(data.timestamp).toLocaleTimeString("en-US", {
+              .toLocaleTimeString("en-US", {
                   timeZone: "America/Belize",
                   hour12: true,
                   hour: "numeric",
@@ -1431,11 +1393,7 @@
                 })
               );
             } else {
-              console.log(
-                `[${timestamp}] Updated transactions for sales user:`,
-                transactions.length
-              );
-            }
+              }
 
             // Update global state
             window.cachedTransactions = transactions;
@@ -1494,9 +1452,7 @@
             : data.transactions || data;
 
           if (data.timestamp) {
-            console.log(
-              `Loaded ${data.count} transactions from server for ${data.role} user ${data.userId} - Server timestamp:`,
-              new Date(data.timestamp).toLocaleTimeString("en-US", {
+            .toLocaleTimeString("en-US", {
                 timeZone: "America/Belize",
                 hour12: true,
                 hour: "numeric",
@@ -1527,10 +1483,6 @@
           const uniqueTransactions = processedData.filter(
             (transaction, index, self) =>
               index === self.findIndex((t) => t.id === transaction.id)
-          );
-
-          console.log(
-            `Deduplicated: ${processedData.length} -> ${uniqueTransactions.length} transactions`
           );
 
           // Important: Store the deduplicated data both in localStorage and as a global variable
@@ -1583,20 +1535,12 @@
               const sessionData = JSON.parse(
                 sessionStorage.getItem(STORAGE_KEY) || "[]"
               );
-              console.log(
-                "Using cached transactions from sessionStorage:",
-                sessionData.length
-              );
               backupData = sessionData;
             }
             // Finally try localStorage (good for browser close/reopen)
             else if (localStorage.getItem(STORAGE_KEY)) {
               const localData = JSON.parse(
                 localStorage.getItem(STORAGE_KEY) || "[]"
-              );
-              console.log(
-                "Using cached transactions from localStorage:",
-                localData.length
               );
               backupData = localData;
             }
@@ -1608,13 +1552,6 @@
         });
     } // Update transactions table with data - PERSISTENCE-FOCUSED VERSION
     function updateTransactionsTableWithData(transactions) {
-      console.log(
-        "updateTransactionsTableWithData called with",
-        transactions?.length || 0,
-        "transactions for role:",
-        userRole
-      );
-
       // Make sure we have an array of transactions
       if (!transactions) {
         transactions = [];
@@ -1622,16 +1559,9 @@
 
       // For sales users: be extra aggressive about finding transactions
       if (transactions.length === 0 && userRole === "sales") {
-        console.log(
-          "No transactions provided, attempting to fetch or load from storage"
-        );
-
         try {
           // First try to get fresh data from server if we're online
           if (navigator.onLine !== false) {
-            console.log(
-              "We appear to be online - attempting fresh fetch from server"
-            );
             // Schedule an async fetch but continue with the function
             setTimeout(() => {
               loadTodaysTransactions(true);
@@ -1655,10 +1585,6 @@
               sessionStorage.getItem(STORAGE_KEY) || "[]"
             );
             if (sessionData.length > 0) {
-              console.log(
-                "Using transactions from sessionStorage:",
-                sessionData.length
-              );
               transactions = sessionData;
             }
           }
@@ -1668,10 +1594,6 @@
               localStorage.getItem(STORAGE_KEY) || "[]"
             );
             if (localData.length > 0) {
-              console.log(
-                "Using transactions from localStorage:",
-                localData.length
-              );
               transactions = localData;
             }
           }
@@ -1786,10 +1708,6 @@
     // Always load transactions on page initialization
     if (userRole === "sales") {
       // For sales users, immediately try to render any existing transactions
-      console.log(
-        "Sales user initialization - checking for preloaded and stored data"
-      );
-
       let foundTransactions = [];
 
       // First check if we have preloaded data in window cache
@@ -1807,10 +1725,6 @@
           if (sessionData) {
             const parsedData = JSON.parse(sessionData);
             if (parsedData && parsedData.length > 0) {
-              console.log(
-                "Found transactions in sessionStorage:",
-                parsedData.length
-              );
               foundTransactions = parsedData;
               window.cachedTransactions = parsedData; // Update window cache
             }
@@ -1827,10 +1741,6 @@
           if (localData) {
             const parsedData = JSON.parse(localData);
             if (parsedData && parsedData.length > 0) {
-              console.log(
-                "Found transactions in localStorage:",
-                parsedData.length
-              );
               foundTransactions = parsedData;
               window.cachedTransactions = parsedData; // Update window cache
             }

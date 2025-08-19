@@ -206,11 +206,8 @@
           '<i class="bi bi-arrow-clockwise"></i> Loading...';
       }
 
-      console.log("Fetching sales tracking data...");
       const response = await fetch("/admin/api/sales-tracking");
       const data = await response.json();
-
-      console.log("Sales tracking response:", data);
 
       if (data.success) {
         updateSalesTrackingTable(data.salesData);
@@ -247,7 +244,6 @@
 
   // Update the sales tracking table with new data
   function updateSalesTrackingTable(salesData) {
-    console.log("Updating table with data:", salesData);
     const tbody = document.getElementById("live-sales-tbody");
     if (!tbody) return;
 

@@ -87,9 +87,9 @@ export const processQRScan = async (
       player: {
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
+        // phone: REMOVED for security
+// email: REMOVED for security
+residence: player.residence,
         city_village: player.city_village,
         gender: player.gender || "unknown",
         age_group: player.age_group,
@@ -98,8 +98,8 @@ export const processQRScan = async (
         name_locked: player.name_locked || false,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
-        parent_phone: player.parent_phone,
-      },
+        // parent_phone: REMOVED for security
+},
       activeTickets,
       todayKicks,
       hasFirstFiveToday,
@@ -281,10 +281,6 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
     isFirstFive = parseInt(firstFiveResult.rows[0].count) === 0;
 
     // Create game stat for individual play
-    console.log(
-      `Individual play: updating player stats for player ${player.id} with ${goals} goals`
-    );
-
     // Determine if this is a competition or practice type
     // Extract from request body or ticket competition_type
     const isPracticeTicket =

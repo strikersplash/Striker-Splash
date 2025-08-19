@@ -239,13 +239,6 @@ class Player {
       );
 
       const newBalance = result.rows[0]?.kicks_balance || 0;
-      console.log("KICKS DEBUG - Balance updated:", {
-        success: result.rows.length > 0,
-        oldBalance: currentBalance,
-        change: amount,
-        newBalance: newBalance,
-      });
-
       return result.rows[0] || null;
     } catch (error) {
       console.error("Error updating kicks balance:", error);
@@ -272,7 +265,7 @@ class Player {
     }
   }
 
-  // Search players by name or phone
+  // Search players by name or phone (excluding deleted players)
   static async search(query: string): Promise<IPlayer[]> {
     try {
       const cleanQuery = query.trim();
@@ -286,10 +279,11 @@ class Player {
             END as match_rank
           FROM players
           WHERE 
-            name ILIKE $3 
+            (name ILIKE $3 
             OR name ILIKE $4
             OR phone LIKE $5
-            OR email ILIKE $6
+            OR email ILIKE $6)
+            AND deleted_at IS NULL
         ) ranked_results
         ORDER BY match_rank, name
         LIMIT 10`;

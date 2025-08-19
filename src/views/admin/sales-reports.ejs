@@ -274,11 +274,8 @@
           '<i class="bi bi-arrow-clockwise"></i> Loading...';
       }
 
-      console.log("Fetching sales tracking data...");
       const response = await fetch("/admin/api/sales-tracking");
       const data = await response.json();
-
-      console.log("Sales tracking response:", data);
 
       if (data.success) {
         // Load current year data for the Year column
@@ -325,7 +322,6 @@
 
   // Update the sales tracking table with new data
   function updateSalesTrackingTable(salesData, yearlyData) {
-    console.log("Updating table with data:", salesData);
     const tbody = document.getElementById("live-sales-tbody");
     if (!tbody) return;
 
@@ -477,8 +473,6 @@
   // Load yearly sales data for the summary cards
   async function loadYearlySalesData(year = new Date().getFullYear()) {
     try {
-      console.log(`Loading yearly sales data for year: ${year}`);
-
       const response = await fetch(`/admin/api/sales-yearly?year=${year}`);
       const data = await response.json();
 

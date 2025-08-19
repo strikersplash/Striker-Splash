@@ -200,9 +200,9 @@ export const searchPlayers = async (
       return res.json([]);
     }
 
-    // Search for players with similar names
+    // Search for players with similar names (excluding deleted players)
     const query =
-      "SELECT name, phone, residence FROM players WHERE name ILIKE $1 LIMIT 10";
+      "SELECT name, phone, residence FROM players WHERE name ILIKE $1 AND deleted_at IS NULL LIMIT 10";
     const { rows } = await Player.query(query, [`%${name}%`]);
 
     res.json(rows);

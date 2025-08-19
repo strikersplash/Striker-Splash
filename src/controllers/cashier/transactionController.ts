@@ -31,11 +31,8 @@ export const getCashierInterface = async (
     const competitionTypes = competitionTypesResult.rows;
 
     // Get next ticket number
-    const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
+    const nextTicketQuery =
+      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
 
     const nextTicketResult = await pool.query(nextTicketQuery);
     const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
@@ -43,70 +40,21 @@ export const getCashierInterface = async (
     // For sales users, pre-load their transactions directly
     let preloadedTransactions = [];
     if ((req.session as any).user.role === "sales") {
-      console.log(
-        `Sales user preloading transactions for today (Central timezone)`
-      );
-
       const userId = parseInt((req.session as any).user.id);
 
       // Add timestamp for cache-busting on the query
       const timestamp = new Date().getTime();
 
       // Query to get transactions for this sales user - using Central timezone range converted to UTC
-      const transactionsQuery = `
-        SELECT 
-          t.id,
-          t.created_at as timestamp,
-          p.name as player_name,
-          CASE 
-            WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue'
-            WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition'
-            WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition'
-            WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale'
-            ELSE 'Sale' 
-          END as transaction_type,
-          t.kicks as kicks_count,
-          t.amount,
-          COALESCE(s.name, s.username, 'Staff') as staff_name,
-          CASE 
-            WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0)
-            ELSE NULL
-          END as ticket_number
-        FROM transactions t
-        JOIN players p ON t.player_id = p.id
-        LEFT JOIN staff s ON t.staff_id = s.id
-        LEFT JOIN (
-          SELECT player_id, ticket_number, competition_type, created_at 
-          FROM queue_tickets 
-          WHERE created_at >= timezone('UTC', (NOW() - interval '6 hours')::date)
-          AND created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day')
-        ) qt ON t.player_id = qt.player_id 
-          AND t.official_entry = true
-          AND DATE(t.created_at) = DATE(qt.created_at)
-        WHERE t.staff_id = $1
-          AND t.created_at >= timezone('UTC', (NOW() - interval '6 hours')::date)
-          AND t.created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day')
-        ORDER BY t.created_at DESC
-        LIMIT 200
-      `;
+      const transactionsQuery =
+        "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN (SELECT player_id, ticket_number, competition_type, created_at FROM queue_tickets WHERE created_at >= timezone('UTC', (NOW() - interval '6 hours')::date) AND created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day')) qt ON t.player_id = qt.player_id AND t.official_entry = true AND DATE(t.created_at) = DATE(qt.created_at) WHERE t.staff_id = $1 AND t.created_at >= timezone('UTC', (NOW() - interval '6 hours')::date) AND t.created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day') ORDER BY t.created_at DESC LIMIT 200";
 
       const result = await pool.query(transactionsQuery, [userId]);
       preloadedTransactions = result.rows;
 
       console.log(
-        `${timestamp} - Fresh transactions loaded for sales user ${userId}, count: ${preloadedTransactions.length}`
-      );
-      console.log(`Sales user transaction query: staff_id = ${userId}`);
-      console.log(
         "Sample preloaded transactions:",
         preloadedTransactions.slice(0, 3)
-      );
-
-      console.log(
-        "Preloaded transactions for sales user:",
-        userId,
-        "Count:",
-        preloadedTransactions.length
       );
     }
 
@@ -282,9 +230,9 @@ export const processQRScan = async (
       player: {
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
+        // phone: REMOVED for security
+        // email: REMOVED for security
+        // residence: REMOVED for security
         age_group: player.age_group,
         gender: player.gender,
         photo_path: player.photo_path,
@@ -422,15 +370,6 @@ export const processKicksPurchase = async (
 
     // Insert transaction record for every purchase (for transaction table persistence)
     const staffId = parseInt((req.session as any).user.id); // Convert string to integer
-    console.log(
-      "processKicksPurchase - Creating transaction with staff_id:",
-      staffId,
-      "for player:",
-      player.id,
-      "Type:",
-      typeof staffId
-    );
-
     // Determine if this should be marked as an official entry (if tickets were created)
     const isOfficialEntry = tickets.length > 0;
 
@@ -442,10 +381,15 @@ export const processKicksPurchase = async (
       );
     }
 
-    await pool.query(
-      `INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5)`,
-      [player.id, kicksQuantity, amount, staffId, isOfficialEntry]
-    );
+    const insertTransactionQuery =
+      "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5)";
+    await pool.query(insertTransactionQuery, [
+      player.id,
+      kicksQuantity,
+      amount,
+      staffId,
+      isOfficialEntry,
+    ]);
 
     console.log(
       "processKicksPurchase - Transaction INSERT completed for staff_id:",
@@ -453,19 +397,12 @@ export const processKicksPurchase = async (
     );
 
     // Verify the transaction was created by querying it back
-    const verifyQuery = `SELECT id, staff_id, player_id, kicks, amount FROM transactions WHERE staff_id = $1 AND player_id = $2 ORDER BY created_at DESC LIMIT 1`;
+    const verifyQuery =
+      "SELECT id, staff_id, player_id, kicks, amount FROM transactions WHERE staff_id = $1 AND player_id = $2 ORDER BY created_at DESC LIMIT 1";
     const verifyResult = await pool.query(verifyQuery, [staffId, player.id]);
-    console.log(
-      "processKicksPurchase - Verification query result:",
-      verifyResult.rows
-    );
-
     // Get next ticket number
-    const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
+    const nextTicketQuery =
+      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
 
     const nextTicketResult = await pool.query(nextTicketQuery);
     const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
@@ -546,10 +483,7 @@ export const processPurchaseKicksTeam = async (
 
     // Get team members
     const membersResult = await pool.query(
-      `SELECT p.id, p.name 
-       FROM players p 
-       JOIN team_members tm ON p.id = tm.player_id 
-       WHERE tm.team_id = $1`,
+      "SELECT p.id, p.name FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1",
       [teamId]
     );
 
@@ -575,8 +509,7 @@ export const processPurchaseKicksTeam = async (
 
         // Record the transaction for each member using proper Belize timezone (UTC-6)
         await client.query(
-          `INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at)
-           VALUES ($1, $2, $3, $4, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')`,
+          "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, $2, $3, $4, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')",
           [
             member.id,
             kicks,
@@ -600,16 +533,24 @@ export const processPurchaseKicksTeam = async (
       // Create team queue ticket
       const ticketNumber = await QueueTicket.incrementTicketNumber();
       await client.query(
-        `INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status)
-         VALUES ($1, $2, $3, true, 'in-queue')`,
+        "INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')",
         [ticketNumber, captainId, isCompetition ? "standard" : "practice"]
       );
 
       await client.query("COMMIT");
 
+      const successMessage =
+        "Successfully purchased " +
+        kicks +
+        " kicks for each of " +
+        teamMembers.length +
+        " team members (Total: $" +
+        totalCost +
+        " BZD) and added team to queue. Ticket #" +
+        ticketNumber;
       res.json({
         success: true,
-        message: `Successfully purchased ${kicks} kicks for each of ${teamMembers.length} team members (Total: $${totalCost} BZD) and added team to queue. Ticket #${ticketNumber}`,
+        message: successMessage,
         ticketNumber,
       });
     } catch (error) {
@@ -703,15 +644,11 @@ export const processReQueue = async (
     // Log the requeue as a transaction for persistence using proper Belize timezone (UTC-6)
     const staffId = parseInt((req.session as any).user.id);
     try {
+      const insertQuery =
+        "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4)";
       await pool.query(
-        `INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4)`,
+        insertQuery,
         [player.id, -5, 0, staffId] // -5 kicks, $0 amount for requeue
-      );
-      console.log(
-        "Requeue transaction logged for player",
-        player.id,
-        "by staff",
-        staffId
       );
     } catch (transactionError) {
       console.error("Error logging requeue transaction:", transactionError);
@@ -722,11 +659,8 @@ export const processReQueue = async (
     const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
 
     // Get next ticket number
-    const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
+    const nextTicketQuery =
+      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
 
     const nextTicketResult = await pool.query(nextTicketQuery);
     const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
@@ -804,10 +738,7 @@ export const processRequeueTeam = async (
 
     // Get team members
     const membersResult = await pool.query(
-      `SELECT p.id, p.name, p.kicks_balance 
-       FROM players p 
-       JOIN team_members tm ON p.id = tm.player_id 
-       WHERE tm.team_id = $1`,
+      "SELECT p.id, p.name, p.kicks_balance FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1 AND p.deleted_at IS NULL",
       [teamId]
     );
 
@@ -825,9 +756,14 @@ export const processRequeueTeam = async (
     if (insufficientMembers.length > 0) {
       res.json({
         success: false,
-        message: `Insufficient kicks. The following members need more kicks: ${insufficientMembers
-          .map((m) => `${m.name} (has ${m.kicks_balance}, needs ${kicks})`)
-          .join(", ")}`,
+        message:
+          "Insufficient kicks. The following members need more kicks: " +
+          insufficientMembers
+            .map(
+              (m) =>
+                m.name + " (has " + m.kicks_balance + ", needs " + kicks + ")"
+            )
+            .join(", "),
       });
       return;
     }
@@ -845,8 +781,7 @@ export const processRequeueTeam = async (
 
         // Record the requeue transaction for each member using proper Belize timezone (UTC-6)
         await client.query(
-          `INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, official_entry, created_at)
-           VALUES ($1, $2, 0, $3, true, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')`,
+          "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, official_entry, created_at) VALUES ($1, $2, 0, $3, true, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')",
           [member.id, kicks, userId]
         );
       }
@@ -855,8 +790,7 @@ export const processRequeueTeam = async (
       const isCompetition = requeueType === "kick-for-competition";
       const ticketNumber = await QueueTicket.incrementTicketNumber();
       await client.query(
-        `INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status)
-         VALUES ($1, $2, $3, true, 'in-queue')`,
+        "INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')",
         [ticketNumber, captainId, isCompetition ? "standard" : "practice"]
       );
 
@@ -864,7 +798,13 @@ export const processRequeueTeam = async (
 
       res.json({
         success: true,
-        message: `Successfully requeued team ${team.name} with ${kicks} kicks per member. Ticket #${ticketNumber}`,
+        message:
+          "Successfully requeued team " +
+          team.name +
+          " with " +
+          kicks +
+          " kicks per member. Ticket #" +
+          ticketNumber,
         ticketNumber,
       });
     } catch (error) {
@@ -965,11 +905,8 @@ export const getQueueStatus = async (
     const currentTicket = await QueueTicket.getCurrentQueuePosition();
 
     // Get next ticket number
-    const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
+    const nextTicketQuery =
+      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
     const nextTicketResult = await pool.query(nextTicketQuery);
     const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
 
@@ -1005,108 +942,35 @@ export const getTodaysTransactions = async (
     }
 
     // Get today's date in Belize timezone (UTC-6) to match preloaded transactions
-    const centralTimeQuery = `SELECT (NOW() - interval '6 hours')::date as today`;
+    const centralTimeQuery =
+      "SELECT (NOW() - interval '6 hours')::date as today";
     const centralTimeResult = await pool.query(centralTimeQuery);
     const today = centralTimeResult.rows[0].today.toISOString().split("T")[0];
-
-    console.log(
-      `getTodaysTransactions - Today's date: ${today} (Belize timezone)`
-    );
 
     const userId = parseInt((req.session as any).user.id); // Convert string to integer
     const userRole = (req.session as any).user.role;
     const userName =
       (req.session as any).user.name || (req.session as any).user.username;
 
-    console.log(
-      "getTodaysTransactions - User:",
-      JSON.stringify({
-        id: userId,
-        role: userRole,
-        name: userName,
-        type: typeof userId,
-      })
-    );
-
     // Get transactions for this specific user (staff member) - using Belize timezone range converted to UTC
     // Fixed query to prevent duplicates from multiple queue tickets
-    const transactionsQuery = `
-      SELECT 
-        t.id,
-        t.created_at as timestamp,
-        p.name as player_name,
-        CASE 
-          WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue'
-          WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition'
-          WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition'
-          WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale'
-          ELSE 'Sale' 
-        END as transaction_type,
-        t.kicks as kicks_count,
-        t.amount,
-        COALESCE(s.name, s.username, 'Staff') as staff_name,
-        CASE 
-          WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0)
-          ELSE NULL
-        END as ticket_number
-      FROM transactions t
-      JOIN players p ON t.player_id = p.id
-      LEFT JOIN staff s ON t.staff_id = s.id
-      LEFT JOIN (
-        SELECT player_id, ticket_number, competition_type, created_at 
-        FROM queue_tickets 
-        WHERE created_at >= timezone('UTC', ($1::date)::timestamp)
-        AND created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
-      ) qt ON t.player_id = qt.player_id 
-        AND t.official_entry = true
-        AND DATE(t.created_at) = DATE(qt.created_at)
-      WHERE t.staff_id = $2
-        AND t.created_at >= timezone('UTC', ($1::date)::timestamp)
-        AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
-      ORDER BY t.created_at DESC
-      LIMIT 200
-    `;
+    const transactionsQuery =
+      "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN (SELECT player_id, ticket_number, competition_type, created_at FROM queue_tickets WHERE created_at >= ($1::date + interval '6 hours')::timestamp AND created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp) qt ON t.player_id = qt.player_id AND t.official_entry = true AND DATE(t.created_at - interval '6 hours') = DATE(qt.created_at - interval '6 hours') WHERE t.staff_id = $2 AND t.created_at >= ($1::date + interval '6 hours')::timestamp AND t.created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp ORDER BY t.created_at DESC LIMIT 200";
 
     const result = await pool.query(transactionsQuery, [today, userId]);
-    console.log(
-      "getTodaysTransactions - Found",
-      result.rows.length,
-      "transactions for user",
-      userId
-    );
-
     // Debug: Log a sample of the data we're sending back
     if (result.rows.length > 0) {
-      console.log("Sample transaction data:", JSON.stringify(result.rows[0]));
     }
 
     // Debug: Let's also check all transactions for today regardless of staff_id (using Central timezone range converted to UTC)
-    const allTodayQuery = `
-      SELECT t.id, t.staff_id, t.player_id, t.kicks, t.amount, 
-             p.name as player_name, s.name as staff_name, s.role as staff_role 
-      FROM transactions t 
-      LEFT JOIN players p ON t.player_id = p.id 
-      LEFT JOIN staff s ON t.staff_id = s.id 
-      WHERE t.created_at >= timezone('UTC', ($1::date)::timestamp)
-        AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
-      ORDER BY t.created_at DESC
-    `;
+    const allTodayQuery =
+      "SELECT t.id, t.staff_id, t.player_id, t.kicks, t.amount, p.name as player_name, s.name as staff_name, s.role as staff_role FROM transactions t LEFT JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id WHERE t.created_at >= timezone('UTC', ($1::date)::timestamp) AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp) ORDER BY t.created_at DESC";
 
     const allTodayResult = await pool.query(allTodayQuery, [today]);
-    console.log(
-      "getTodaysTransactions - All today's transactions count:",
-      allTodayResult.rows.length
-    );
-
     // Log transactions for this user separately from the full query
     const userTransactions = allTodayResult.rows.filter(
       (t) => t.staff_id === userId
     );
-    console.log(
-      "getTodaysTransactions - Filtered transactions for this user from all transactions:",
-      userTransactions.length
-    );
-
     // If inconsistent, log a warning
     if (userTransactions.length !== result.rows.length) {
       console.warn(

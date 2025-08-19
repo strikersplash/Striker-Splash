@@ -56,9 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return response.json();
         })
         .then((data) => {
-          console.log("API Response:", data);
           if (data.success && data.members) {
-            console.log("Displaying team members:", data.members.length);
             displayTeamMembers(data.members);
           } else {
             console.error("No members found in API response");

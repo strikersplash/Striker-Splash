@@ -51,18 +51,12 @@ export const getPlayerManagement = async (
 
     // Get players
     const playersResult = await pool.query(query, params);
-    const players = playersResult.rows;
-
-    // Debug profile pictures
-    console.log(
-      "DEBUG - Player profile pictures:",
-      players.slice(0, 3).map((p) => ({
-        id: p.id,
-        name: p.name,
-        photo_path: p.photo_path,
-        profile_picture: p.photo_path, // Map photo_path to profile_picture
-      }))
-    );
+    const players = playersResult.rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      photo_path: p.photo_path,
+      profile_picture: p.photo_path, // Map photo_path to profile_picture
+    }));
 
     res.render("admin/player-management", {
       title: "Player Management",
@@ -106,73 +100,30 @@ export const getPlayerDetails = async (
     }
 
     // Debug player profile picture
-    console.log("DEBUG - Player Detail profile picture:", {
-      id: player.id,
-      name: player.name,
-      photo_path: player.photo_path,
-      profile_picture: player.photo_path, // Map photo_path to profile_picture
-    });
-
     // Query to check what tables exist in the database
-    const tablesQuery = `
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `;
+    const tablesQuery =
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
     const tablesResult = await pool.query(tablesQuery);
-    console.log(
-      "DEBUG - Tables in database:",
-      tablesResult.rows.map((r) => r.table_name)
-    );
+    const tables = tablesResult.rows.map((r) => r.table_name);
 
     // Using correct table name (game_stats) as shown in the debug output
-    const statsQuery = `
-      SELECT 
-        gs.*,
-        s.name as staff_name
-      FROM 
-        game_stats gs
-      LEFT JOIN
-        staff s ON gs.staff_id = s.id
-      WHERE 
-        gs.player_id = $1
-      ORDER BY 
-        gs.timestamp DESC
-    `;
+    const statsQuery =
+      "SELECT gs.*, s.name as staff_name FROM game_stats gs LEFT JOIN staff s ON gs.staff_id = s.id WHERE gs.player_id = $1 ORDER BY gs.timestamp DESC";
 
     const statsResult = await pool.query(statsQuery, [id]);
     const stats = statsResult.rows;
-    console.log("DEBUG - Player Stats:", id, stats.length, stats.slice(0, 2));
 
     // Get player tickets
-    const ticketsQuery = `
-      SELECT *
-      FROM queue_tickets
-      WHERE player_id = $1
-      ORDER BY created_at DESC
-    `;
+    const ticketsQuery =
+      "SELECT * FROM queue_tickets WHERE player_id = $1 ORDER BY created_at DESC";
 
     const ticketsResult = await pool.query(ticketsQuery, [id]);
     const tickets = ticketsResult.rows;
-    console.log(
-      "DEBUG - Player Tickets:",
-      id,
-      tickets.length,
-      tickets.slice(0, 2)
-    );
 
     // Get table structure for game_stats
-    const tableStructureQuery = `
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'game_stats'
-    `;
+    const tableStructureQuery =
+      "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'game_stats'";
     const tableStructureResult = await pool.query(tableStructureQuery);
-    console.log(
-      "DEBUG - game_stats table structure:",
-      tableStructureResult.rows
-    );
-
     res.render("admin/player-details", {
       title: `Player: ${player.name}`,
       player,
@@ -395,21 +346,18 @@ export const deletePlayer = async (
       );
 
       // Add a transaction record for the deletion (for audit trail)
-      const auditTransactionQuery = `
-        INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at)
-        VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))
-      `;
+      const auditTransactionQuery =
+        "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))";
       await pool.query(auditTransactionQuery, [id, staffId]);
 
       // Commit the transaction
       await pool.query("COMMIT");
 
-      console.log(
-        `Player soft deleted successfully: ${player.name} (ID: ${id}) by staff ${staffId}`
-      );
       req.flash(
         "success_msg",
-        `Player "${player.name}" has been deleted. Transaction history preserved for sales reports.`
+        'Player "' +
+          player.name +
+          '" has been deleted. Transaction history preserved for sales reports.'
       );
       res.redirect("/admin/players");
     } catch (deleteError) {
@@ -460,6 +408,57 @@ export const restorePlayer = async (
     await pool.query("BEGIN");
 
     try {
+      // Check team capacity before reactivation
+      const teamCapacityQuery = `
+        SELECT t.id, t.name, t.team_size,
+               COUNT(tm2.player_id) FILTER (WHERE p2.deleted_at IS NULL) as current_active_members,
+               tm.is_captain
+        FROM team_members tm
+        JOIN teams t ON tm.team_id = t.id
+        LEFT JOIN team_members tm2 ON t.id = tm2.team_id
+        LEFT JOIN players p2 ON tm2.player_id = p2.id
+        WHERE tm.player_id = $1
+        GROUP BY t.id, t.name, t.team_size, tm.is_captain
+      `;
+      const teamCapacityResult = await pool.query(teamCapacityQuery, [id]);
+
+      let teamsToRemoveFrom = [];
+      let teamWarnings = [];
+      let availableTeams = [];
+
+      // Check each team the player belongs to
+      for (const teamData of teamCapacityResult.rows) {
+        const {
+          id: teamId,
+          name: teamName,
+          team_size,
+          current_active_members,
+          is_captain,
+        } = teamData;
+
+        if (team_size && current_active_members >= team_size) {
+          // Team is at capacity - player will be removed from this team
+          teamsToRemoveFrom.push({
+            id: teamId,
+            name: teamName,
+            current: current_active_members,
+            capacity: team_size,
+            is_captain,
+          });
+        } else if (team_size && current_active_members === team_size - 1) {
+          // Team will be at capacity after reactivation
+          teamWarnings.push({
+            name: teamName,
+            current: current_active_members + 1,
+            capacity: team_size,
+          });
+          availableTeams.push(teamName);
+        } else {
+          // Team has space
+          availableTeams.push(teamName);
+        }
+      }
+
       // Restore player: Clear deletion fields
       const restoreQuery = `
         UPDATE players 
@@ -469,6 +468,14 @@ export const restorePlayer = async (
       `;
       await pool.query(restoreQuery, [id]);
 
+      // Remove player from teams that are at capacity
+      for (const team of teamsToRemoveFrom) {
+        await pool.query(
+          "DELETE FROM team_members WHERE team_id = $1 AND player_id = $2",
+          [team.id, id]
+        );
+      }
+
       // Reactivate any cancelled queue tickets that are still current
       await pool.query(
         "UPDATE queue_tickets SET status = 'waiting' WHERE player_id = $1 AND status = 'cancelled' AND created_at > NOW() - INTERVAL '1 day'",
@@ -476,23 +483,65 @@ export const restorePlayer = async (
       );
 
       // Add a transaction record for the restoration (for audit trail)
-      const auditTransactionQuery = `
-        INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at)
-        VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))
-      `;
+      const auditTransactionQuery =
+        "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))";
       await pool.query(auditTransactionQuery, [id, staffId]);
 
       // Commit the transaction
       await pool.query("COMMIT");
 
-      console.log(
-        `Player restored successfully: ${player.name} (ID: ${id}) by staff ${staffId}`
-      );
-      req.flash(
-        "success_msg",
-        `Player "${player.name}" has been restored and can now log in again.`
-      );
-      res.redirect(`/admin/players/${id}`);
+      // Create comprehensive success message
+      let successMessage =
+        'Player "' +
+        player.name +
+        '" has been restored and can now log in again.';
+
+      if (availableTeams.length > 0) {
+        successMessage +=
+          " They have been restored to: " + availableTeams.join(", ") + ".";
+      }
+
+      if (teamsToRemoveFrom.length > 0) {
+        const removedTeamDetails = teamsToRemoveFrom
+          .map(
+            (team) =>
+              '"' +
+              team.name +
+              '" (was ' +
+              team.current +
+              "/" +
+              team.capacity +
+              (team.is_captain ? ", was Captain" : "") +
+              ")"
+          )
+          .join(", ");
+        successMessage +=
+          " However, they were removed from the following teams that are now at capacity: " +
+          removedTeamDetails +
+          ".";
+      }
+
+      if (teamWarnings.length > 0) {
+        const warningDetails = teamWarnings
+          .map(
+            (team) =>
+              '"' +
+              team.name +
+              '" (now ' +
+              team.current +
+              "/" +
+              team.capacity +
+              ")"
+          )
+          .join(", ");
+        successMessage +=
+          " Note: The following teams are now at full capacity: " +
+          warningDetails +
+          ".";
+      }
+
+      req.flash("success_msg", successMessage);
+      res.redirect("/admin/players/" + id);
     } catch (restoreError) {
       // Rollback transaction on error
       await pool.query("ROLLBACK");
@@ -504,6 +553,6 @@ export const restorePlayer = async (
       "error_msg",
       "An error occurred while restoring the player account."
     );
-    res.redirect(`/admin/players/${req.params.id}`);
+    res.redirect("/admin/players/" + req.params.id);
   }
 };

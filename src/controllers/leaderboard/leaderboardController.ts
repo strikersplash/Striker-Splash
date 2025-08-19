@@ -33,23 +33,10 @@ export const getLeaderboard = async (
 
     console.log("Filter object being passed to functions:", filterObj);
 
-    console.log("Fetching individual leaderboard...");
     leaderboard = await getIndividualLeaderboard(filterObj);
-    console.log(
-      `Individual leaderboard fetched: ${leaderboard.length} entries`
-    );
-
-    console.log("Fetching team leaderboard...");
     teamLeaderboard = await getTeamLeaderboard(filterObj);
-    console.log(`Team leaderboard fetched: ${teamLeaderboard.length} entries`);
-
     // Let's log some team data details
     if (teamLeaderboard.length > 0) {
-      console.log(
-        "Sample team leaderboard data:",
-        JSON.stringify(teamLeaderboard[0], null, 2)
-      );
-
       // Calculate and log total goals across all teams
       const totalTeamGoals = teamLeaderboard.reduce(
         (sum, team) => sum + Number(team.total_goals || 0),
@@ -59,34 +46,13 @@ export const getLeaderboard = async (
         (sum, team) => sum + Number(team.total_attempts || 0),
         0
       );
-
-      console.log(`Total goals across all teams: ${totalTeamGoals}`);
-      console.log(`Total attempts across all teams: ${totalTeamAttempts}`);
     } else {
-      console.log("No team data available");
     }
 
     // Get age brackets for filter dropdown using dynamic calculation
-    const ageBracketsResult = await pool.query(`
-      SELECT DISTINCT 
-        CASE 
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years'
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years'
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years'
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years'
-          ELSE 'Seniors 51+ years'
-        END as name,
-        CASE 
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 1
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 2
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 3
-          WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 4
-          ELSE 5
-        END as sort_order
-      FROM players p
-      WHERE p.dob IS NOT NULL
-      ORDER BY sort_order
-    `);
+    const ageBracketsResult = await pool.query(
+      "SELECT DISTINCT CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years' ELSE 'Seniors 51+ years' END as name, CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 1 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 2 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 3 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 4 ELSE 5 END as sort_order FROM players p WHERE p.dob IS NOT NULL ORDER BY sort_order"
+    );
 
     res.render("leaderboard/index", {
       title: "Leaderboard",
@@ -144,6 +110,7 @@ async function getIndividualLeaderboard(filters: any): Promise<any[]> {
         queue_tickets qt ON gs.queue_ticket_id = qt.id
       WHERE 
         ((qt.status = 'played' AND qt.official = TRUE) OR gs.competition_type = 'custom_competition')
+        AND p.deleted_at IS NULL
     `;
 
   const params: any[] = [];
@@ -231,17 +198,9 @@ async function getIndividualLeaderboard(filters: any): Promise<any[]> {
 
   query += ` LIMIT 100`;
 
-  console.log("Individual leaderboard final query:", query);
-  console.log("Individual leaderboard query params:", params);
-
   try {
     const result = await pool.query(query, params);
-    console.log(
-      `Individual leaderboard query returned ${result.rows.length} rows`
-    );
     if (result.rows.length > 0) {
-      console.log("Sample individual leaderboard result:", result.rows[0]);
-      console.log("All individual results:");
       result.rows.forEach((row, index) => {
         console.log(
           `${index + 1}. ${row.name} (${row.gender}) - ${row.total_goals} goals`
@@ -282,7 +241,7 @@ async function getTeamLeaderboard(filters: any): Promise<any[]> {
       ta.last_activity
     FROM teams t
     LEFT JOIN team_members tm ON tm.team_id = t.id
-    LEFT JOIN players p ON p.id = tm.player_id
+    LEFT JOIN players p ON p.id = tm.player_id AND p.deleted_at IS NULL
     LEFT JOIN team_activity ta ON ta.team_id = t.id
   `;
 
@@ -297,7 +256,7 @@ async function getTeamLeaderboard(filters: any): Promise<any[]> {
       `EXISTS (
         SELECT 1 FROM team_members tm2 
         JOIN players p2 ON p2.id = tm2.player_id 
-        WHERE tm2.team_id = t.id AND p2.gender = $${paramIndex}
+        WHERE tm2.team_id = t.id AND p2.gender = $${paramIndex} AND p2.deleted_at IS NULL
       )`;
     params.push(filters.gender);
     paramIndex++;
@@ -319,7 +278,7 @@ async function getTeamLeaderboard(filters: any): Promise<any[]> {
           WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p2.dob)) <= 30 THEN 'Young Adults 18-30 years'
           WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p2.dob)) <= 50 THEN 'Adults 31-50 years'
           ELSE 'Seniors 51+ years'
-        END) = $${paramIndex}
+        END) = $${paramIndex} AND p2.deleted_at IS NULL
       )`;
     params.push(filters.ageGroup);
     paramIndex++;
@@ -335,7 +294,7 @@ async function getTeamLeaderboard(filters: any): Promise<any[]> {
       `EXISTS (
         SELECT 1 FROM team_members tm2 
         JOIN players p2 ON p2.id = tm2.player_id 
-        WHERE tm2.team_id = t.id AND (p2.residence ILIKE $${paramIndex} OR p2.city_village ILIKE $${paramIndex})
+        WHERE tm2.team_id = t.id AND (p2.residence ILIKE $${paramIndex} OR p2.city_village ILIKE $${paramIndex}) AND p2.deleted_at IS NULL
       )`;
     params.push(`%${filters.residence}%`);
     paramIndex++;
@@ -391,10 +350,7 @@ async function getTeamLeaderboard(filters: any): Promise<any[]> {
   query += ` LIMIT 50`;
 
   try {
-    console.log("Team leaderboard query:", query);
-    console.log("Team leaderboard params:", params);
     const result = await pool.query(query, params);
-    console.log("Team leaderboard results:", result.rows.length);
     return result.rows;
   } catch (error) {
     console.error("Error fetching team leaderboard:", error);

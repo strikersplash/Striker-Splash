@@ -156,10 +156,6 @@ export const getSalesTrackingData = async (
     `);
     const monthStart = monthStartResult.rows[0].month_start;
 
-    console.log(
-      `Sales tracking data - Today: ${today}, Week: ${weekStart}, Month: ${monthStart}`
-    );
-
     // Get sales data for all staff with day/week/month breakdowns
     const salesQuery = `
       SELECT 
@@ -254,8 +250,6 @@ export const getYearlySalesData = async (
   try {
     const { year = new Date().getFullYear() } = req.query;
     const targetYear = parseInt(year as string);
-
-    console.log(`Getting yearly sales data for year: ${targetYear}`);
 
     // Get sales data by staff member for the entire year with monthly breakdown
     const salesQuery = `

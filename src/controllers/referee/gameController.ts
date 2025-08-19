@@ -99,9 +99,7 @@ export const processQRScan = async (
     today.setHours(0, 0, 0, 0);
 
     const kicksResult = await Player.query(
-      `SELECT SUM(gs.kicks_used) as total_kicks
-       FROM game_stats gs
-       WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+      "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
       [player.id, today]
     );
 
@@ -110,10 +108,7 @@ export const processQRScan = async (
     // Get team information if player is in a team
     let teamInfo = null;
     const teamResult = await Player.query(
-      `SELECT t.*, tm.is_captain 
-       FROM teams t 
-       JOIN team_members tm ON t.id = tm.team_id 
-       WHERE tm.player_id = $1`,
+      "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
       [player.id]
     );
 
@@ -125,9 +120,7 @@ export const processQRScan = async (
       const membersWithKicks = await Promise.all(
         teamMembers.map(async (member: any) => {
           const memberKicksResult = await Player.query(
-            `SELECT SUM(gs.kicks_used) as total_kicks
-             FROM game_stats gs
-             WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+            "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
             [member.player_id, today]
           );
 
@@ -154,16 +147,16 @@ export const processQRScan = async (
       player: {
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
-        city_village: player.city_village,
+        // phone: REMOVED for security
+        // email: REMOVED for security
+        // residence: REMOVED for security
+        // city_village: REMOVED for security
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
-        parent_phone: player.parent_phone,
+        // parent_phone: REMOVED for security
       },
       activeTickets,
       todayKicks,
@@ -219,9 +212,7 @@ export const searchPlayerByPhone = async (
     today.setHours(0, 0, 0, 0);
 
     const kicksResult = await Player.query(
-      `SELECT SUM(gs.kicks_used) as total_kicks
-       FROM game_stats gs
-       WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+      "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
       [player.id, today]
     );
 
@@ -230,10 +221,7 @@ export const searchPlayerByPhone = async (
     // Get team information if player is in a team
     let teamInfo = null;
     const teamResult = await Player.query(
-      `SELECT t.*, tm.is_captain 
-       FROM teams t 
-       JOIN team_members tm ON t.id = tm.team_id 
-       WHERE tm.player_id = $1`,
+      "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
       [player.id]
     );
 
@@ -245,9 +233,7 @@ export const searchPlayerByPhone = async (
       const membersWithKicks = await Promise.all(
         teamMembers.map(async (member: any) => {
           const memberKicksResult = await Player.query(
-            `SELECT SUM(gs.kicks_used) as total_kicks
-             FROM game_stats gs
-             WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+            "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
             [member.player_id, today]
           );
 
@@ -274,9 +260,9 @@ export const searchPlayerByPhone = async (
       player: {
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
+        // phone: REMOVED for security
+        // email: REMOVED for security
+        // residence: REMOVED for security
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
@@ -318,13 +304,10 @@ export const searchPlayerByName = async (
       return;
     }
 
-    // Search for players by name (case insensitive, partial match)
+    // Search for players by name (case insensitive, partial match, excluding deleted players)
     const searchResult = await Player.query(
-      `SELECT * FROM players 
-       WHERE LOWER(name) LIKE LOWER($1) 
-       ORDER BY name 
-       LIMIT 10`,
-      [`%${name}%`]
+      "SELECT * FROM players WHERE LOWER(name) LIKE LOWER($1) AND deleted_at IS NULL ORDER BY name LIMIT 10",
+      ["%" + name + "%"]
     );
 
     const players = searchResult.rows;
@@ -334,9 +317,9 @@ export const searchPlayerByName = async (
       players: players.map((player: any) => ({
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
+        // phone: REMOVED for security
+        // email: REMOVED for security
+        // residence: REMOVED for security
         age_group: player.age_group,
         kicks_balance: player.kicks_balance,
       })),
@@ -433,10 +416,7 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
     if (teamPlay) {
       // Verify the team exists and the selected member is in the team
       const teamMemberResult = await Player.query(
-        `SELECT tm.*, t.name as team_name, tm.is_captain 
-         FROM team_members tm 
-         JOIN teams t ON tm.team_id = t.id
-         WHERE tm.team_id = $1 AND tm.player_id = $2`,
+        "SELECT tm.*, t.name as team_name, tm.is_captain FROM team_members tm JOIN teams t ON tm.team_id = t.id WHERE tm.team_id = $1 AND tm.player_id = $2",
         [parseInt(teamId), actualPlayerId]
       );
 
@@ -462,7 +442,7 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
           .join(", ");
         res.status(400).json({
           success: false,
-          message: `Team members with insufficient balance: ${memberNames}`,
+          message: "Team members with insufficient balance: " + memberNames,
         });
         return;
       }
@@ -472,9 +452,7 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       today.setHours(0, 0, 0, 0);
 
       const memberKicksResult = await Player.query(
-        `SELECT SUM(gs.kicks_used) as total_kicks
-         FROM game_stats gs
-         WHERE gs.player_id = $1 AND gs.timestamp >= $2 AND gs.team_play = TRUE`,
+        "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2 AND gs.team_play = TRUE",
         [actualPlayerId, today]
       );
 
@@ -485,7 +463,11 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       if (memberTodayKicks + kicksUsedInt > 3) {
         res.status(400).json({
           success: false,
-          message: `${player.name} would exceed 3 kicks limit in team mode today (currently used: ${memberTodayKicks})`,
+          message:
+            player.name +
+            " would exceed 3 kicks limit in team mode today (currently used: " +
+            memberTodayKicks +
+            ")",
         });
         return;
       }
@@ -495,7 +477,11 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
     if (player.kicks_balance < kicksUsedInt) {
       res.status(400).json({
         success: false,
-        message: `Player only has ${player.kicks_balance} kicks remaining but trying to use ${kicksUsedInt}`,
+        message:
+          "Player only has " +
+          player.kicks_balance +
+          " kicks remaining but trying to use " +
+          kicksUsedInt,
       });
       return;
     }
@@ -517,14 +503,6 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.log("KICKS DEBUG - Before update:", {
-      playerId: actualPlayerId,
-      playerName: player.name,
-      currentBalance: player.kicks_balance,
-      kicksToDeduct: kicksUsedInt,
-      teamPlay: teamPlay === true,
-    });
-
     // Start transaction to ensure data consistency
     const client = await pool.connect();
 
@@ -534,10 +512,7 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       if (teamPlay) {
         // Team mode: deduct kicks from all team members
         const teamResult = await client.query(
-          `SELECT t.*, tm.is_captain 
-           FROM teams t 
-           JOIN team_members tm ON t.id = tm.team_id 
-           WHERE tm.player_id = $1`,
+          "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
           [actualPlayerId]
         );
 
@@ -556,10 +531,6 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
               "UPDATE players SET kicks_balance = $1 WHERE id = $2",
               [newMemberBalance, member.player_id]
             );
-
-            console.log(
-              `TEAM KICKS DEDUCTED: ${kicksUsedInt} from team member ${member.name} (ID: ${member.player_id}). New balance: ${newMemberBalance}`
-            );
           }
         }
       } else {
@@ -568,10 +539,6 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
         await client.query(
           "UPDATE players SET kicks_balance = $1 WHERE id = $2",
           [newBalance, actualPlayerId]
-        );
-
-        console.log(
-          `KICKS DEDUCTED: ${kicksUsedInt} from player ${actualPlayerId}. New balance: ${newBalance}`
         );
       }
 
@@ -582,11 +549,8 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       await client.query(updateTicketQuery, ["played", ticketIdInt]);
 
       // 3. Log goals in game_stats
-      const insertGameStatQuery = `
-        INSERT INTO game_stats (player_id, goals, kicks_used, staff_id, location, competition_type, queue_ticket_id, requeued, team_play, timestamp)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, (NOW() AT TIME ZONE 'America/Belize')::timestamp)
-        RETURNING *
-      `;
+      const insertGameStatQuery =
+        "INSERT INTO game_stats (player_id, goals, kicks_used, staff_id, location, competition_type, queue_ticket_id, requeued, team_play, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, (NOW() AT TIME ZONE 'America/Belize')::timestamp) RETURNING *";
 
       const gameStatResult = await client.query(insertGameStatQuery, [
         actualPlayerId,
@@ -656,16 +620,14 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       );
       const updatedPlayer = updatedPlayerResult.rows[0];
 
-      console.log("KICKS DEBUG - After update:", {
-        playerId: actualPlayerId,
-        oldBalance: player.kicks_balance,
-        newBalance: updatedPlayer.kicks_balance,
-        kicksDeducted: kicksUsedInt,
-      });
-
       res.json({
         success: true,
-        message: `Successfully logged ${goalsInt} goals and deducted ${kicksUsedInt} kicks`,
+        message:
+          "Successfully logged " +
+          goalsInt +
+          " goals and deducted " +
+          kicksUsedInt +
+          " kicks",
         gameStat,
         newTicket,
         currentQueuePosition,
@@ -743,7 +705,7 @@ export const skipQueue = async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       success: true,
-      message: `Skipped ticket #${currentTicket.ticket_number}`,
+      message: "Skipped ticket #" + currentTicket.ticket_number,
       currentQueuePosition: newQueuePosition,
     });
   } catch (error) {
@@ -828,7 +790,7 @@ export const updatePlayerName = async (
 
       res.json({
         success: true,
-        message: `Player name updated successfully`,
+        message: "Player name updated successfully",
         player: {
           id: updatedPlayer.id,
           name: updatedPlayer.name,
@@ -900,15 +862,9 @@ export const fixKicksBalance = async (
 
     const updatedPlayer = result.rows[0];
 
-    console.log(
-      `Admin ${
-        (req.session as any).user.id
-      } set kicks balance to ${amountInt} for player ${playerIdInt}`
-    );
-
     res.json({
       success: true,
-      message: `Kicks balance set to ${amountInt}`,
+      message: "Kicks balance set to " + amountInt,
       player: {
         id: updatedPlayer.id,
         name: updatedPlayer.name,
@@ -966,9 +922,7 @@ export const getPlayerDetails = async (
     today.setHours(0, 0, 0, 0);
 
     const kicksResult = await Player.query(
-      `SELECT SUM(gs.kicks_used) as total_kicks
-       FROM game_stats gs
-       WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+      "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
       [player.id, today]
     );
 
@@ -977,10 +931,7 @@ export const getPlayerDetails = async (
     // Get team information if player is in a team
     let teamInfo = null;
     const teamResult = await Player.query(
-      `SELECT t.*, tm.is_captain 
-       FROM teams t 
-       JOIN team_members tm ON t.id = tm.team_id 
-       WHERE tm.player_id = $1`,
+      "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
       [player.id]
     );
 
@@ -992,9 +943,7 @@ export const getPlayerDetails = async (
       const membersWithKicks = await Promise.all(
         teamMembers.map(async (member: any) => {
           const memberKicksResult = await Player.query(
-            `SELECT SUM(gs.kicks_used) as total_kicks
-             FROM game_stats gs
-             WHERE gs.player_id = $1 AND gs.timestamp >= $2`,
+            "SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2",
             [member.player_id, today]
           );
 
@@ -1021,16 +970,16 @@ export const getPlayerDetails = async (
       player: {
         id: player.id,
         name: player.name,
-        phone: player.phone,
-        email: player.email,
-        residence: player.residence,
-        city_village: player.city_village,
+        // phone: REMOVED for security
+        // email: REMOVED for security
+        // residence: REMOVED for security
+        // city_village: REMOVED for security
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
-        parent_phone: player.parent_phone,
+        // parent_phone: REMOVED for security
       },
       activeTickets,
       todayKicks,
@@ -1078,7 +1027,7 @@ export const searchTeams = async (
       LIMIT 10
     `;
 
-    const result = await pool.query(searchQuery, [`%${query}%`]);
+    const result = await pool.query(searchQuery, ["%" + query + "%"]);
     const teams = result.rows;
 
     res.json({ success: true, teams: teams });
@@ -1107,16 +1056,14 @@ export const getTeamMembers = async (
     }
 
     // First check if the team exists
-    const teamQuery = `SELECT * FROM teams WHERE id = $1`;
+    const teamQuery = "SELECT * FROM teams WHERE id = $1";
     const teamResult = await pool.query(teamQuery, [teamId]);
 
     if (teamResult.rows.length === 0) {
-      console.log(`Team with ID ${teamId} does not exist`);
+      console.log("Team with ID " + teamId + " does not exist");
       res.json({ success: false, error: "Team not found" });
       return;
     }
-
-    console.log(`Team found: ${JSON.stringify(teamResult.rows[0].name)}`);
 
     // Get team members with player details and team name
     const membersQuery = `
@@ -1137,16 +1084,16 @@ export const getTeamMembers = async (
         WHERE DATE(timestamp) = CURRENT_DATE
         GROUP BY player_id
       ) daily_kicks ON p.id = daily_kicks.player_id
-      WHERE tm.team_id = $1
+      WHERE tm.team_id = $1 AND p.deleted_at IS NULL
       ORDER BY tm.is_captain DESC, tm.joined_at ASC
     `;
 
     const result = await pool.query(membersQuery, [teamId]);
     const members = result.rows;
-    console.log(`Found ${members.length} team members for team ${teamId}`);
+    console.log("Found " + members.length + " team members for team " + teamId);
 
     if (members.length === 0) {
-      console.log(`No members found for team ${teamId}`);
+      console.log("No members found for team " + teamId);
       res.json({ success: false, error: "Team not found or has no members" });
       return;
     }

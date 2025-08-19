@@ -9,6 +9,9 @@ import ejsLayouts from "express-ejs-layouts";
 import multer from "multer";
 import fs from "fs";
 
+// Import security middleware
+import { sanitizeResponse, securityHeaders } from "./middleware/security";
+
 // Import routes
 import authRoutes from "./routes/auth";
 import playerRoutes from "./routes/player";
@@ -43,21 +46,7 @@ app.disable("view cache");
 // Middleware
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://unpkg.com",
-          "https://cdn.jsdelivr.net",
-        ],
-        scriptSrcAttr: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-        imgSrc: ["'self'", "data:"],
-        connectSrc: ["'self'"],
-      },
-    },
+    contentSecurityPolicy: false, // Temporarily disable CSP to test if it's blocking CSS
   })
 );
 
@@ -79,6 +68,10 @@ if (!fs.existsSync(uploadsDir)) {
 // IMPORTANT: Static files middleware must come BEFORE route handlers
 // This ensures CSS, JS, and other static files are served properly
 app.use(express.static(publicDir));
+
+// Apply security middleware
+app.use(securityHeaders);
+app.use(sanitizeResponse);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -138,11 +131,6 @@ app.use((req, res, next) => {
   // Check if session has a user but no server start time (old session)
   if (session && session.user && !session.serverStartTime) {
     // Old session from before this restart - invalidate it
-    console.log(
-      `🔄 Invalidating old session for user: ${
-        session.user.username || session.user.name || session.user.id
-      }`
-    );
     session.destroy((err: any) => {
       if (err) console.error("Error destroying old session:", err);
     });
@@ -158,11 +146,6 @@ app.use((req, res, next) => {
     session.serverStartTime &&
     session.serverStartTime !== SERVER_START_TIME
   ) {
-    console.log(
-      `🔄 Invalidating session from different server instance for user: ${
-        session.user.username || session.user.name || session.user.id
-      }`
-    );
     session.destroy((err: any) => {
       if (err) console.error("Error destroying session:", err);
     });

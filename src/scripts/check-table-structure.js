@@ -21,8 +21,6 @@ const password = passwordMatch ? passwordMatch[1] : "striker_splash";
 const port = portMatch ? parseInt(portMatch[1]) : 5432;
 
 console.log("Using connection info:");
-console.log({ user, host, database, password: "****", port });
-
 const pool = new Pool({ user, host, database, password, port });
 
 async function checkTableStructure() {
@@ -35,7 +33,6 @@ async function checkTableStructure() {
       ORDER BY ordinal_position;
     `;
 
-    console.log("Executing query:", query);
     const result = await pool.query(query);
 
     console.log("=== Notifications Table Structure ===");

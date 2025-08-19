@@ -138,8 +138,6 @@ export const postProfileEdit = async (
       console.log("- Saved filename:", req.file.filename);
       console.log("- Multer destination:", req.file.destination);
       console.log("- Full path (from multer):", fullPath);
-      console.log("- Photo path for DB:", updateData.photo_path);
-
       if (fs.existsSync(fullPath)) {
         const stats = fs.statSync(fullPath);
         console.log("File verification successful:");

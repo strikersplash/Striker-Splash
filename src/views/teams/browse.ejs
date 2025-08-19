@@ -28,7 +28,9 @@
               >
             </div>
           </div>
-          <% } %> <% if (teams && teams.length > 0) { %>
+          <% } %>
+          
+          <% if (teams && teams.length > 0) { %>
           <div class="row g-4">
             <% teams.forEach(team => { %>
             <div class="col-lg-4 col-md-6">
@@ -46,7 +48,8 @@
                     </div>
                     <div>
                       <h5 class="card-title mb-1">
-                        <%= team.name %> <% if (team.team_size) { %>
+                        <%= team.name %> 
+                        <% if (team.team_size) { %>
                         <span
                           class="badge <%= (parseInt(team.current_members) >= team.team_size) ? 'bg-danger' : 'bg-success' %> ms-2"
                         >
@@ -79,9 +82,9 @@
                     </div>
                     <div class="col-4">
                       <h6 class="text-warning mb-0">
-                        <% if (team.total_attempts > 0) { %> <%=
-                        ((team.total_goals / team.total_attempts) *
-                        100).toFixed(1) %>% <% } else { %> 0% <% } %>
+                        <% if (team.total_attempts > 0) { %>
+                        <%= ((team.total_goals / team.total_attempts) * 100).toFixed(1) %>%
+                        <% } else { %>0%<% } %>
                       </h6>
                       <small class="text-muted">Accuracy</small>
                     </div>
@@ -91,8 +94,8 @@
                     <div
                       class="progress-bar bg-warning"
                       role="progressbar"
-                      style="width: <%= team.total_attempts > 0 ? ((team.total_goals / team.total_attempts) * 100) : 0 %>%"
-                      aria-valuenow="<%= team.total_attempts > 0 ? ((team.total_goals / team.total_attempts) * 100) : 0 %>"
+                      style="width: <%= team.total_attempts > 0 ? Math.round((team.total_goals / team.total_attempts) * 100) : 0 %>%"
+                      aria-valuenow="<%= team.total_attempts > 0 ? Math.round((team.total_goals / team.total_attempts) * 100) : 0 %>"
                       aria-valuemin="0"
                       aria-valuemax="100"
                     ></div>
@@ -106,13 +109,11 @@
                       <i class="bi bi-eye me-1"></i>View Team
                     </a>
 
-                    <% if (playerTeamIds && playerTeamIds.includes(team.id)) {
-                    %>
+                    <% if (playerTeamIds && playerTeamIds.includes(team.id)) { %>
                     <span class="btn btn-success w-100 disabled">
                       <i class="bi bi-check-circle me-1"></i>Your Team
                     </span>
-                    <% } else if (parseInt(team.current_members) >=
-                    team.team_size) { %>
+                    <% } else if (parseInt(team.current_members) >= team.team_size) { %>
                     <button
                       type="button"
                       class="btn btn-secondary w-100"
@@ -121,24 +122,112 @@
                       <i class="bi bi-person-x me-1"></i>Team Full
                     </button>
                     <% } else if (team.is_recruiting) { %>
+                    <!-- Desktop: Modal trigger button -->
                     <button
                       type="button"
-                      class="btn btn-success w-100"
+                      class="btn btn-primary btn-sm desktop-only"
                       data-bs-toggle="modal"
                       data-bs-target="#joinModal<%= team.id %>"
                     >
-                      <i class="bi bi-person-plus me-1"></i>Join Team
+                      <i class="fas fa-plus" style="font-size: 0.8em"></i> Join
+                      Team
                     </button>
-                    <% } else { %>
+
+                    <!-- Mobile/Tablet: Inline form trigger button -->
                     <button
                       type="button"
-                      class="btn btn-warning w-100"
+                      class="btn btn-primary btn-sm mobile-only"
+                      onclick="toggleJoinForm('<%= team.id %>')"
+                    >
+                      <i class="fas fa-plus" style="font-size: 0.8em"></i> Join
+                      Team
+                    </button>
+                    <% } else { %>
+                    <!-- Desktop: Modal button -->
+                    <button
+                      type="button"
+                      class="btn btn-warning w-100 d-none d-lg-block"
                       data-bs-toggle="modal"
                       data-bs-target="#joinModal<%= team.id %>"
                     >
                       <i class="bi bi-envelope me-1"></i>Request to Join
                     </button>
+                    <!-- Mobile/Tablet: Inline form toggle -->
+                    <button
+                      type="button"
+                      class="btn btn-warning w-100 d-lg-none"
+                      onclick="toggleJoinForm('<%= team.id %>')"
+                    >
+                      <i class="bi bi-envelope me-1"></i>Request to Join
+                    </button>
                     <% } %>
+
+                    <!-- Mobile/Tablet Inline Join Form -->
+                    <div
+                      id="joinForm<%= team.id %>"
+                      class="join-form-mobile d-lg-none"
+                      style="display: none"
+                    >
+                      <div class="card mt-2 border-primary">
+                        <div class="card-header bg-primary text-white">
+                          <h6 class="mb-0">
+                            <% if (team.is_recruiting) { %>Join <%= team.name %><% } else { %>Request to Join <%= team.name %><% } %>
+                          </h6>
+                        </div>
+                        <div class="card-body">
+                          <form
+                            action="/teams/join/<%= team.id %>"
+                            method="POST"
+                          >
+                            <% if (team.is_recruiting) { %>
+                            <div class="alert alert-success alert-sm">
+                              <i class="bi bi-check-circle me-2"></i>
+                              You can join immediately!
+                            </div>
+                            <% } else { %>
+                            <div class="alert alert-info alert-sm">
+                              <i class="bi bi-info-circle me-2"></i>
+                              Requires approval from team captain.
+                            </div>
+                            <% } %>
+
+                            <div class="mb-3">
+                              <label
+                                for="mobilemessage<%= team.id %>"
+                                class="form-label"
+                              >
+                                <% if (team.is_recruiting) { %>Message (Optional)<% } else { %>Message<% } %>
+                              </label>
+                              <textarea
+                                class="form-control form-control-sm"
+                                id="mobilemessage<%= team.id %>"
+                                name="message"
+                                rows="2"
+                                placeholder="<% if (team.is_recruiting) { %>Let them know you're excited to join...<% } else { %>Tell them why you'd be a great addition to their team...<% } %>"
+                                <% if (!team.is_recruiting) { %>required<% } %>
+                              ></textarea>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                              <button type="submit" class="btn btn-primary btn-sm">
+                                <% if (team.is_recruiting) { %>
+                                <i class="bi bi-plus-circle me-1"></i>Join Now
+                                <% } else { %>
+                                <i class="bi bi-envelope me-1"></i>Send Request
+                                <% } %>
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-secondary btn-sm"
+                                onclick="toggleJoinForm('<%= team.id %>')"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -153,9 +242,7 @@
                     <div class="modal-content">
                       <div class="modal-header">
                         <h5 class="modal-title">
-                          <% if (team.is_recruiting) { %> Join <%= team.name %>
-                          <% } else { %> Request to Join <%= team.name %> <% }
-                          %>
+                          <% if (team.is_recruiting) { %>Join <%= team.name %><% } else { %>Request to Join <%= team.name %><% } %>
                         </h5>
                         <button
                           type="button"
@@ -183,8 +270,7 @@
                               for="message<%= team.id %>"
                               class="form-label"
                             >
-                              <% if (team.is_recruiting) { %>Message
-                              (Optional)<% } else { %>Message<% } %>
+                              <% if (team.is_recruiting) { %>Message (Optional)<% } else { %>Message<% } %>
                             </label>
                             <textarea
                               class="form-control"
@@ -192,15 +278,8 @@
                               name="message"
                               rows="3"
                               placeholder="<% if (team.is_recruiting) { %>Let the team know you're excited to join...<% } else { %>Tell the team captain why you'd like to join...<% } %>"
-                              <%
-                              if
-                              (!team.is_recruiting)
-                              {
-                              %
-                            >
-required<% } %>
-                            ></textarea
-                            >
+                              <% if (!team.is_recruiting) { %>required<% } %>
+                            ></textarea>
                           </div>
                         </div>
                         <div class="modal-footer">
@@ -216,9 +295,10 @@ required<% } %>
                             class="<% if (team.is_recruiting) { %>btn btn-success<% } else { %>btn btn-warning<% } %>"
                           >
                             <% if (team.is_recruiting) { %>
-                            <i class="bi bi-person-plus me-1"></i>Join Team <% }
-                            else { %> <i class="bi bi-send me-1"></i>Send
-                            Request <% } %>
+                            <i class="bi bi-person-plus me-1"></i>Join Team
+                            <% } else { %>
+                            <i class="bi bi-send me-1"></i>Send Request
+                            <% } %>
                           </button>
                         </div>
                       </form>
@@ -231,16 +311,9 @@ required<% } %>
           </div>
           <% } else { %>
           <div class="text-center py-5">
-            <div class="mb-4">
-              <i class="bi bi-people text-muted" style="font-size: 4rem"></i>
-            </div>
-            <h5 class="text-muted mb-3">No teams found</h5>
-            <p class="text-muted mb-4">
-              Be the first to create a team and start competing!
-            </p>
-            <a href="/teams/create" class="btn btn-primary">
-              <i class="bi bi-plus-circle me-1"></i>Create Team
-            </a>
+            <i class="bi bi-people" style="font-size: 4rem; color: #dee2e6"></i>
+            <h4 class="mt-3 text-muted">No Teams Available</h4>
+            <p class="text-muted">There are currently no teams to browse.</p>
           </div>
           <% } %>
         </div>
@@ -250,35 +323,196 @@ required<% } %>
 </div>
 
 <style>
-  /* Remove backdrop for all devices */
+  /* Responsive button visibility - 1024px+ for laptop and up */
+  @media (min-width: 1024px) {
+    .mobile-only {
+      display: none !important;
+    }
+    .desktop-only {
+      display: inline-block !important;
+    }
+  }
+
+  /* Mobile/Tablet - Use inline forms, NO modals */
+  @media (max-width: 1023.98px) {
+    .desktop-only {
+      display: none !important;
+    }
+    .mobile-only {
+      display: inline-block !important;
+    }
+
+    /* Hide modals on mobile/tablet only */
+    .modal {
+      display: none !important;
+    }
+  }
+
+  /* Remove backdrop on all screen sizes */
   .modal-backdrop {
     display: none !important;
   }
 
-  body.modal-open {
-    overflow: auto !important;
-    padding-right: 0 !important;
+  #custom-modal-overlay {
+    display: none !important;
+  }
+
+  .join-form-mobile {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .alert-sm {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Make button icons smaller */
+  .btn i {
+    font-size: 0.875rem !important;
+  }
+
+  /* Make sure buttons don't get too tall */
+  .btn {
+    padding: 0.5rem 1rem !important;
+    line-height: 1.4 !important;
   }
 </style>
 
 <script>
-  // Remove backdrop functionality
+  // Simple solution: Working modals with NO backdrops
   document.addEventListener("DOMContentLoaded", function () {
-    const modals = document.querySelectorAll(".modal");
+    const isLaptopOrLarger = window.innerWidth >= 1024;
 
-    modals.forEach((modal) => {
-      new bootstrap.Modal(modal, {
-        backdrop: false,
-        keyboard: true,
-      });
+    if (isLaptopOrLarger) {
+      // LAPTOP/DESKTOP: Initialize working modals WITHOUT any backdrop
+      const modals = document.querySelectorAll(".modal");
+      modals.forEach((modal) => {
+        const modalInstance = new bootstrap.Modal(modal, {
+          backdrop: false, // NO backdrop at all
+          keyboard: true,
+        });
 
-      modal.addEventListener("show.bs.modal", function (e) {
-        setTimeout(() => {
-          document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
-            backdrop.remove();
+        // Make sure modal shows when button is clicked
+        const triggers = document.querySelectorAll(
+          `[data-bs-target="#${modal.id}"]`
+        );
+        triggers.forEach((trigger) => {
+          trigger.addEventListener("click", function (e) {
+            e.preventDefault();
+            modalInstance.show();
           });
-        }, 10);
+        });
       });
+      console.log("Desktop mode: Working modals without backdrop");
+    } else {
+      // MOBILE/TABLET: No modals, inline forms only
+      console.log("Mobile mode: No modals, inline forms only");
+    }
+
+    // Clean up any existing backdrops or overlays
+    document
+      .querySelectorAll(".modal-backdrop")
+      .forEach((backdrop) => backdrop.remove());
+    document
+      .querySelectorAll("#custom-modal-overlay")
+      .forEach((overlay) => overlay.remove());
+  });
+
+  // Toggle inline forms for mobile/tablet screens
+  function toggleJoinForm(teamId) {
+    const form = document.getElementById("joinForm" + teamId);
+    if (!form) return;
+
+    // Close other forms first
+    document.querySelectorAll(".join-form-mobile").forEach((otherForm) => {
+      if (otherForm !== form) {
+        otherForm.style.display = "none";
+      }
     });
+
+    // Toggle this form
+    if (form.style.display === "none" || form.style.display === "") {
+      form.style.display = "block";
+      const textarea = form.querySelector("textarea");
+      if (textarea) {
+        setTimeout(() => textarea.focus(), 100);
+      }
+    } else {
+      form.style.display = "none";
+    }
+  }
+
+  // Handle window resize
+  window.addEventListener("resize", function () {
+    const isLaptopOrLarger = window.innerWidth >= 1024;
+
+    if (isLaptopOrLarger) {
+      // Switched to laptop view - initialize working modals
+      const modals = document.querySelectorAll(".modal");
+      modals.forEach((modal) => {
+        let instance = bootstrap.Modal.getInstance(modal);
+        if (!instance) {
+          instance = new bootstrap.Modal(modal, {
+            backdrop: false, // NO backdrop
+            keyboard: true,
+          });
+
+          // Re-add click handlers
+          const triggers = document.querySelectorAll(
+            `[data-bs-target="#${modal.id}"]`
+          );
+          triggers.forEach((trigger) => {
+            trigger.addEventListener("click", function (e) {
+              e.preventDefault();
+              instance.show();
+            });
+          });
+        }
+      });
+
+      // Hide inline forms
+      document.querySelectorAll(".join-form-mobile").forEach((form) => {
+        form.style.display = "none";
+      });
+    } else {
+      // Switched to mobile view - clean up everything
+      document.querySelectorAll(".modal").forEach((modal) => {
+        const instance = bootstrap.Modal.getInstance(modal);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      });
+
+      // Remove any backdrops or overlays
+      document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+        backdrop.remove();
+      });
+      document.querySelectorAll("#custom-modal-overlay").forEach((overlay) => {
+        overlay.remove();
+      });
+
+      // Hide inline forms
+      document.querySelectorAll(".join-form-mobile").forEach((form) => {
+        form.style.display = "none";
+      });
+    }
   });
 </script>

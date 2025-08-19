@@ -13,8 +13,6 @@ export const createTeam = async (
     const { name, team_size, description, slug, is_recruiting } = req.body;
     const playerId = parseInt((req.session as any).user.id);
 
-    console.log("Player ID:", playerId);
-
     if (!name || !team_size) {
       req.flash("error_msg", "Team name and size are required");
       return res.redirect("/player/teams/create");
@@ -109,7 +107,9 @@ export const joinTeam = async (req: Request, res: Response): Promise<void> => {
 
     // Check if team is at capacity
     const memberCountQuery = await pool.query(
-      "SELECT COUNT(*) FROM team_members WHERE team_id = $1",
+      `SELECT COUNT(*) FROM team_members tm 
+       JOIN players p ON tm.player_id = p.id 
+       WHERE tm.team_id = $1 AND p.deleted_at IS NULL`,
       [parseInt(teamId)]
     );
     const currentMembers = parseInt(memberCountQuery.rows[0].count);

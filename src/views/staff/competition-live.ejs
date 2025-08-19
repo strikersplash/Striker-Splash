@@ -409,7 +409,6 @@
         }
         
         // Fetch team members
-        console.log("Fetching team members for team ID:", teamId);
         fetch(`/referee/api/team/${teamId}/members`, {
           method: 'GET',
           credentials: 'include',
@@ -424,9 +423,7 @@
             return response.json();
           })
           .then(data => {
-            console.log("API Response:", data);
             if (data.success && data.members) {
-              console.log("Displaying team members:", data.members.length);
               // Update title after data is loaded - exact match for screenshot
               if (modalTitle) {
                 modalTitle.textContent = "Team Members";
@@ -434,8 +431,6 @@
               
               // Check if we already have active players selected for this team
               if (activeTeamPlayers[teamId] && activeTeamPlayers[teamId].length === 11 && data.members.length > 11) {
-                console.log("Using previously selected players for team", teamId);
-                
                 // Get the selected members data
                 const selectedMemberIds = activeTeamPlayers[teamId];
                 const membersWithSelectionInfo = data.members.map(member => ({
@@ -574,8 +569,6 @@ function updateLogGoalsButtons() {
                   activeTeamPlayers[teamId].includes(parseInt(member.id))
                 );
                 
-                console.log("Active team members:", activeMembers.length, "out of", data.members.length);
-                
                 if (activeMembers.length === 0) {
                   // No active players found, but we have members
                   showNotification("No active players found for this team. Using all team members.", "warning");
@@ -678,7 +671,6 @@ function updateLogGoalsButtons() {
           
           // Check if goals have already been logged for this player
           if (participantsWithLoggedGoals.some(p => p.player_id == memberId)) {
-            console.log("Goals already logged for this player");
             showNotification("Goals have already been logged for " + memberName, "warning");
             return;
           }
@@ -769,8 +761,6 @@ function updateLogGoalsButtons() {
           timestamp: new Date().toISOString()
         };
         
-        console.log("Submitting goal data:", data);
-        
         // Submit to server
         fetch("/staff/competition-setup/log-goals", {
           method: "POST",
@@ -786,8 +776,6 @@ function updateLogGoalsButtons() {
           return response.json();
         })
         .then(result => {
-          console.log("Goal submission result:", result);
-          
           if (result.success) {
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById("logGoalsModal"));
@@ -1013,8 +1001,6 @@ function updateLogGoalsButtons() {
       
       // Function to refresh competition data
       function refreshCompetitionData() {
-        console.log("=== REFRESHING COMPETITION DATA ===");
-        
         // Refresh individual leaderboard
         if (competitionType === 'individual') {
           refreshIndividualLeaderboard();
@@ -1184,8 +1170,6 @@ function updateLogGoalsButtons() {
               const teamId = document.getElementById('teamMembersModalLabel').getAttribute('data-team-id');
               if (teamId) {
                 activeTeamPlayers[teamId] = selectedPlayerIds;
-                console.log("Active players set for team", teamId, ":", selectedPlayerIds);
-                
                 // Update the modal to show log goals buttons only for selected players
                 const members = Array.from(document.querySelectorAll('.member-checkbox')).map(cb => ({
                   id: cb.dataset.memberId,
@@ -1254,8 +1238,6 @@ function updateLogGoalsButtons() {
 
       // Function to reset team member selection and show the full list again
       function resetTeamMemberSelection(teamId) {
-        console.log("Resetting player selection for team", teamId);
-        
         // Clear the active players for this team
         if (activeTeamPlayers[teamId]) {
           delete activeTeamPlayers[teamId];

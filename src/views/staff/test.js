@@ -361,7 +361,6 @@
         }
         
         // Fetch team members
-        console.log("Fetching team members for team ID:", teamId);
         fetch(`/referee/api/team/${teamId}/members`)
           .then(response => {
             if (!response.ok) {
@@ -370,9 +369,7 @@
             return response.json();
           })
           .then(data => {
-            console.log("API Response:", data);
             if (data.success && data.members) {
-              console.log("Displaying team members:", data.members.length);
               displayTeamMembers(data.members);
             } else {
               console.error("No members found in API response");
@@ -525,8 +522,6 @@ function updateLogGoalsButtons() {
                   activeTeamPlayers[teamId].includes(parseInt(member.id))
                 );
                 
-                console.log("Active team members:", activeMembers.length, "out of", data.members.length);
-                
                 if (activeMembers.length === 0) {
                   // No active players found, but we have members
                   showNotification("No active players found for this team. Using all team members.", "warning");
@@ -629,7 +624,6 @@ function updateLogGoalsButtons() {
           
           // Check if goals have already been logged for this player
           if (participantsWithLoggedGoals.some(p => p.player_id == memberId)) {
-            console.log("Goals already logged for this player");
             showNotification("Goals have already been logged for " + memberName, "warning");
             return;
           }
@@ -690,8 +684,7 @@ function updateLogGoalsButtons() {
         const teamPlayerSelector = document.getElementById('team-player-selector');
         if (teamPlayerSelector) {
           selectedPlayerId = teamPlayerSelector.value;
-          console.log("Team player selector found, selected player ID:", selectedPlayerId);
-        }
+          }
         
         // Get participantId from form or selector and make sure it's a number
         const participantIdValue = selectedPlayerId || formData.get("participantId");
@@ -753,8 +746,6 @@ function updateLogGoalsButtons() {
         };
 
         // Debug log the data being sent
-        console.log("Submitting goals data:", data);
-        
         // Validate required fields before submission
         if (!data.competitionId) {
           showNotification("Error: Missing competition ID", "danger");
@@ -776,22 +767,16 @@ function updateLogGoalsButtons() {
         })
           .then((response) => {
             // Log the raw response before parsing
-            console.log("Response status:", response.status);
-            console.log("Response status text:", response.statusText);
-            
             // Clone the response so we can both log it and parse it as JSON
             const responseClone = response.clone();
             
             // Log the raw response body as text (helps debug non-JSON responses)
             responseClone.text().then(text => {
-              console.log("Raw response body:", text);
-            });
+              });
             
             return response.json();
           })
           .then((result) => {
-            console.log("Processed result:", result);
-            
             if (result.success) {
               try {
                 const modal = bootstrap.Modal.getInstance(document.getElementById("logGoalsModal"));
@@ -874,7 +859,6 @@ function updateLogGoalsButtons() {
               }
 
               // Refresh data in the background (immediate)
-              console.log("Triggering immediate data refresh after goal logging");
               setTimeout(() => {
                 refreshCompetitionData();
                 loadRecentActivity();
@@ -900,7 +884,7 @@ function updateLogGoalsButtons() {
 
       // Missing function stub to prevent errors
       function loadRecentActivity() {
-        console.log("loadRecentActivity called (stub function)");
+        ");
         // TODO: Implement recent activity loading if needed
       }
 
@@ -926,9 +910,6 @@ function updateLogGoalsButtons() {
             }
           })
             .then((response) => {
-              console.log("End competition response status:", response.status);
-              console.log("Response headers:", response.headers);
-              
               // Handle non-JSON responses (like redirects to login)
               if (!response.ok && response.status === 302) {
                 // Redirect to login
@@ -982,8 +963,6 @@ function updateLogGoalsButtons() {
         const teamSize = parseInt(firstMember.team_size) || 0;
         
         // Debug team ID
-        console.log(`Team ID from API response: ${teamId}, type: ${typeof teamId}`);
-        
         if (!teamId) {
           console.error("Missing team ID in API response:", members);
           showNotification("Error: Team ID missing from server response", "danger");
@@ -1171,7 +1150,6 @@ function updateLogGoalsButtons() {
         }, 3000);
 
         // Initial load
-        console.log("Loading initial competition data");
         refreshCompetitionData();
         loadRecentActivity();
         loadParticipantsWithLoggedGoals();
@@ -1266,12 +1244,9 @@ function updateLogGoalsButtons() {
           
           fetch(`/staff/competition-setup/${competitionId}/leaderboard`)
             .then((response) => {
-              console.log("Leaderboard response status:", response.status);
               return response.json();
             })
             .then((data) => {
-              console.log("Leaderboard data received:", data);
-              
               if (data.success) {
                 displayIndividualLeaderboard(data.leaderboard);
                 updateParticipantCards(data.participants);
@@ -1300,8 +1275,6 @@ function updateLogGoalsButtons() {
         }
 
         function displayIndividualLeaderboard(leaderboard) {
-          console.log("Displaying individual leaderboard with data:", leaderboard);
-          
           const container = document.getElementById("leaderboard-list");
           if (!container) {
             console.error("Leaderboard container not found!");
@@ -1311,7 +1284,6 @@ function updateLogGoalsButtons() {
           container.innerHTML = "";
 
           if (leaderboard.length === 0) {
-            console.log("No leaderboard data, showing 'No scores yet' message");
             container.innerHTML = '<p class="text-muted">No scores yet</p>';
             return;
           }
@@ -1382,8 +1354,6 @@ function updateLogGoalsButtons() {
         }
 
         function updateParticipantCards(participants) {
-          console.log("Updating participant cards with data:", participants);
-          
           participants.forEach((participant) => {
             console.log(`Updating card for participant ${participant.id} (${participant.name}):`, participant);
             
@@ -1533,8 +1503,6 @@ function updateLogGoalsButtons() {
 
       // Function to load active players for teams
       function loadActiveTeamPlayers() {
-        console.log("Loading active team players for competition:", competitionId);
-        
         // Try loading from localStorage first (fallback in case server fails)
         try {
           const teams = Object.keys(localStorage)
@@ -1550,7 +1518,6 @@ function updateLogGoalsButtons() {
             }, {});
           
           if (Object.keys(teams).length > 0) {
-            console.log("Loaded active players from localStorage:", teams);
             activeTeamPlayers = teams; // Use localStorage data while waiting for server
           }
         } catch (e) {
@@ -1575,8 +1542,6 @@ function updateLogGoalsButtons() {
                 }
                 activeTeamPlayers[item.team_id].push(item.player_id);
               });
-              console.log("Active team players loaded from server:", activeTeamPlayers);
-              
               // Cache in localStorage for redundancy
               try {
                 Object.entries(activeTeamPlayers).forEach(([teamId, players]) => {
@@ -1733,11 +1698,8 @@ function updateLogGoalsButtons() {
             const firstPlayerCard = document.querySelector('.player-selectable');
             if (firstPlayerCard && firstPlayerCard.getAttribute('data-team-id')) {
               teamId = firstPlayerCard.getAttribute('data-team-id');
-              console.log("Found team ID from player card:", teamId);
-            }
+              }
           }
-          
-          console.log("Final team ID for saving active players:", teamId);
           
           if (!teamId) {
             showNotification('Team ID not found. Please refresh the page and try again.', 'danger');
@@ -1764,15 +1726,11 @@ function updateLogGoalsButtons() {
             return Promise.reject(new Error('Invalid active players array'));
           }
           
-          console.log("Saving active players for team:", teamId, "Players:", activePlayers);
-          
           // Show loading notification
           showNotification('Saving active players...', 'info', 1500);
           
           // Make API call with better error handling
           const apiUrl = `/staff/competition-setup/${competitionId}/team/${teamId}/active-players`;
-          console.log("API URL:", apiUrl);
-          
           return fetch(apiUrl, {
             method: 'POST',
             headers: {

@@ -66,16 +66,13 @@ No API response yet</pre
 
     // Test API call function
     window.testApiCall = function () {
-      console.log("Testing API call");
       apiResult.textContent = "Making API request...";
 
       fetch("/staff/events-with-registrations")
         .then((response) => {
-          console.log("Response status:", response.status);
           return response.json();
         })
         .then((data) => {
-          console.log("API response:", data);
           apiResult.textContent = JSON.stringify(data, null, 2);
 
           // If successful, load events
@@ -96,11 +93,9 @@ No API response yet</pre
 
       fetch(`/staff/registered-players/${eventId}`)
         .then((response) => {
-          console.log("Response status:", response.status);
           return response.json();
         })
         .then((data) => {
-          console.log("Registrations data:", data);
           apiResult.textContent = JSON.stringify(data, null, 2);
         })
         .catch((error) => {

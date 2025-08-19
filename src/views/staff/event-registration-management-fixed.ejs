@@ -186,10 +186,6 @@
     registrationsTable.innerHTML =
       '<tr><td colspan="7" class="text-center">Loading registrations...</td></tr>';
 
-    console.log(
-      `Fetching registrations from: /staff/registered-players/${eventId}`
-    );
-
     // Make sure we don't have a null eventId before making the request
     if (!eventId) {
       console.error("No event ID provided");
@@ -200,12 +196,9 @@
 
     fetch(`/staff/registered-players/${eventId}`)
       .then((response) => {
-        console.log("Response status:", response.status);
         return response.json();
       })
       .then((data) => {
-        console.log("Received data:", data);
-
         if (data.success && data.registrations) {
           if (data.registrations.length === 0) {
             registrationsTable.innerHTML =
@@ -294,8 +287,6 @@
     fetch("/staff/events-with-registrations")
       .then((response) => response.json())
       .then((data) => {
-        console.log("Events data:", data);
-
         if (data.success && data.events) {
           if (data.events.length === 0) {
             eventsTable.innerHTML =

@@ -6,17 +6,14 @@ import {
 import {
   getCurrentQueuePosition,
   getTodaysActivity,
+  getQueueList,
 } from "../controllers/api/activityController";
 import { isStaff } from "../middleware/auth";
 
 const router = express.Router();
 
-console.log("=== API ROUTES MODULE LOADING ===");
-console.log("API routes loading...");
-
 // Test route to verify API is working
 router.get("/test", (req, res) => {
-  console.log("API test route hit!");
   res.json({ message: "API is working", timestamp: new Date().toISOString() });
 });
 
@@ -26,13 +23,13 @@ router.get("/competitions", getCompetitions);
 
 // Queue endpoints (require staff authentication)
 router.get("/queue/current", isStaff, getCurrentQueuePosition);
+router.get("/queue/list", isStaff, getQueueList);
 
 // Activity endpoints
 router.get("/activity/today", getTodaysActivity);
 
 // Public events endpoint for About Us page
 router.get("/public/events", async (req, res) => {
-  console.log("=== PUBLIC EVENTS API CALLED ===");
   console.log("Request received at:", new Date().toISOString());
 
   try {
@@ -54,12 +51,9 @@ router.get("/public/events", async (req, res) => {
       ORDER BY start_date ASC
     `;
 
-    console.log("Executing query:", eventsQuery);
     console.log("With parameter:", todayString);
 
     const eventsResult = await pool.query(eventsQuery, [todayString]);
-    console.log(`Found ${eventsResult.rows.length} upcoming events`);
-
     if (eventsResult.rows.length > 0) {
       console.log("Events found:");
       eventsResult.rows.forEach((event: any, index: number) => {
@@ -78,7 +72,6 @@ router.get("/public/events", async (req, res) => {
       events: eventsResult.rows,
     };
 
-    console.log("Sending response:", JSON.stringify(response, null, 2));
     res.json(response);
   } catch (error) {
     console.error("Error fetching public events:", error);
@@ -107,10 +100,6 @@ router.get("/events/upcoming", async (req, res) => {
     `;
 
     const eventsResult = await pool.query(eventsQuery, [today]);
-    console.log(
-      `Found ${eventsResult.rows.length} upcoming events for logged-in user`
-    );
-
     // Get player information if logged in
     let availableKicks = 0;
     let registrations: any[] = [];
@@ -119,8 +108,6 @@ router.get("/events/upcoming", async (req, res) => {
     const session = req.session as any;
     if (session?.user?.role === "player") {
       const playerId = session.user.id;
-      console.log(`Getting kick balance for player ID: ${playerId}`);
-
       // Get player's kick balance (exclude deleted players)
       try {
         const playerQuery = `
@@ -130,11 +117,7 @@ router.get("/events/upcoming", async (req, res) => {
 
         if (playerResult.rows.length > 0) {
           availableKicks = playerResult.rows[0].kicks_balance || 0;
-          console.log(
-            `Player ${playerId} has ${availableKicks} kicks available`
-          );
         } else {
-          console.log(`Player ${playerId} not found in database`);
         }
       } catch (error) {
         console.error("Error fetching player kick balance:", error);
@@ -152,14 +135,10 @@ router.get("/events/upcoming", async (req, res) => {
           playerId,
         ]);
         registrations = registrationsResult.rows;
-        console.log(
-          `Player ${playerId} has ${registrations.length} registrations`
-        );
       } catch (error) {
         console.error("Error fetching player registrations:", error);
       }
     } else {
-      console.log("User not logged in as player, using default values");
     }
 
     res.json({
@@ -182,7 +161,6 @@ router.get("/events/upcoming", async (req, res) => {
 
 // Event registration endpoint
 router.post("/events/register", async (req, res) => {
-  console.log("=== EVENT REGISTRATION API CALLED ===");
   console.log("Request body:", req.body);
 
   try {
@@ -192,7 +170,6 @@ router.post("/events/register", async (req, res) => {
     // Check if user is logged in and is a player
     const session = req.session as any;
     if (!session?.user?.role || session.user.role !== "player") {
-      console.log("User not logged in as player");
       return res.status(401).json({
         success: false,
         error: "You must be logged in as a player to register for events",
@@ -202,7 +179,6 @@ router.post("/events/register", async (req, res) => {
     const playerId = session.user.id;
     const { eventId, kicksRequested, isCompetition } = req.body;
 
-    console.log(`Player ${playerId} registering for event ${eventId}`);
     console.log(
       `Kicks requested: ${kicksRequested}, Is competition: ${isCompetition}`
     );
@@ -261,8 +237,6 @@ router.post("/events/register", async (req, res) => {
       }
 
       const currentKicks = playerResult.rows[0].kicks_balance || 0;
-      console.log(`Player has ${currentKicks} kicks available`);
-
       // Calculate tickets needed (based on event's tickets_required and kicks_requested)
       const ticketsPerKick = event.tickets_required || 1;
       const totalTicketsNeeded = kicksRequested * ticketsPerKick;
@@ -343,10 +317,6 @@ router.post("/events/register", async (req, res) => {
       ]);
       const remainingKicks = updatedPlayerResult.rows[0].kicks_balance;
 
-      console.log(
-        `Deducted ${kicksRequested} kicks. Player now has ${remainingKicks} kicks`
-      );
-
       // Add notification for the player
       const notificationQuery = `
         INSERT INTO notifications
@@ -390,8 +360,6 @@ router.post("/events/register", async (req, res) => {
 
 // Get player's event registrations
 router.get("/events/registrations", async (req, res) => {
-  console.log("=== PLAYER REGISTRATIONS API CALLED ===");
-
   try {
     // Import pool here to avoid circular dependencies
     const { pool } = require("../config/db");
@@ -399,7 +367,6 @@ router.get("/events/registrations", async (req, res) => {
     // Check if user is logged in and is a player
     const session = req.session as any;
     if (!session?.user?.role || session.user.role !== "player") {
-      console.log("User not logged in as player");
       return res.status(401).json({
         success: false,
         error: "You must be logged in as a player to view registrations",
@@ -408,8 +375,6 @@ router.get("/events/registrations", async (req, res) => {
     }
 
     const playerId = session.user.id;
-    console.log(`Getting registrations for player ID: ${playerId}`);
-
     // Get player's event registrations with event details
     const registrationsQuery = `
       SELECT 
@@ -436,10 +401,6 @@ router.get("/events/registrations", async (req, res) => {
     const registrationsResult = await pool.query(registrationsQuery, [
       playerId,
     ]);
-    console.log(
-      `Found ${registrationsResult.rows.length} registrations for player ${playerId}`
-    );
-
     res.json({
       success: true,
       registrations: registrationsResult.rows,
@@ -456,9 +417,6 @@ router.get("/events/registrations", async (req, res) => {
 
 // Delete event registration
 router.delete("/events/registrations/:id", async (req, res) => {
-  console.log("=== DELETE REGISTRATION API CALLED ===");
-  console.log("Registration ID:", req.params.id);
-
   try {
     // Import pool here to avoid circular dependencies
     const { pool } = require("../config/db");
@@ -466,7 +424,6 @@ router.delete("/events/registrations/:id", async (req, res) => {
     // Check if user is logged in and is a player
     const session = req.session as any;
     if (!session?.user?.role || session.user.role !== "player") {
-      console.log("User not logged in as player");
       return res.status(401).json({
         success: false,
         error: "You must be logged in as a player to delete registrations",
@@ -475,8 +432,6 @@ router.delete("/events/registrations/:id", async (req, res) => {
 
     const playerId = session.user.id;
     const registrationId = req.params.id;
-
-    console.log(`Player ${playerId} deleting registration ${registrationId}`);
 
     const client = await pool.connect();
 
@@ -520,10 +475,6 @@ router.delete("/events/registrations/:id", async (req, res) => {
         playerId,
       ]);
       const newBalance = refundResult.rows[0].kicks_balance;
-
-      console.log(
-        `Refunded ${registration.kicks_requested} kicks. Player now has ${newBalance} kicks`
-      );
 
       // Delete the registration
       const deleteQuery = `
@@ -574,8 +525,6 @@ router.delete("/events/registrations/:id", async (req, res) => {
 
 // Simple activity route that returns today's activities only
 router.get("/activity/today", async (req, res) => {
-  console.log("Activity/today route hit!");
-
   try {
     // Import pool here to avoid circular dependencies
     const { pool } = require("../config/db");
@@ -586,8 +535,6 @@ router.get("/activity/today", async (req, res) => {
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
     const todayString = `${year}-${month}-${day}`;
-
-    console.log(`Getting activity for today: ${todayString}`);
 
     // Get today's game stats with player names - simplified query
     const query = `
@@ -615,8 +562,6 @@ router.get("/activity/today", async (req, res) => {
     `;
 
     const result = await pool.query(query, [todayString]);
-    console.log(`Found ${result.rows.length} activities for today`);
-
     res.json(result.rows);
   } catch (error) {
     console.error("Error getting today's activity:", error);
@@ -626,7 +571,6 @@ router.get("/activity/today", async (req, res) => {
 
 // Raffle win notification endpoint
 router.post("/notifications/raffle-win", async (req, res) => {
-  console.log("=== RAFFLE WIN NOTIFICATION API CALLED ===");
   console.log("Request body:", req.body);
 
   try {
@@ -636,7 +580,6 @@ router.post("/notifications/raffle-win", async (req, res) => {
     // Check if user is logged in and is admin
     const session = req.session as any;
     if (!session?.user?.role || session.user.role !== "admin") {
-      console.log("User not logged in as admin");
       return res.status(401).json({
         success: false,
         error: "You must be logged in as an admin to send notifications",
@@ -645,12 +588,6 @@ router.post("/notifications/raffle-win", async (req, res) => {
 
     const { playerId, ticketNumber, raffleDate, customPrize, drawNumber } =
       req.body;
-
-    console.log(
-      `Admin sending raffle win notification to player ${playerId} for ticket ${ticketNumber} (draw #${
-        drawNumber || "unknown"
-      })${customPrize ? ` with custom prize: ${customPrize}` : ""}`
-    );
 
     // Validate input
     if (!playerId || !ticketNumber || !raffleDate) {
@@ -674,8 +611,6 @@ router.post("/notifications/raffle-win", async (req, res) => {
     }
 
     const player = playerResult.rows[0];
-    console.log(`Found player: ${player.name}`);
-
     // Create notifications table if it doesn't exist
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (

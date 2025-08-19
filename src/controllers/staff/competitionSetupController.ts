@@ -78,11 +78,6 @@ export const createCompetition = async (
     }
 
     const competitionData: CompetitionData = req.body;
-    console.log(
-      "Parsed competition data:",
-      JSON.stringify(competitionData, null, 2)
-    );
-    console.log("Participants array:", competitionData.participants);
 
     // Validate required fields
     if (
@@ -132,34 +127,10 @@ export const createCompetition = async (
 
       // Add participants/teams
       console.log("=== PARTICIPANT ADDITION LOGIC ===");
-      console.log("Competition type:", competitionData.type);
-      console.log("Has participants array:", !!competitionData.participants);
-      console.log(
-        "Participants array length:",
-        competitionData.participants?.length || 0
-      );
-      console.log(
-        "Condition check - individual:",
-        competitionData.type === "individual"
-      );
-      console.log(
-        "Condition check - has participants:",
-        !!competitionData.participants
-      );
-
       if (
         competitionData.type === "individual" &&
         competitionData.participants
       ) {
-        console.log(
-          "✓ ADDING INDIVIDUAL PARTICIPANTS:",
-          competitionData.participants
-        );
-        console.log(
-          "Number of participants to add:",
-          competitionData.participants.length
-        );
-
         for (const participantId of competitionData.participants) {
           console.log(
             `Inserting participant ${participantId} into competition ${competition.id}`
@@ -169,7 +140,6 @@ export const createCompetition = async (
              VALUES ($1, $2) RETURNING *`,
             [competition.id, participantId]
           );
-          console.log("Participant inserted:", insertResult.rows[0]);
         }
 
         console.log("✓ All participants added successfully");
@@ -203,12 +173,6 @@ export const createCompetition = async (
         }
       } else {
         console.log("❌ NO PARTICIPANTS ADDED - conditions not met");
-        console.log(
-          "Type is individual:",
-          competitionData.type === "individual"
-        );
-        console.log("Has participants:", !!competitionData.participants);
-        console.log("Participants value:", competitionData.participants);
       }
 
       await client.query("COMMIT");
@@ -491,16 +455,6 @@ export const getCompetitionLive = async (
       `;
       const teamsResult = await pool.query(teamsQuery, [id]);
 
-      // Log team IDs for debugging
-      console.log(
-        `Competition ${id} teams:`,
-        teamsResult.rows.map((t) => ({
-          id: t.id,
-          team_id: t.team_id,
-          name: t.name,
-        }))
-      );
-
       // Calculate format for team competitions
       const teamCount = teamsResult.rows.length;
       let format = "Team";
@@ -556,7 +510,7 @@ export const getIndividualLeaderboard = async (
         END as accuracy
       FROM competition_players cp
       JOIN players p ON cp.player_id = p.id
-      WHERE cp.competition_id = $1
+      WHERE cp.competition_id = $1 AND p.deleted_at IS NULL
       ORDER BY COALESCE(cp.goals, 0) DESC, COALESCE(cp.kicks_taken, 0) ASC, p.name ASC
     `;
 
@@ -601,6 +555,7 @@ export const getTeamLeaderboard = async (
       JOIN teams t ON ct.team_id = t.id
       JOIN competitions cc ON ct.competition_id = cc.id
       LEFT JOIN team_members tm ON t.id = tm.team_id
+      LEFT JOIN players p ON tm.player_id = p.id AND p.deleted_at IS NULL
       LEFT JOIN competition_players cp ON cp.competition_id = ct.competition_id 
         AND cp.player_id = tm.player_id AND cp.team_id = t.id
       WHERE ct.competition_id = $1
@@ -692,7 +647,6 @@ export const logCompetitionGoals = async (
     const client = await pool.connect();
 
     try {
-      console.log("Starting database transaction");
       await client.query("BEGIN");
 
       // Check if user session exists and get user ID
@@ -714,16 +668,9 @@ export const logCompetitionGoals = async (
 
       // Get competition details
       const competitionQuery = `SELECT * FROM competitions WHERE id = $1`;
-      console.log("Competition query:", competitionQuery, [competitionId]);
-
       const competitionResult = await client.query(competitionQuery, [
         competitionId,
       ]);
-
-      console.log(
-        "Competition query result rows:",
-        competitionResult.rows.length
-      );
 
       if (competitionResult.rows.length === 0) {
         console.error("Competition not found with ID:", competitionId);
@@ -735,8 +682,6 @@ export const logCompetitionGoals = async (
         return;
       }
 
-      console.log("Found competition:", competitionResult.rows[0]);
-
       const competition = competitionResult.rows[0];
       let actualPlayerId;
       let teamIdToUpdate = null;
@@ -744,7 +689,6 @@ export const logCompetitionGoals = async (
       // Make sure participantId is treated as a number if it's a valid number string
       if (participantId && !isNaN(parseInt(participantId))) {
         actualPlayerId = parseInt(participantId);
-        console.log("Converted participantId to number:", actualPlayerId);
       } else {
         console.error("Invalid participantId:", participantId);
         await client.query("ROLLBACK");
@@ -764,20 +708,11 @@ export const logCompetitionGoals = async (
           RETURNING *
         `;
 
-        console.log("Participant update query:", updateQuery);
-        console.log("Participant update parameters:", [
-          goals,
-          kicksUsed,
-          participantId,
-        ]);
-
         const updateResult = await client.query(updateQuery, [
           goals,
           kicksUsed,
           participantId,
         ]);
-        console.log("Participant update result:", updateResult.rows);
-
         if (updateResult.rows.length === 0) {
           console.error("No participant found to update");
           await client.query("ROLLBACK");
@@ -787,8 +722,6 @@ export const logCompetitionGoals = async (
           });
           return;
         }
-
-        console.log("Updated participant:", updateResult.rows[0]);
 
         // Get the player_id from the updated participant record for activity logging
         const updatedParticipant = updateResult.rows[0];
@@ -818,10 +751,6 @@ export const logCompetitionGoals = async (
             const gameStatsResult = await client.query(
               gameStatsQuery,
               gameStatsParams
-            );
-            console.log(
-              "Custom competition goals added to global leaderboard with ID:",
-              gameStatsResult.rows[0]?.id
             );
           } catch (error) {
             console.error("Error inserting game stats:", error);
@@ -853,7 +782,6 @@ export const logCompetitionGoals = async (
 
           if (findTeamResult.rows.length > 0) {
             teamIdToUpdate = findTeamResult.rows[0].team_id;
-            console.log("Found team for player:", teamIdToUpdate);
           } else {
             console.error("No team found for player:", actualPlayerId);
             await client.query("ROLLBACK");
@@ -898,10 +826,6 @@ export const logCompetitionGoals = async (
               actualPlayerId,
               teamIdToUpdate,
             ]);
-            console.log(
-              "Team player stats updated:",
-              playerUpdateResult.rows[0]
-            );
           } else {
             // Insert new player record
             const insertPlayerQuery = `
@@ -916,10 +840,6 @@ export const logCompetitionGoals = async (
               goals,
               kicksUsed,
             ]);
-            console.log(
-              "Team player stats inserted:",
-              playerInsertResult.rows[0]
-            );
           }
 
           // Also update team_stats to reflect in the global team leaderboard
@@ -950,10 +870,6 @@ export const logCompetitionGoals = async (
                 goals,
                 kicksUsed,
               ]);
-              console.log(
-                "Team global stats updated:",
-                teamStatsResult.rows[0]
-              );
             } else {
               // Insert new record
               const insertQuery = `
@@ -968,10 +884,6 @@ export const logCompetitionGoals = async (
                 goals,
                 kicksUsed,
               ]);
-              console.log(
-                "Team global stats inserted:",
-                teamStatsResult.rows[0]
-              );
             }
           } catch (error) {
             console.error("Error updating team global stats:", error);
@@ -1004,10 +916,6 @@ export const logCompetitionGoals = async (
                 gameStatsQuery,
                 gameStatsParams
               );
-              console.log(
-                "Team competition goals added to player stats with ID:",
-                gameStatsResult.rows[0]?.id
-              );
             } catch (error) {
               console.error("Error inserting game stats for player:", error);
               // Don't fail the entire operation if game_stats fails
@@ -1035,14 +943,9 @@ export const logCompetitionGoals = async (
 
       // Log user ID from session (safely)
       try {
-        console.log("Session exists:", !!req.session);
         console.log(
-          "User in session:",
-          !!(req.session && (req.session as any).user)
-        );
-        console.log(
-          "User ID from session:",
-          req.session && (req.session as any).user
+          "Session user:",
+          (req.session as any).user
             ? (req.session as any).user.id
             : "Not available"
         );
@@ -1062,21 +965,15 @@ export const logCompetitionGoals = async (
         userId,
       ];
 
-      console.log("Activity insertion parameters:", activityParams);
-
       try {
         const activityResult = await client.query(
           activityQuery,
           activityParams
         );
-        console.log("Activity inserted with ID:", activityResult.rows[0]?.id);
       } catch (error) {
         console.error("Error inserting activity:", error);
         // Don't rollback the transaction for activity logging failures
         // The main goal logging was successful, so we should continue
-        console.log(
-          "Activity logging failed, but continuing with goal logging success"
-        );
       }
 
       await client.query("COMMIT");

@@ -464,7 +464,7 @@
         })
           .then((response) => response.json())
           .then((data) => {
-            console.log('Upload response:', data); // Debug log
+            // Debug log
             if (data.success) {
               // Show success message including photo info if applicable
               let message = data.message || "Player profile updated successfully";
@@ -472,8 +472,6 @@
               // If a photo was uploaded, show a more specific success message
               if (data.photoUploaded && data.photoPath) {
                 message += ". Your profile picture has been updated.";
-                console.log('New photo path:', data.photoPath);
-                
                 // Pre-load the image to ensure it's available before page refresh
                 const preloadImg = new Image();
                 preloadImg.onload = function() {

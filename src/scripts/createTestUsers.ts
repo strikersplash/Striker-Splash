@@ -28,8 +28,7 @@ const createTestUsers = async () => {
         role: "admin",
       });
       await admin.save();
-      console.log("Admin user created");
-    }
+      }
 
     // Create staff user
     const staffExists = await Staff.findOne({ username: "staff" });
@@ -41,8 +40,7 @@ const createTestUsers = async () => {
         role: "staff",
       });
       await staff.save();
-      console.log("Staff user created");
-    }
+      }
 
     // Create test players
     const players = [
@@ -110,11 +108,9 @@ const createTestUsers = async () => {
           }
         }
 
-        console.log(`Player ${playerData.name} created`);
-      }
+        }
     }
 
-    console.log("Test users created successfully");
     process.exit(0);
   } catch (error) {
     console.error("Error creating test users:", error);

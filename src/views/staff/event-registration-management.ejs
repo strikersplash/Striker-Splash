@@ -281,15 +281,12 @@
     // Fetch registrations data
     fetch(`/staff/registered-players/${eventId}`)
       .then((response) => {
-        console.log("Response status:", response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         return response.json();
       })
       .then((data) => {
-        console.log("Received data:", data);
-
         if (data.success && data.registrations) {
           if (data.registrations.length === 0) {
             registrationsTable.innerHTML =
@@ -383,11 +380,8 @@
     // Show loading toast
     showToast("Refreshing events data...", "info");
 
-    console.log("Making fetch request to /api/staff/events");
     fetch("/api/staff/events")
       .then((response) => {
-        console.log("Fetch response received:", response.status);
-
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -396,8 +390,6 @@
         });
       })
       .then((data) => {
-        console.log("Events data received:", data);
-
         if (data.success && data.events) {
           if (data.events.length === 0) {
             eventsTable.innerHTML =
@@ -522,7 +514,6 @@
               });
             });
 
-          console.log("Successfully loaded " + data.events.length + " events!");
           // Show success toast with pending tickets count
           const totalPending = data.events.reduce(
             (sum, event) =>

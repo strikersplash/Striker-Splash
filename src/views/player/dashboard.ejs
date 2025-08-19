@@ -308,9 +308,6 @@
     // Create avatar
     const avatarContainer = document.getElementById("player-avatar-container");
     const playerPhotoPath = '<%= player.photo_path || "" %>';
-    console.log("Player photo path:", playerPhotoPath);
-    console.log("Player name:", "<%= player.name %>");
-
     const avatar = createAvatar("<%= player.name %>", 80, playerPhotoPath);
     avatar.classList.add("d-block", "mx-auto");
     avatarContainer.appendChild(avatar);
@@ -354,7 +351,6 @@
       fetch("/player/notifications")
         .then((response) => response.json())
         .then((data) => {
-          console.log("Notifications response:", data);
           const container = document.getElementById("notifications-container");
           const unreadCount = document.getElementById("unread-count");
           const clearBtn = document.getElementById(
@@ -366,7 +362,6 @@
             data.notifications &&
             data.notifications.length > 0
           ) {
-            console.log(`Found ${data.notifications.length} notifications`);
             let html = "";
             let unreadCounter = 0;
 

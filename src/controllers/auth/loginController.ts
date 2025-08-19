@@ -14,8 +14,6 @@ export const getLogin = (req: Request, res: Response): void => {
 export const postLogin = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, userType } = req.body;
-    console.log("Login attempt:", { username, userType });
-
     // Validate input
     if (!username || !password) {
       req.flash("error_msg", "Please enter all fields");
@@ -45,15 +43,9 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
         return res.redirect("/auth/login");
       }
 
-      console.log("Staff found, comparing password");
-      console.log("Stored hash:", staff.password_hash);
-
       // Verify password
       const isMatch = await bcrypt.compare(password, staff.password_hash);
-      console.log("Password match:", isMatch);
-
       if (!isMatch) {
-        console.log("Password mismatch for staff");
         req.flash("error_msg", "Invalid credentials");
         return res.redirect("/auth/login");
       }
@@ -97,7 +89,6 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
       const player = rows[0];
 
       if (!player || !player.password_hash) {
-        console.log("Player not found, deleted, or no password");
         req.flash(
           "error_msg",
           "Invalid credentials or account no longer active"
@@ -105,15 +96,9 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
         return res.redirect("/auth/login");
       }
 
-      console.log("Player found, comparing password");
-      console.log("Stored hash:", player.password_hash);
-
       // Verify password
       const isMatch = await bcrypt.compare(password, player.password_hash);
-      console.log("Password match:", isMatch);
-
       if (!isMatch) {
-        console.log("Password mismatch for player");
         req.flash("error_msg", "Invalid credentials");
         return res.redirect("/auth/login");
       }

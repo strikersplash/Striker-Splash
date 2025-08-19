@@ -319,11 +319,11 @@
           }),
         })
           .then((response) => {
-            console.log("Response status:", response.status); // Debug log
+            // Debug log
             return response.json();
           })
           .then((data) => {
-            console.log("Response data:", data); // Debug log
+            // Debug log
             
             if (data.success) {
               // Hide no-winners card if it exists
@@ -560,8 +560,6 @@
       if (customPrize) {
         requestData.customPrize = customPrize;
       }
-      
-      console.log("Sending notification with data:", requestData);
       
       // Send notification
       fetch("/api/notifications/raffle-win", {

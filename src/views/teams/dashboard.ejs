@@ -57,6 +57,13 @@
             </form>
           </div>
           <% } else { %>
+          <% if (members && team.team_size && members.length >= team.team_size) { %>
+          <!-- Team is full -->
+          <button type="button" class="btn btn-secondary" disabled>
+            <i class="bi bi-person-x me-1"></i>Team Full
+          </button>
+          <% } else { %>
+          <!-- Team has space -->
           <button
             type="button"
             class="btn btn-primary"
@@ -109,6 +116,7 @@
               </div>
             </div>
           </div>
+          <% } %>
           <% } %>
         </div>
       </div>

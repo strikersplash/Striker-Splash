@@ -39,18 +39,6 @@ router.get("/api/debug/transactions", isCashierAPI, async (req, res) => {
     const centralTimeResult = await pool.query(centralTimeQuery);
     const today = centralTimeResult.rows[0].today.toISOString().split("T")[0];
 
-    console.log(
-      "Debug endpoint - User ID:",
-      userId,
-      "Role:",
-      userRole,
-      "Type:",
-      typeof userId,
-      "Today:",
-      today,
-      "(Central timezone)"
-    );
-
     // Get all today's transactions using Central timezone range converted to UTC
     const allTransactionsQuery = `
       SELECT t.id, t.player_id, t.staff_id, t.kicks, t.amount, t.created_at, 
@@ -204,8 +192,6 @@ router.post("/requeue", isCashier, async (req, res) => {
 router.post("/sell-kicks", isCashier, async (req, res) => {
   // Debug mode - just return request details
   if (req.body.debug) {
-    console.log("DEBUG REQUEST RECEIVED:", req.body);
-    console.log("SESSION USER:", (req.session as any).user);
     return res.status(200).send("Debug info logged to server console");
   }
   const client = await pool.connect();
@@ -247,15 +233,6 @@ router.post("/sell-kicks", isCashier, async (req, res) => {
 
     // Create transaction record
     const userId = parseInt((req.session as any).user.id); // Convert string to integer
-    console.log(
-      "sell-kicks route - Creating transaction with staff_id:",
-      userId,
-      "for player:",
-      playerId,
-      "Type:",
-      typeof userId
-    );
-
     const transactionQuery = `
       INSERT INTO transactions (player_id, kicks, amount, team_play, staff_id, created_at)
       VALUES ($1, $2, $3, $4, $5, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')

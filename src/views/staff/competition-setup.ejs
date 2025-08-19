@@ -875,7 +875,6 @@
 
         // Use event listener instead of onclick to avoid quote issues
         addButton.addEventListener("click", function () {
-          console.log("Add button clicked for player:", player.name);
           addPlayerFromSearch(
             player.id,
             player.name,
@@ -891,13 +890,6 @@
     }
 
     window.addPlayerFromSearch = function (id, name, ageGroup, residence) {
-      console.log("addPlayerFromSearch called with:", {
-        id,
-        name,
-        ageGroup,
-        residence,
-      });
-
       addPlayer({
         id: id,
         name: name,
@@ -1012,7 +1004,6 @@
         removeButton.addEventListener("click", function (e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log("Removing player:", player.name);
           selectedPlayers.splice(index, 1);
           updateSelectedPlayersDisplay();
           showNotification(`${player.name} removed successfully!`, "info");
@@ -1188,7 +1179,6 @@
       fetch(`/teams/api/members/${teamId}`)
         .then((response) => response.json())
         .then((data) => {
-          console.log("Team members loaded:", data);
           if (data.success) {
             teamMembers[teamId] = data.members;
 
@@ -1586,15 +1576,6 @@
         "individual-description"
       ).value;
 
-      console.log("Individual form values:", {
-        cost,
-        kicks,
-        maxPlayers,
-        selectedAgeGroup,
-        description,
-        selectedPlayersCount: selectedPlayers.length,
-      });
-
       // Validation
       if (isNaN(cost) || cost < 0) {
         showNotification(
@@ -1672,19 +1653,12 @@
       };
 
       console.log("=== FRONTEND DEBUG ===");
-      console.log("Selected players array:", selectedPlayers);
-      console.log(
-        "Mapped participant IDs:",
-        selectedPlayers.map((p) => p.id)
+      => p.id)
       );
-      console.log("Competition data to submit:", competitionData);
-
       submitIndividualCompetition(competitionData);
     }
 
     function submitIndividualCompetition(competitionData) {
-      console.log("Submitting individual competition data:", competitionData);
-
       // Show loading state
       const loadingElement = document.getElementById("individual-notification");
       if (loadingElement) {
@@ -1710,8 +1684,6 @@
           return response.json();
         })
         .then((data) => {
-          console.log("Individual competition created successfully:", data);
-
           // Refresh the competition queue using Promise-based approach
           forceRefreshQueue()
             .then(() => {
@@ -1820,9 +1792,6 @@
                 .then((data) => {
                   if (data.success) {
                     teamMembers[teamId] = data.members;
-                    console.log(
-                      `Successfully loaded ${data.members.length} members for team ${team.name}`
-                    );
                     resolve();
                   } else {
                     console.error(
@@ -1913,9 +1882,6 @@
         console.log("Validating teams for competition:");
         console.log("Required team size:", teamSize);
         console.log("Selected teams:", selectedTeams);
-        console.log("Team members data:", teamMembers);
-        console.log("Selected team players:", selectedTeamPlayers);
-
         for (let team of selectedTeams) {
           const teamId = parseInt(team.id);
           const members = teamMembers[teamId] || [];
@@ -1931,9 +1897,6 @@
 
           // If there are enough selected players for this team, don't count it as insufficient
           if (selectedCount >= teamSize) {
-            console.log(
-              `Team ${team.name} has enough selected active players: ${selectedCount} >= ${teamSize}`
-            );
             continue;
           }
 
@@ -1963,18 +1926,11 @@
             // Special case handling - if it's Lightning Bolts United or Thunder Strikers FC and they were in the screenshot
             // We'll auto-select the first teamSize players rather than failing validation
             if (isSpecialCase) {
-              console.log(
-                `Auto-selecting first ${teamSize} players for special case team ${team.name}`
-              );
               const playerIds = members
                 .slice(0, teamSize)
                 .map((m) => m.id || m.player_id);
               selectedTeamPlayers[teamId] = playerIds;
-              console.log(`Auto-selected players:`, playerIds);
-            } else {
-              console.log(
-                `Team ${team.name} needs to select ${teamSize} active players but only has ${selectedCount} selected`
-              );
+              } else {
               insufficientPlayersTeams.push(
                 `${team.name} (selected ${selectedCount}/${teamSize} required players)`
               );
@@ -2009,10 +1965,6 @@
           const members = teamMembers[teamId] || [];
           const selectedCount = selectedTeamPlayers[teamId]?.length || 0;
 
-          console.log(
-            `Validating team ${team.name}: ${selectedCount} players selected out of required ${teamSize}`
-          );
-
           // Special case handling - if it's Lightning Bolts United or Thunder Strikers FC
           const isSpecialCase =
             team.name === "Lightning Bolts United" ||
@@ -2024,15 +1976,11 @@
             selectedTeamPlayers[teamId] = members.map(
               (member) => member.id || member.player_id
             );
-            console.log(
-              `Auto-selected all ${teamSize} players for team ${team.name}`
-            );
-          } else if (members.length > teamSize) {
+            } else if (members.length > teamSize) {
             // Team has more players than needed, check if exactly teamSize players are selected
             if (selectedCount === teamSize) {
               // Correct number of players selected - don't reassign the selection
-              console.log(
-                `Team ${team.name} has correct number of players selected (${selectedCount}/${teamSize})`
+              `
               );
             } else if (isSpecialCase) {
               // Auto-select the first teamSize players for special case teams
@@ -2040,11 +1988,7 @@
                 .slice(0, teamSize)
                 .map((m) => m.id || m.player_id);
               selectedTeamPlayers[teamId] = playerIds;
-              console.log(
-                `Auto-selected first ${teamSize} players for special case team ${team.name}:`,
-                playerIds
-              );
-            } else {
+              } else {
               // Incorrect number of players selected
               incompleteSelectionTeams.push(
                 `${team.name} (selected ${selectedCount}, need ${teamSize})`
@@ -2111,9 +2055,6 @@
         );
 
         if (unequalTeams.length > 0) {
-          console.log(
-            "Teams have different player counts, but that's allowed now"
-          );
           // We're allowing teams of different sizes now, so we'll just log it
           // but we won't prevent the user from continuing
         }
@@ -2133,14 +2074,10 @@
         selected_players: selectedTeamPlayers,
       };
 
-      console.log("Final competition data to submit:", competitionData);
-
       submitCompetition(competitionData);
     }
 
     window.submitCompetition = function (competitionData) {
-      console.log("Submitting competition data:", competitionData);
-
       // Show loading state
       const loadingElement = document.getElementById("team-notification");
       if (loadingElement) {
@@ -2165,8 +2102,6 @@
           return response.json();
         })
         .then((data) => {
-          console.log("Competition created successfully:", data);
-
           // Refresh the competition queue using Promise-based approach
           forceRefreshQueue()
             .then(() => {
@@ -2398,16 +2333,10 @@
 
     return fetch(queueEndpoint)
       .then((response) => {
-        console.log("Queue response status:", response.status);
         return response.json();
       })
       .then((data) => {
-        console.log("Queue data received:", data);
-
         if (data.success) {
-          console.log(
-            `Displaying ${data.competitions?.length || 0} competitions`
-          );
           displayCompetitionQueue(data.competitions || []);
           return data.competitions;
         } else {
@@ -2605,7 +2534,6 @@
     console.log(`=== START COMPETITION ${id} ===`);
 
     if (!confirm("Are you sure you want to start this competition?")) {
-      console.log("Start operation aborted by user");
       return;
     }
 
@@ -2633,12 +2561,9 @@
       },
     })
       .then((response) => {
-        console.log("Start response status:", response.status);
         return response.json();
       })
       .then((data) => {
-        console.log("Start response data:", data);
-
         if (data.success) {
           // IMMEDIATE UPDATE: Update the competition card to show active status
           if (competitionCard) {
@@ -2736,7 +2661,6 @@
         "Are you sure you want to cancel this competition? This action cannot be undone."
       )
     ) {
-      console.log("Cancel operation aborted by user");
       return;
     }
 
@@ -2764,12 +2688,9 @@
       },
     })
       .then((response) => {
-        console.log("Cancel response status:", response.status);
         return response.json();
       })
       .then((data) => {
-        console.log("Cancel response data:", data);
-
         if (data.success) {
           // IMMEDIATE REMOVAL: Remove the competition from DOM instantly
           if (competitionCard) {
@@ -2842,7 +2763,6 @@
     console.log(`=== END COMPETITION ${id} ===`);
 
     if (!confirm("Are you sure you want to end this competition?")) {
-      console.log("End operation aborted by user");
       return;
     }
 
@@ -2873,15 +2793,10 @@
       },
     })
       .then((response) => {
-        console.log("End response status:", response.status);
         return response.json();
       })
       .then((data) => {
-        console.log("End response data:", data);
-
         if (data.success) {
-          console.log("✅ End competition API call successful");
-
           // IMMEDIATE REMOVAL: Remove the competition from DOM instantly
           if (competitionCard) {
             console.log("🗑️ Immediately removing ended competition from DOM");

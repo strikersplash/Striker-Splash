@@ -37,7 +37,6 @@ export const getRaffleInterface = async (
     const ticketsResult = await pool.query(ticketsQuery, [todayString]);
     const ticketRange = ticketsResult.rows[0];
 
-    console.log("Tickets query result:", ticketRange);
     console.log("=== END DEBUG ===");
 
     // Check for existing raffles today

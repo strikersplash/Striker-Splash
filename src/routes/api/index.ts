@@ -2,19 +2,13 @@ import express from "express";
 
 const router = express.Router();
 
-console.log("=== API ROUTES MODULE LOADING ===");
-console.log("API routes loading...");
-
 // Test route to verify API is working
 router.get("/test", (req, res) => {
-  console.log("API test route hit!");
   res.json({ message: "API is working", timestamp: new Date().toISOString() });
 });
 
 // Simple activity route that returns today's activities only
 router.get("/activity/today", async (req, res) => {
-  console.log("Activity/today route hit!");
-
   try {
     // Import pool here to avoid circular dependencies
     const { pool } = require("../../config/db");
@@ -25,8 +19,6 @@ router.get("/activity/today", async (req, res) => {
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
     const todayString = `${year}-${month}-${day}`;
-
-    console.log(`Getting activity for today: ${todayString}`);
 
     // Get today's game stats with player names - simplified query
     const query = `
@@ -54,8 +46,6 @@ router.get("/activity/today", async (req, res) => {
     `;
 
     const result = await pool.query(query, [todayString]);
-    console.log(`Found ${result.rows.length} activities for today`);
-
     res.json(result.rows);
   } catch (error) {
     console.error("Error getting today's activity:", error);
@@ -65,7 +55,6 @@ router.get("/activity/today", async (req, res) => {
 
 // Public events endpoint for About Us page
 router.get("/public/events", async (req, res) => {
-  console.log("=== PUBLIC EVENTS API CALLED ===");
   console.log("Request received at:", new Date().toISOString());
 
   // First, let's try a simple response to make sure the route works
@@ -102,10 +91,6 @@ router.get("/events/upcoming", async (req, res) => {
     `;
 
     const eventsResult = await pool.query(eventsQuery, [today]);
-    console.log(
-      `Found ${eventsResult.rows.length} upcoming events for logged-in user`
-    );
-
     // For now, return basic structure - can be enhanced later for player-specific data
     res.json({
       success: true,

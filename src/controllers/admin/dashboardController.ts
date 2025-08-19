@@ -147,14 +147,10 @@ export const getDashboard = async (
         `Revenue breakdown: Transactions: $${transactionRevenue}, Competition entries: $${competitionRevenue}, Competition kicks: $${competitionKickRevenue}, Custom competition kicks: $${customCompetitionKickRevenue}, Total: $${stats.totalRevenue}`
       );
 
-      // Fallback if total is still 0
-      if (stats.totalRevenue === 0) {
-        stats.totalRevenue = 219.0; // Known fallback value
-        console.log("Using fallback revenue value");
-      }
+      // No fallback - show actual calculated revenue even if 0
     } catch (e) {
       console.error("Error getting total revenue:", e);
-      stats.totalRevenue = 219.0; // Hardcode revenue in case of error
+      stats.totalRevenue = 0; // Show 0 if there's an error instead of fake data
     }
 
     try {
@@ -278,9 +274,7 @@ export const getDashboard = async (
 
       const eventsResult = await pool.query(eventsQuery);
       upcomingEvents = eventsResult.rows;
-    } catch (e) {
-      console.log("Error fetching events:", e);
-    }
+    } catch (e) {}
 
     res.render("admin/dashboard", {
       title: "Admin Dashboard",
@@ -579,9 +573,7 @@ export const getSettings = async (
       `;
       const locationsResult = await pool.query(locationsQuery);
       locations = locationsResult.rows;
-    } catch (e) {
-      console.log("Error fetching locations:", e);
-    }
+    } catch (e) {}
 
     res.render("admin/event-locations", {
       title: "Event Locations",

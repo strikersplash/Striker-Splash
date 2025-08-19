@@ -563,7 +563,6 @@
 
     // Set up periodic refresh of activity data (every 60 seconds)
     setInterval(() => {
-      console.log("Auto-refreshing activity data...");
       loadTodaysActivity(true);
     }, 60000); // 60 seconds
 
@@ -1059,9 +1058,7 @@
           const ticketItems = document.querySelectorAll(".ticket-item");
           console.log("Found", ticketItems.length, "ticket items");
           ticketItems.forEach((item, index) => {
-            console.log(`Ticket ${index}:`, item.dataset.ticketId);
             item.addEventListener("click", function () {
-              console.log("Ticket clicked:", this.dataset.ticketId);
               // Remove active class from all tickets
               document
                 .querySelectorAll(".ticket-item")
@@ -1076,7 +1073,6 @@
               const fullTicketData = activeTickets.find(
                 (ticket) => ticket.id == ticketId
               );
-              console.log("Full ticket data:", fullTicketData);
               console.log("Complete activeTickets array:", activeTickets);
 
               // IMPORTANT - Make sure competition type is properly set
@@ -1084,15 +1080,6 @@
               let computedType = "unknown";
               if (fullTicketData) {
                 // Log all relevant properties that might be related to competition type
-                console.log("Ticket data inspection:", {
-                  id: fullTicketData.id,
-                  ticket_number: fullTicketData.ticket_number,
-                  competition_type: fullTicketData.competition_type,
-                  type: fullTicketData.type,
-                  ticket_type: fullTicketData.ticket_type,
-                  "all properties": fullTicketData,
-                });
-
                 // Try to get competition type from multiple possible places
                 computedType =
                   fullTicketData.competition_type ||
@@ -1580,8 +1567,6 @@
           }
         }
 
-        console.log("Raw server response data:", data);
-
         // Don't rely on isCompetition flag from server, it might be wrong
         // Instead, check if competition_type is explicitly "practice" - CASE SENSITIVE
         const ticketCompType =
@@ -1597,14 +1582,6 @@
           ticketCompType === "no competition";
 
         // For debugging - look at what's coming back from the server
-        console.log("Creating activity with detailed debug data:", {
-          "Competition type from server": data.competition_type,
-          "Competition type from client": window.selectedTicket?.competition_type,
-          "Final decision": isPracticeTicket ? "PRACTICE" : "COMPETITION",
-          "Raw selected ticket": window.selectedTicket,
-          "Raw server data": data,
-        });
-
         // Create a complete activity object with all needed properties
         const newActivity = {
           id: data.activityId || `client-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -1618,8 +1595,6 @@
           timestamp: new Date(),
           clientGenerated: !data.activityId // Mark as client-generated if no server ID
         };
-
-        console.log("New activity created with ID:", newActivity.id);
 
         // Clear the table first to prevent duplicates
         const table = document.getElementById("activity-table");
@@ -1643,22 +1618,18 @@
         try {
           localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
           sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
-          console.log("Activity saved to storage successfully");
-        } catch (e) {
+          } catch (e) {
           console.error("Failed to save activity to storage:", e);
         }
 
         // If we have server-generated ID, no need to refresh from server
         if (data.activityId) {
-          console.log("Server provided activity ID, skipping refresh");
-
           // Instead of reloading, load from our cache
           setTimeout(() => {
             updateActivityTableWithData(window.cachedActivity);
           }, 500);
         } else {
           // Only refresh from server if we don't have a server-generated ID
-          console.log("No activity ID from server, scheduling server refresh");
           setTimeout(() => {
             loadTodaysActivity(true);
           }, 3000);
@@ -1687,8 +1658,6 @@
     // Skip queue button handler is now handled by setupSkipQueueBtn function
     // Removed duplicate event listener code    // Load today's activity - ROBUST VERSION WITH PERSISTENCE
     function loadTodaysActivity(forceRefresh = false) {
-      console.log("Loading today's activity... forceRefresh:", forceRefresh);
-
       // Track if we've displayed data at least once
       let dataDisplayed = false;
 
@@ -1712,7 +1681,6 @@
           if (localData) {
             const parsedData = JSON.parse(localData);
             if (parsedData && parsedData.length > 0) {
-              console.log("Using localStorage as fallback:", parsedData.length, "items");
               existingCacheData = parsedData;
 
               // Find client-generated activities in localStorage data
@@ -1726,8 +1694,6 @@
 
       // If we have cache data and we're not forcing refresh, use it
       if (!forceRefresh && existingCacheData && existingCacheData.length > 0) {
-        console.log("Using cached activity data:", existingCacheData.length, "items");
-
         // Filter cached data to only show today's activities
         const today = new Date();
         const todayDateString = today.getFullYear() + '-' +
@@ -1746,7 +1712,7 @@
           return activityDateString === todayDateString;
         });
 
-        console.log("Filtered to today's activities:", todaysActivities.length, "items (from", existingCacheData.length, "total)");
+        ");
 
         window.cachedActivity = todaysActivities;
         updateActivityTableWithData(todaysActivities);
@@ -1756,7 +1722,6 @@
         const now = Date.now();
         const fiveMinutes = 5 * 60 * 1000;
         if (window.lastActivityLoad && now - window.lastActivityLoad < fiveMinutes) {
-          console.log("Skipping server fetch - last load was less than 5 minutes ago");
           return;
         }
 
@@ -1766,8 +1731,6 @@
       // Fetch fresh data from server
       const timestamp = Date.now();
       const url = `/api/activity/today?t=${timestamp}&nocache=${Math.random()}`;
-
-      console.log("Fetching activity from server:", url);
 
       fetch(url, {
         headers: {
@@ -1784,8 +1747,6 @@
           return response.json();
         })
         .then((data) => {
-          console.log("Fetched fresh activity from server:", data.length, "items");
-
           // Process server data
           const processedData = data.map((activity) => {
             return {
@@ -1841,16 +1802,13 @@
             return dateB - dateA;
           });
 
-          console.log(`Final deduplicated activity count: ${uniqueActivity.length} items`);
-
           // Cache the data
           try {
             localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
             sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
             window.cachedActivity = uniqueActivity;
             window.lastActivityLoad = Date.now();
-            console.log("Activity cached successfully");
-          } catch (e) {
+            } catch (e) {
             console.error("Failed to cache activity:", e);
           }
 
@@ -1870,8 +1828,6 @@
           // Try to fall back to any cached data
           try {
             if (existingCacheData && existingCacheData.length > 0) {
-              console.log("Using existing cache as fallback after fetch error");
-
               // Filter cached data to only show today's activities
               const today = new Date();
               const todayDateString = today.getFullYear() + '-' +
@@ -1890,7 +1846,7 @@
                 return activityDateString === todayDateString;
               });
 
-              console.log("Fallback filtered to today's activities:", todaysActivities.length, "items (from", existingCacheData.length, "total)");
+              ");
 
               updateActivityTableWithData(todaysActivities);
               window.cachedActivity = todaysActivities;
@@ -1901,8 +1857,6 @@
                                 localStorage.getItem(ACTIVITY_STORAGE_KEY);
             if (fallbackData) {
               const parsedData = JSON.parse(fallbackData);
-              console.log("Using storage fallback cached activity:", parsedData.length, "items");
-
               // Filter storage fallback data to only show today's activities
               const today = new Date();
               const todayDateString = today.getFullYear() + '-' +
@@ -1921,7 +1875,7 @@
                 return activityDateString === todayDateString;
               });
 
-              console.log("Storage fallback filtered to today's activities:", todaysActivities.length, "items (from", parsedData.length, "total)");
+              ");
 
               updateActivityTableWithData(todaysActivities);
               window.cachedActivity = todaysActivities;
@@ -1932,8 +1886,7 @@
           }
 
           // Show error message
-          console.log("No activity data available");
-        });
+          });
     }
 
     // Update queue position
@@ -1955,7 +1908,6 @@
           return response.json();
         })
         .then((data) => {
-          console.log("Queue position update:", data);
           const queueElement = document.getElementById("current-queue-number");
           if (queueElement) {
             if (data && data.currentQueuePosition !== undefined) {
@@ -1990,7 +1942,6 @@
           return response.json();
         })
         .then((data) => {
-          console.log("Queue list update:", data);
           const statusText = document.getElementById("queue-status-text");
           const queueCountBadge = document.getElementById("queue-count-badge");
           const queueContainer = document.getElementById("queue-items-container");
@@ -2034,6 +1985,7 @@
 
                   const kickType = isCompetitionKick ? 'Competition' : 'No Competition';
                   const ageGroup = ticket.age_group || 'Unknown';
+                  const phoneNumber = ticket.phone || 'N/A';
 
                   // Determine if this is the currently serving ticket
                   const isCurrentlyServing = index === 0;
@@ -2050,6 +2002,8 @@
                           </h6>
                           <p class="mb-1 text-primary fw-bold">${ticket.player_name}</p>
                           <small class="text-muted">
+                            <i class="bi bi-telephone me-1"></i>Phone: ${phoneNumber}
+                            <span class="mx-2">|</span>
                             <i class="bi bi-person-badge me-1"></i>Age: ${ageGroup}
                             <span class="mx-2">|</span>
                             <i class="bi bi-trophy me-1"></i>Type: ${kickType}
@@ -2141,8 +2095,6 @@
 
       // First deduplicate the array by ID
       if (activities && activities.length) {
-        console.log("Updating activity table with", activities.length, "activities");
-
         // Create a map to deduplicate by ID
         const uniqueActivitiesMap = new Map();
 
@@ -2430,9 +2382,6 @@
       "Skip queue button:",
       !!document.getElementById("skip-queue-btn")
     );
-    console.log(
-      "Search results container:",
-      !!document.getElementById("search-results")
     );
 
     // --- Fix: Always enable Log Goals buttons when a ticket is selected ---

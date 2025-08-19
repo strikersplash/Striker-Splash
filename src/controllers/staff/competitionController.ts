@@ -1041,7 +1041,7 @@ export const getSoloLeaderboard = async (
       FROM solo_participants sp
       JOIN players p ON sp.player_id = p.id
       LEFT JOIN kick_log kl ON sp.player_id = kl.player_id AND kl.solo_comp_id = $1
-      WHERE sp.solo_competition_id = $1
+      WHERE sp.solo_competition_id = $1 AND p.deleted_at IS NULL
       GROUP BY sp.player_id, p.name, sp.score
       ORDER BY sp.score DESC, kick_count ASC
     `,

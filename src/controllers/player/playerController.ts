@@ -306,7 +306,7 @@ export const downloadQR = async (
     const qrData = JSON.stringify({
       playerId: player.id,
       name: player.name,
-      phone: player.phone,
+      // phone: REMOVED for security,
     });
 
     // Generate QR code
@@ -390,8 +390,6 @@ export const getQueueStatus = async (
     }
 
     const playerId = parseInt((req.session as any).user.id);
-    console.log(`Queue status request for player ID: ${playerId}`);
-
     // Get current queue position
     const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
     console.log(`Current queue position: ${currentQueuePosition}`);
@@ -404,15 +402,11 @@ export const getQueueStatus = async (
     `;
     const ticketsResult = await pool.query(ticketsQuery, [playerId]);
     const playerTickets = ticketsResult.rows;
-    console.log(`Player ${playerId} tickets:`, playerTickets);
-
     const response = {
       success: true,
       currentQueuePosition,
       playerTickets,
     };
-    console.log("Sending response:", response);
-
     res.json(response);
   } catch (error) {
     console.error("Queue status error:", error);

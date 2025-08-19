@@ -8,7 +8,6 @@ export const getRegisteredPlayersForEvent = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log("getRegisteredPlayersForEvent called with params:", req.params);
     const { eventId } = req.params;
 
     if (!eventId) {
@@ -230,8 +229,6 @@ export const getEventsWithRegistrations = async (
     `;
 
     const eventsResult = await pool.query(eventsQuery, [today]);
-
-    console.log("Events found:", eventsResult.rows.length);
 
     res.json({
       success: true,

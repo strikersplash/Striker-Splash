@@ -97,7 +97,9 @@ export default class Team {
       `SELECT DISTINCT ON (t.id) t.*, 
               COALESCE(ts.total_goals, 0) as total_goals, 
               COALESCE(ts.total_attempts, 0) as total_attempts,
-              (SELECT COUNT(*) FROM team_members tm WHERE tm.team_id = t.id) as current_members
+              (SELECT COUNT(*) FROM team_members tm 
+               JOIN players p ON tm.player_id = p.id 
+               WHERE tm.team_id = t.id AND p.deleted_at IS NULL) as current_members
        FROM teams t 
        LEFT JOIN team_stats ts ON t.id = ts.team_id AND ts.competition_id IS NULL
        ORDER BY t.id, t.name`
@@ -111,7 +113,7 @@ export default class Team {
         (SELECT SUM(gs.goals) FROM game_stats gs WHERE gs.player_id = p.id AND gs.team_play = TRUE) as goals
        FROM team_members tm
        JOIN players p ON tm.player_id = p.id
-       WHERE tm.team_id = $1
+       WHERE tm.team_id = $1 AND p.deleted_at IS NULL
        ORDER BY tm.is_captain DESC, p.name`,
       [teamId]
     );
@@ -133,7 +135,9 @@ export default class Team {
 
     // Check if team has reached capacity
     const countResult = await pool.query(
-      "SELECT COUNT(*) FROM team_members WHERE team_id = $1",
+      `SELECT COUNT(*) FROM team_members tm 
+       JOIN players p ON tm.player_id = p.id 
+       WHERE tm.team_id = $1 AND p.deleted_at IS NULL`,
       [teamId]
     );
 
@@ -327,7 +331,10 @@ export default class Team {
   }
 
   // Leave a specific team (for multi-team players)
-  static async leaveSpecificTeam(playerId: number, teamId: number): Promise<boolean> {
+  static async leaveSpecificTeam(
+    playerId: number,
+    teamId: number
+  ): Promise<boolean> {
     const client = await pool.connect();
 
     try {
@@ -723,7 +730,9 @@ export default class Team {
       if (action === "approve") {
         // Check team capacity
         const memberCount = await client.query(
-          "SELECT COUNT(*) FROM team_members WHERE team_id = $1",
+          `SELECT COUNT(*) FROM team_members tm 
+           JOIN players p ON tm.player_id = p.id 
+           WHERE tm.team_id = $1 AND p.deleted_at IS NULL`,
           [request.team_id]
         );
 

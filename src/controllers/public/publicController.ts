@@ -17,8 +17,6 @@ export const getHome = async (req: Request, res: Response): Promise<void> => {
       const eventsResult = await pool.query(eventsQuery);
       events = eventsResult.rows;
     } catch (e) {
-      console.log('Error fetching events:', e);
-      
       // Create events table if it doesn't exist
       try {
         await pool.query(`
@@ -67,8 +65,6 @@ export const getAbout = async (req: Request, res: Response): Promise<void> => {
       const eventsResult = await pool.query(eventsQuery);
       events = eventsResult.rows;
     } catch (e) {
-      console.log('Error fetching events:', e);
-      
       // Create events table if it doesn't exist
       try {
         await pool.query(`

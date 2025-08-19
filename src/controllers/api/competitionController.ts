@@ -13,7 +13,6 @@ import { pool } from "../../config/db";
  */
 export const createCompetition = async (req: Request, res: Response) => {
   try {
-    console.log("=== API COMPETITION CREATION DEBUG ===");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
 
     const {
@@ -29,13 +28,10 @@ export const createCompetition = async (req: Request, res: Response) => {
       participants, // Added participants for individual competitions
     } = req.body;
 
-    console.log("Parsed data:");
     console.log("- Type:", type);
     console.log("- Name:", name);
     console.log("- Teams:", teams);
     console.log("- Participants:", participants);
-    console.log("- Selected players:", selected_players);
-
     // Start a transaction
     const client = await pool.connect();
     try {
@@ -121,7 +117,9 @@ export const createCompetition = async (req: Request, res: Response) => {
 
             // Get team members for individual transactions
             const membersResult = await client.query(
-              `SELECT player_id FROM team_members WHERE team_id = $1`,
+              `SELECT tm.player_id FROM team_members tm 
+               JOIN players p ON tm.player_id = p.id 
+               WHERE tm.team_id = $1 AND p.deleted_at IS NULL`,
               [teamId]
             );
 
@@ -150,7 +148,6 @@ export const createCompetition = async (req: Request, res: Response) => {
 
       // If selected players are provided, add them to the competition_players table
       if (selected_players) {
-        console.log("Adding selected players for teams:", selected_players);
         for (const [teamId, playerIds] of Object.entries(selected_players)) {
           if (Array.isArray(playerIds) && playerIds.length > 0) {
             const insertPlayerValues = playerIds
@@ -166,8 +163,7 @@ export const createCompetition = async (req: Request, res: Response) => {
             `);
           }
         }
-        console.log("✅ All selected players added successfully");
-      }
+        }
 
       await client.query("COMMIT");
 
