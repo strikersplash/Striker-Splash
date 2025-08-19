@@ -116,9 +116,23 @@ app.use((0, express_session_1.default)({
         httpOnly: true, // Prevent client-side script access
         sameSite: "lax", // Help with cross-origin issues
     },
+    // Add session store options for better persistence
+    rolling: true, // Reset maxAge on every request
+    name: "striker_splash_session", // Custom session name
 }));
 // Flash messages
 app.use((0, express_flash_1.default)());
+// Session debugging middleware - to track session issues
+app.use((req, res, next) => {
+    const session = req.session;
+    console.log(`Session Debug - URL: ${req.url}`);
+    console.log(`Session ID: ${req.sessionID}`);
+    console.log(`Session User: ${(session === null || session === void 0 ? void 0 : session.user) ? 'EXISTS' : 'NONE'}`);
+    console.log(`Session User Details:`, session === null || session === void 0 ? void 0 : session.user);
+    console.log(`Cookies:`, req.headers.cookie);
+    console.log('---');
+    next();
+});
 // Session validation middleware - DISABLED for deployment stability
 // This was causing sessions to be invalidated too aggressively on DigitalOcean
 /*
