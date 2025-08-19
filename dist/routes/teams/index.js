@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const auth_1 = require("../../middleware/auth");
 const teamController_1 = require("../../controllers/teams/teamController");
-const router = express_1.default.Router();
+const router = express.Router();
 // Team routes
 router.get("/create", auth_1.isAuthenticated, teamController_1.getCreateTeamForm);
 router.post("/create", auth_1.isAuthenticated, teamController_1.createTeam);

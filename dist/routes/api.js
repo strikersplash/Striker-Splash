@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const competitionController_1 = require("../controllers/api/competitionController");
 const activityController_1 = require("../controllers/api/activityController");
 const auth_1 = require("../middleware/auth");
-const router = express_1.default.Router();
+const router = express.Router();
 // Test route to verify API is working
 router.get("/test", (req, res) => {
     res.json({ message: "API is working", timestamp: new Date().toISOString() });

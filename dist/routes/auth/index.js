@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const loginController_1 = require("../../controllers/auth/loginController");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const router = express_1.default.Router();
+const router = express.Router();
 // Create uploads directory if it doesn't exist - use absolute path
 const rootDir = path.resolve(__dirname, "../../../");
 const uploadsDir = path.join(rootDir, "public/uploads");

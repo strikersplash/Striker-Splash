@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const auth_1 = require("../../middleware/auth");
 const db_1 = require("../../config/db");
 const playerController_1 = require("../../controllers/player/playerController");
 const teamController_1 = require("../../controllers/teams/teamController");
-const router = express_1.default.Router();
+const router = express.Router();
 // API routes
 router.get("/api/queue-status", auth_1.isAuthenticated, playerController_1.getQueueStatus);
 // Player routes

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const auth_1 = require("../../middleware/auth");
 const gameController_1 = require("../../controllers/referee/gameController");
-const router = express_1.default.Router();
+const router = express.Router();
 // Referee interface routes
 router.get("/", auth_1.isStaff, gameController_1.getRefereeInterface);
 // API routes

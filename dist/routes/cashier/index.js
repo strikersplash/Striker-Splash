@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const db_1 = require("../../config/db");
 const auth_1 = require("../../middleware/auth");
 const QueueTicket_1 = require("../../models/QueueTicket");
 const transactionController_1 = require("../../controllers/cashier/transactionController");
-const router = express_1.default.Router();
+const router = express.Router();
 // API routes
 router.get("/api/search", auth_1.isCashierAPI, transactionController_1.searchPlayer);
 router.get("/api/search-teams", auth_1.isCashierAPI, transactionController_1.searchTeams);

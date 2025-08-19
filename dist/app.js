@@ -1,34 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SERVER_START_TIME = void 0;
-const express_1 = require("express");
+const express = require("express");
 const path_1 = require("path");
 const body_parser_1 = require("body-parser");
 const express_session_1 = require("express-session");
 const express_flash_1 = require("express-flash");
 const helmet_1 = require("helmet");
-const dotenv_1 = require("dotenv");
+const dotenv = require("dotenv");
 const express_ejs_layouts_1 = require("express-ejs-layouts");
 const multer_1 = require("multer");
 const fs_1 = require("fs");
 // Import security middleware
 const security_1 = require("./middleware/security");
-// Import routes
+// Import route modules
 const auth_1 = require("./routes/auth");
-const player_1 = require("./routes/player");
-const staff_1 = require("./routes/staff");
 const admin_1 = require("./routes/admin");
+const player_1 = require("./routes/player");
 const cashier_1 = require("./routes/cashier");
+const staff_1 = require("./routes/staff");
 const referee_1 = require("./routes/referee");
-const leaderboard_1 = require("./routes/leaderboard");
 const teams_1 = require("./routes/teams");
+const testRoutes_1 = require("./routes/testRoutes");
+const leaderboard_1 = require("./routes/leaderboard");
 const public_1 = require("./routes/public");
 const api_1 = require("./routes/api");
 const error_1 = require("./routes/system/error");
 const debug_1 = require("./routes/debug");
 // Load environment variables
-dotenv_1.default.config();
-const app = (0, express_1.default)();
+dotenv.config();
+const app = (0, express)();
 // Server startup timestamp to invalidate sessions on restart
 exports.SERVER_START_TIME = Date.now();
 // Set view engine
@@ -57,7 +58,7 @@ if (!fs_1.default.existsSync(uploadsDir)) {
 }
 // IMPORTANT: Static files middleware must come BEFORE route handlers
 // This ensures CSS, JS, and other static files are served properly
-app.use(express_1.default.static(publicDir));
+app.use(express.static(publicDir));
 // Apply security middleware
 app.use(security_1.securityHeaders);
 app.use(security_1.sanitizeResponse);

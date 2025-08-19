@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const auth_1 = require("../../middleware/auth");
 const dashboardController_1 = require("../../controllers/admin/dashboardController");
 const raffleController_1 = require("../../controllers/admin/raffleController");
@@ -9,7 +9,7 @@ const ticketController_1 = require("../../controllers/admin/ticketController");
 const playerController_1 = require("../../controllers/admin/playerController");
 const contentController_1 = require("../../controllers/contentController");
 const salesReportsController_1 = require("../../controllers/admin/salesReportsController");
-const router = express_1.default.Router();
+const router = express.Router();
 // Test admin login route (for development only)
 router.get("/test-login", (req, res) => {
     req.session.user = {

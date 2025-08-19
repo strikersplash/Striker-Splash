@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const router = express_1.default.Router();
+const express = require("express");
+const router = express.Router();
 // Error routes
 router.get('/error/:code', (req, res) => {
     const code = parseInt(req.params.code) || 500;

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
+const express = require("express");
 const fs_1 = require("fs");
 const path_1 = require("path");
-const router = express_1.default.Router();
+const router = express.Router();
 router.get("/debug-images", async (req, res) => {
     try {
         const uploadsDir = path_1.default.join(__dirname, "../../public/uploads");
