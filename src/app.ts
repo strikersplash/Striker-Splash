@@ -111,8 +111,8 @@ const upload = multer({
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "striker_splash_secret",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session save - needed for DigitalOcean
+    saveUninitialized: true, // Save uninitialized sessions - needed for DigitalOcean
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       // For DigitalOcean App Platform, let the platform handle HTTPS
