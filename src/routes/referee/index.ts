@@ -1,5 +1,5 @@
 import express from "express";
-import { isStaff } from "../../middleware/auth";
+import { isStaff, isStaffAPI } from "../../middleware/auth";
 import {
   getRefereeInterface,
   processQRScan,
@@ -20,15 +20,15 @@ const router = express.Router();
 router.get("/", isStaff, getRefereeInterface);
 
 // API routes
-router.post("/api/scan", isStaff, processQRScan);
-router.get("/api/search", isStaff, searchPlayerByPhone);
-router.get("/api/search-name", isStaff, searchPlayerByName);
-router.get("/api/search-teams", isStaff, searchTeams);
-router.get("/api/team/:teamId/members", isStaff, getTeamMembers);
-router.get("/api/player/:playerId", isStaff, getPlayerDetails);
-router.post("/api/log-goals", isStaff, logGoals);
-router.post("/api/update-name", isStaff, updatePlayerName);
-router.post("/api/fix-kicks", isStaff, fixKicksBalance);
-router.post("/api/skip-queue", isStaff, skipQueue);
+router.post("/api/scan", isStaffAPI, processQRScan);
+router.get("/api/search", isStaffAPI, searchPlayerByPhone);
+router.get("/api/search-name", isStaffAPI, searchPlayerByName);
+router.get("/api/search-teams", isStaffAPI, searchTeams);
+router.get("/api/team/:teamId/members", isStaffAPI, getTeamMembers);
+router.get("/api/player/:playerId", isStaffAPI, getPlayerDetails);
+router.post("/api/log-goals", isStaffAPI, logGoals);
+router.post("/api/update-name", isStaffAPI, updatePlayerName);
+router.post("/api/fix-kicks", isStaffAPI, fixKicksBalance);
+router.post("/api/skip-queue", isStaffAPI, skipQueue);
 
 export default router;

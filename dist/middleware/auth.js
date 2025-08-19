@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isAuthenticatedAPI = exports.isCashierAPI = exports.isCashier = exports.isPlayer = exports.isStaff = exports.isAdmin = exports.isAuthenticated = void 0;
+exports.isStaffAPI = exports.isAuthenticatedAPI = exports.isCashierAPI = exports.isCashier = exports.isPlayer = exports.isStaff = exports.isAdmin = exports.isAuthenticated = void 0;
 // Check if user is authenticated
 const isAuthenticated = (req, res, next) => {
     if (req.session.user) {
@@ -83,3 +83,13 @@ const isAuthenticatedAPI = (req, res, next) => {
         .json({ success: false, message: "Please log in to access this API" });
 };
 exports.isAuthenticatedAPI = isAuthenticatedAPI;
+// Check if user is staff (API version - returns JSON)
+const isStaffAPI = (req, res, next) => {
+    if (req.session.user &&
+        (req.session.user.role === "staff" ||
+            req.session.user.role === "admin")) {
+        return next();
+    }
+    res.status(401).json({ success: false, message: "Unauthorized access" });
+};
+exports.isStaffAPI = isStaffAPI;

@@ -118,3 +118,19 @@ export const isAuthenticatedAPI = (
     .status(401)
     .json({ success: false, message: "Please log in to access this API" });
 };
+
+// Check if user is staff (API version - returns JSON)
+export const isStaffAPI = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (
+    (req.session as any).user &&
+    ((req.session as any).user.role === "staff" ||
+      (req.session as any).user.role === "admin")
+  ) {
+    return next();
+  }
+  res.status(401).json({ success: false, message: "Unauthorized access" });
+};
