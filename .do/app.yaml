@@ -39,5 +39,4 @@ services:
       - key: LOG_LEVEL
         value: "warn"
     http_port: 3000
-
 # No databases section needed - using external Supabase
