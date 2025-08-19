@@ -1,4 +1,4 @@
-# Update production environment for cloud deployment
+# Supabase + DigitalOcean App Platform deployment
 name: striker-splash
 services:
   - name: web
@@ -14,8 +14,18 @@ services:
     envs:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        value: ${striker-splash-db.DATABASE_URL}
+      # Supabase Database Configuration
+      - key: DB_HOST
+        value: YOUR_SUPABASE_HOST
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        value: postgres
+      - key: DB_PASSWORD
+        value: YOUR_SUPABASE_PASSWORD
+      - key: DB_PORT
+        value: "5432"
+      # Application Configuration
       - key: SESSION_SECRET
         value: your_super_secure_production_session_secret_here
       - key: ENABLE_HTTPS
@@ -30,9 +40,4 @@ services:
         value: "warn"
     http_port: 3000
 
-databases:
-  - engine: PG
-    name: striker-splash-db
-    version: "14"
-    production: false
-    cluster_name: striker-splash-cluster
+# No databases section needed - using external Supabase
