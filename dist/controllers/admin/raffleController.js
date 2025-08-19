@@ -1,18 +1,9 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.drawRaffleWinner = exports.getRaffleInterface = void 0;
 const db_1 = require("../../config/db");
 // Display raffle interface
-const getRaffleInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getRaffleInterface = async (req, res) => {
     try {
         // Only allow admin to access this page
         if (!req.session.user ||
@@ -36,7 +27,7 @@ const getRaffleInterface = (req, res) => __awaiter(void 0, void 0, void 0, funct
         DATE(created_at) = $1
         AND status = 'played'
     `;
-        const ticketsResult = yield db_1.pool.query(ticketsQuery, [todayString]);
+        const ticketsResult = await db_1.pool.query(ticketsQuery, [todayString]);
         const ticketRange = ticketsResult.rows[0];
         console.log("=== END DEBUG ===");
         // Check for existing raffles today
@@ -45,7 +36,7 @@ const getRaffleInterface = (req, res) => __awaiter(void 0, void 0, void 0, funct
       WHERE raffle_date = $1
       ORDER BY draw_number DESC
     `;
-        const raffleResult = yield db_1.pool.query(raffleQuery, [todayString]);
+        const raffleResult = await db_1.pool.query(raffleQuery, [todayString]);
         const existingRaffles = raffleResult.rows;
         const latestRaffle = existingRaffles[0];
         // Get all winners for today (date-only comparison)
@@ -66,7 +57,7 @@ const getRaffleInterface = (req, res) => __awaiter(void 0, void 0, void 0, funct
           dr.raffle_date = $1
         ORDER BY dr.draw_number DESC
       `;
-            const winnersResult = yield db_1.pool.query(winnersQuery, [todayString]);
+            const winnersResult = await db_1.pool.query(winnersQuery, [todayString]);
             winners = winnersResult.rows;
         }
         res.render("admin/raffle", {
@@ -83,10 +74,10 @@ const getRaffleInterface = (req, res) => __awaiter(void 0, void 0, void 0, funct
         req.flash("error_msg", "An error occurred while loading the raffle interface");
         res.redirect("/admin/dashboard");
     }
-});
+};
 exports.getRaffleInterface = getRaffleInterface;
 // Draw raffle winner
-const drawRaffleWinner = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const drawRaffleWinner = async (req, res) => {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -105,7 +96,7 @@ const drawRaffleWinner = (req, res) => __awaiter(void 0, void 0, void 0, functio
       SELECT MAX(draw_number) as max_draw_number FROM daily_raffles
       WHERE raffle_date = $1
     `;
-        const existingRafflesResult = yield db_1.pool.query(existingRafflesQuery, [
+        const existingRafflesResult = await db_1.pool.query(existingRafflesQuery, [
             date,
         ]);
         const nextDrawNumber = (existingRafflesResult.rows[0].max_draw_number || 0) + 1;
@@ -126,7 +117,7 @@ const drawRaffleWinner = (req, res) => __awaiter(void 0, void 0, void 0, functio
         AND qt.created_at < $2
         AND qt.status = 'played'
     `;
-        const ticketsResult = yield db_1.pool.query(ticketsQuery, [
+        const ticketsResult = await db_1.pool.query(ticketsQuery, [
             targetDate,
             nextDate,
         ]);
@@ -143,7 +134,7 @@ const drawRaffleWinner = (req, res) => __awaiter(void 0, void 0, void 0, functio
         // Record raffle result
         const minTicket = Math.min(...eligibleTickets.map((t) => t.ticket_number));
         const maxTicket = Math.max(...eligibleTickets.map((t) => t.ticket_number));
-        const insertResult = yield db_1.pool.query(`INSERT INTO daily_raffles 
+        const insertResult = await db_1.pool.query(`INSERT INTO daily_raffles 
        (raffle_date, start_ticket, end_ticket, winning_ticket, winner_id, drawn_at, drawn_by, draw_number)
        VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7)
        RETURNING id`, [
@@ -179,5 +170,5 @@ const drawRaffleWinner = (req, res) => __awaiter(void 0, void 0, void 0, functio
             message: "An error occurred while drawing raffle winner",
         });
     }
-});
+};
 exports.drawRaffleWinner = drawRaffleWinner;

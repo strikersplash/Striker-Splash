@@ -1,18 +1,9 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLeaderboard = void 0;
 const db_1 = require("../../config/db");
 // Display leaderboard page
-const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getLeaderboard = async (req, res) => {
     try {
         // Get filter parameters
         const { gender, ageGroup, residence, timeRange, sortBy, type } = req.query;
@@ -35,8 +26,8 @@ const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function*
             sortBy: sortBy,
         };
         console.log("Filter object being passed to functions:", filterObj);
-        leaderboard = yield getIndividualLeaderboard(filterObj);
-        teamLeaderboard = yield getTeamLeaderboard(filterObj);
+        leaderboard = await getIndividualLeaderboard(filterObj);
+        teamLeaderboard = await getTeamLeaderboard(filterObj);
         // Let's log some team data details
         if (teamLeaderboard.length > 0) {
             // Calculate and log total goals across all teams
@@ -46,7 +37,7 @@ const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function*
         else {
         }
         // Get age brackets for filter dropdown using dynamic calculation
-        const ageBracketsResult = yield db_1.pool.query("SELECT DISTINCT CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years' ELSE 'Seniors 51+ years' END as name, CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 1 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 2 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 3 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 4 ELSE 5 END as sort_order FROM players p WHERE p.dob IS NOT NULL ORDER BY sort_order");
+        const ageBracketsResult = await db_1.pool.query("SELECT DISTINCT CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years' ELSE 'Seniors 51+ years' END as name, CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 1 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 2 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 3 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 4 ELSE 5 END as sort_order FROM players p WHERE p.dob IS NOT NULL ORDER BY sort_order");
         res.render("leaderboard/index", {
             title: "Leaderboard",
             leaderboard,
@@ -70,13 +61,12 @@ const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function*
             message: "Failed to load leaderboard",
         });
     }
-});
+};
 exports.getLeaderboard = getLeaderboard;
-function getIndividualLeaderboard(filters) {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log("Individual leaderboard function called with filters:", filters);
-        // Build query with filters for individual leaderboard
-        let query = `
+async function getIndividualLeaderboard(filters) {
+    console.log("Individual leaderboard function called with filters:", filters);
+    // Build query with filters for individual leaderboard
+    let query = `
       SELECT 
         p.id,
         p.name,
@@ -106,94 +96,92 @@ function getIndividualLeaderboard(filters) {
         ((qt.status = 'played' AND qt.official = TRUE) OR gs.competition_type = 'custom_competition')
         AND p.deleted_at IS NULL
     `;
-        const params = [];
-        let paramIndex = 1;
-        // Filtering is now handled in the main WHERE clause above
-        if (filters.gender && filters.gender !== "all" && filters.gender !== "") {
-            console.log("Adding gender filter:", filters.gender);
-            query += ` AND p.gender = $${paramIndex}`;
-            params.push(filters.gender);
-            paramIndex++;
-        }
-        if (filters.ageGroup &&
-            filters.ageGroup !== "all" &&
-            filters.ageGroup !== "") {
-            console.log("Adding age group filter:", filters.ageGroup);
-            query += ` AND (CASE 
+    const params = [];
+    let paramIndex = 1;
+    // Filtering is now handled in the main WHERE clause above
+    if (filters.gender && filters.gender !== "all" && filters.gender !== "") {
+        console.log("Adding gender filter:", filters.gender);
+        query += ` AND p.gender = $${paramIndex}`;
+        params.push(filters.gender);
+        paramIndex++;
+    }
+    if (filters.ageGroup &&
+        filters.ageGroup !== "all" &&
+        filters.ageGroup !== "") {
+        console.log("Adding age group filter:", filters.ageGroup);
+        query += ` AND (CASE 
       WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years'
       WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years'
       WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years'
       WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years'
       ELSE 'Seniors 51+ years'
     END) = $${paramIndex}`;
-            params.push(filters.ageGroup);
-            paramIndex++;
+        params.push(filters.ageGroup);
+        paramIndex++;
+    }
+    if (filters.residence &&
+        filters.residence !== "all" &&
+        filters.residence !== "") {
+        console.log("Adding residence filter:", filters.residence);
+        query += ` AND (p.residence ILIKE $${paramIndex} OR p.city_village ILIKE $${paramIndex})`;
+        params.push(`%${filters.residence}%`);
+        paramIndex++;
+    }
+    // Add time range filter
+    if (filters.timeRange &&
+        filters.timeRange !== "all" &&
+        filters.timeRange !== "") {
+        const now = new Date();
+        let startDate;
+        switch (filters.timeRange) {
+            case "day":
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case "week":
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case "month":
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case "year":
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(0);
         }
-        if (filters.residence &&
-            filters.residence !== "all" &&
-            filters.residence !== "") {
-            console.log("Adding residence filter:", filters.residence);
-            query += ` AND (p.residence ILIKE $${paramIndex} OR p.city_village ILIKE $${paramIndex})`;
-            params.push(`%${filters.residence}%`);
-            paramIndex++;
-        }
-        // Add time range filter
-        if (filters.timeRange &&
-            filters.timeRange !== "all" &&
-            filters.timeRange !== "") {
-            const now = new Date();
-            let startDate;
-            switch (filters.timeRange) {
-                case "day":
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    break;
-                case "week":
-                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    break;
-                case "month":
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    break;
-                case "year":
-                    startDate = new Date(now.getFullYear(), 0, 1);
-                    break;
-                default:
-                    startDate = new Date(0);
-            }
-            query += ` AND gs.timestamp >= $${paramIndex}`;
-            params.push(startDate);
-            paramIndex++;
-        }
-        query += `
+        query += ` AND gs.timestamp >= $${paramIndex}`;
+        params.push(startDate);
+        paramIndex++;
+    }
+    query += `
       GROUP BY p.id, p.name, p.residence, p.city_village, p.gender, p.dob
       HAVING SUM(gs.goals) > 0
     `;
-        // Add sorting
-        if (filters.sortBy === "streak") {
-            query += ` ORDER BY best_streak DESC, total_goals DESC`;
+    // Add sorting
+    if (filters.sortBy === "streak") {
+        query += ` ORDER BY best_streak DESC, total_goals DESC`;
+    }
+    else {
+        query += ` ORDER BY total_goals DESC, best_streak DESC`;
+    }
+    query += ` LIMIT 100`;
+    try {
+        const result = await db_1.pool.query(query, params);
+        if (result.rows.length > 0) {
+            result.rows.forEach((row, index) => {
+                console.log(`${index + 1}. ${row.name} (${row.gender}) - ${row.total_goals} goals`);
+            });
         }
-        else {
-            query += ` ORDER BY total_goals DESC, best_streak DESC`;
-        }
-        query += ` LIMIT 100`;
-        try {
-            const result = yield db_1.pool.query(query, params);
-            if (result.rows.length > 0) {
-                result.rows.forEach((row, index) => {
-                    console.log(`${index + 1}. ${row.name} (${row.gender}) - ${row.total_goals} goals`);
-                });
-            }
-            return result.rows;
-        }
-        catch (error) {
-            console.error("Error executing individual leaderboard query:", error);
-            return [];
-        }
-    });
+        return result.rows;
+    }
+    catch (error) {
+        console.error("Error executing individual leaderboard query:", error);
+        return [];
+    }
 }
-function getTeamLeaderboard(filters) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Use team_stats table, but avoid double counting by prioritizing specific competition records
-        let query = `
+async function getTeamLeaderboard(filters) {
+    // Use team_stats table, but avoid double counting by prioritizing specific competition records
+    let query = `
     WITH team_activity AS (
       -- Calculate team totals from team_stats, avoiding double-counting
       -- by prioritizing specific competition records over global ones
@@ -221,27 +209,27 @@ function getTeamLeaderboard(filters) {
     LEFT JOIN players p ON p.id = tm.player_id AND p.deleted_at IS NULL
     LEFT JOIN team_activity ta ON ta.team_id = t.id
   `;
-        const params = [];
-        let paramIndex = 1;
-        let whereClause = "";
-        // Add filters if needed
-        if (filters.gender && filters.gender !== "all" && filters.gender !== "") {
-            whereClause +=
-                (whereClause ? " AND " : " WHERE ") +
-                    `EXISTS (
+    const params = [];
+    let paramIndex = 1;
+    let whereClause = "";
+    // Add filters if needed
+    if (filters.gender && filters.gender !== "all" && filters.gender !== "") {
+        whereClause +=
+            (whereClause ? " AND " : " WHERE ") +
+                `EXISTS (
         SELECT 1 FROM team_members tm2 
         JOIN players p2 ON p2.id = tm2.player_id 
         WHERE tm2.team_id = t.id AND p2.gender = $${paramIndex} AND p2.deleted_at IS NULL
       )`;
-            params.push(filters.gender);
-            paramIndex++;
-        }
-        if (filters.ageGroup &&
-            filters.ageGroup !== "all" &&
-            filters.ageGroup !== "") {
-            whereClause +=
-                (whereClause ? " AND " : " WHERE ") +
-                    `EXISTS (
+        params.push(filters.gender);
+        paramIndex++;
+    }
+    if (filters.ageGroup &&
+        filters.ageGroup !== "all" &&
+        filters.ageGroup !== "") {
+        whereClause +=
+            (whereClause ? " AND " : " WHERE ") +
+                `EXISTS (
         SELECT 1 FROM team_members tm2 
         JOIN players p2 ON p2.id = tm2.player_id 
         WHERE tm2.team_id = t.id AND (CASE 
@@ -252,71 +240,70 @@ function getTeamLeaderboard(filters) {
           ELSE 'Seniors 51+ years'
         END) = $${paramIndex} AND p2.deleted_at IS NULL
       )`;
-            params.push(filters.ageGroup);
-            paramIndex++;
-        }
-        if (filters.residence &&
-            filters.residence !== "all" &&
-            filters.residence !== "") {
-            whereClause +=
-                (whereClause ? " AND " : " WHERE ") +
-                    `EXISTS (
+        params.push(filters.ageGroup);
+        paramIndex++;
+    }
+    if (filters.residence &&
+        filters.residence !== "all" &&
+        filters.residence !== "") {
+        whereClause +=
+            (whereClause ? " AND " : " WHERE ") +
+                `EXISTS (
         SELECT 1 FROM team_members tm2 
         JOIN players p2 ON p2.id = tm2.player_id 
         WHERE tm2.team_id = t.id AND (p2.residence ILIKE $${paramIndex} OR p2.city_village ILIKE $${paramIndex}) AND p2.deleted_at IS NULL
       )`;
-            params.push(`%${filters.residence}%`);
-            paramIndex++;
+        params.push(`%${filters.residence}%`);
+        paramIndex++;
+    }
+    // Add time range filter if needed
+    if (filters.timeRange &&
+        filters.timeRange !== "all" &&
+        filters.timeRange !== "") {
+        const now = new Date();
+        let startDate;
+        switch (filters.timeRange) {
+            case "day":
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case "week":
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case "month":
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case "year":
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(0);
         }
-        // Add time range filter if needed
-        if (filters.timeRange &&
-            filters.timeRange !== "all" &&
-            filters.timeRange !== "") {
-            const now = new Date();
-            let startDate;
-            switch (filters.timeRange) {
-                case "day":
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    break;
-                case "week":
-                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    break;
-                case "month":
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    break;
-                case "year":
-                    startDate = new Date(now.getFullYear(), 0, 1);
-                    break;
-                default:
-                    startDate = new Date(0);
-            }
-            whereClause +=
-                (whereClause ? " AND " : " WHERE ") +
-                    `ta.last_activity >= $${paramIndex}`;
-            params.push(startDate);
-            paramIndex++;
-        }
-        query += whereClause;
-        query += `
+        whereClause +=
+            (whereClause ? " AND " : " WHERE ") +
+                `ta.last_activity >= $${paramIndex}`;
+        params.push(startDate);
+        paramIndex++;
+    }
+    query += whereClause;
+    query += `
     GROUP BY t.id, t.name, t.slug, t.team_size, ta.goals, ta.attempts, ta.last_activity
     HAVING COUNT(DISTINCT tm.player_id) > 0
   `;
-        // Add ordering based on sort filter
-        if (filters.sortBy === "streak") {
-            // Teams don't have streaks, so we default to goals anyway
-            query += ` ORDER BY total_goals DESC, total_attempts ASC, member_count DESC`;
-        }
-        else {
-            query += ` ORDER BY total_goals DESC, total_attempts ASC, member_count DESC`;
-        }
-        query += ` LIMIT 50`;
-        try {
-            const result = yield db_1.pool.query(query, params);
-            return result.rows;
-        }
-        catch (error) {
-            console.error("Error fetching team leaderboard:", error);
-            return [];
-        }
-    });
+    // Add ordering based on sort filter
+    if (filters.sortBy === "streak") {
+        // Teams don't have streaks, so we default to goals anyway
+        query += ` ORDER BY total_goals DESC, total_attempts ASC, member_count DESC`;
+    }
+    else {
+        query += ` ORDER BY total_goals DESC, total_attempts ASC, member_count DESC`;
+    }
+    query += ` LIMIT 50`;
+    try {
+        const result = await db_1.pool.query(query, params);
+        return result.rows;
+    }
+    catch (error) {
+        console.error("Error fetching team leaderboard:", error);
+        return [];
+    }
 }

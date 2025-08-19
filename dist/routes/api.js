@@ -1,18 +1,6 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+const express_1 = require("express");
 const competitionController_1 = require("../controllers/api/competitionController");
 const activityController_1 = require("../controllers/api/activityController");
 const auth_1 = require("../middleware/auth");
@@ -30,7 +18,7 @@ router.get("/queue/list", auth_1.isStaff, activityController_1.getQueueList);
 // Activity endpoints
 router.get("/activity/today", activityController_1.getTodaysActivity);
 // Public events endpoint for About Us page
-router.get("/public/events", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/public/events", async (req, res) => {
     console.log("Request received at:", new Date().toISOString());
     try {
         // Import pool here to avoid circular dependencies
@@ -49,7 +37,7 @@ router.get("/public/events", (req, res) => __awaiter(void 0, void 0, void 0, fun
       ORDER BY start_date ASC
     `;
         console.log("With parameter:", todayString);
-        const eventsResult = yield pool.query(eventsQuery, [todayString]);
+        const eventsResult = await pool.query(eventsQuery, [todayString]);
         if (eventsResult.rows.length > 0) {
             console.log("Events found:");
             eventsResult.rows.forEach((event, index) => {
@@ -73,10 +61,9 @@ router.get("/public/events", (req, res) => __awaiter(void 0, void 0, void 0, fun
             events: [],
         });
     }
-}));
+});
 // Events endpoint for logged-in users (supports player registrations)
-router.get("/events/upcoming", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+router.get("/events/upcoming", async (req, res) => {
     console.log("Events/upcoming route hit!");
     try {
         // Import pool here to avoid circular dependencies
@@ -88,20 +75,20 @@ router.get("/events/upcoming", (req, res) => __awaiter(void 0, void 0, void 0, f
       WHERE end_date >= $1
       ORDER BY start_date ASC
     `;
-        const eventsResult = yield pool.query(eventsQuery, [today]);
+        const eventsResult = await pool.query(eventsQuery, [today]);
         // Get player information if logged in
         let availableKicks = 0;
         let registrations = [];
         // Check if user is logged in and is a player
         const session = req.session;
-        if (((_a = session === null || session === void 0 ? void 0 : session.user) === null || _a === void 0 ? void 0 : _a.role) === "player") {
+        if (session?.user?.role === "player") {
             const playerId = session.user.id;
             // Get player's kick balance (exclude deleted players)
             try {
                 const playerQuery = `
           SELECT kicks_balance FROM players WHERE id = $1 AND deleted_at IS NULL
         `;
-                const playerResult = yield pool.query(playerQuery, [playerId]);
+                const playerResult = await pool.query(playerQuery, [playerId]);
                 if (playerResult.rows.length > 0) {
                     availableKicks = playerResult.rows[0].kicks_balance || 0;
                 }
@@ -119,7 +106,7 @@ router.get("/events/upcoming", (req, res) => __awaiter(void 0, void 0, void 0, f
           JOIN event_locations el ON er.event_id = el.id
           WHERE er.player_id = $1
         `;
-                const registrationsResult = yield pool.query(registrationsQuery, [
+                const registrationsResult = await pool.query(registrationsQuery, [
                     playerId,
                 ]);
                 registrations = registrationsResult.rows;
@@ -147,17 +134,16 @@ router.get("/events/upcoming", (req, res) => __awaiter(void 0, void 0, void 0, f
             registrations: [],
         });
     }
-}));
+});
 // Event registration endpoint
-router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+router.post("/events/register", async (req, res) => {
     console.log("Request body:", req.body);
     try {
         // Import pool here to avoid circular dependencies
         const { pool } = require("../config/db");
         // Check if user is logged in and is a player
         const session = req.session;
-        if (!((_a = session === null || session === void 0 ? void 0 : session.user) === null || _a === void 0 ? void 0 : _a.role) || session.user.role !== "player") {
+        if (!session?.user?.role || session.user.role !== "player") {
             return res.status(401).json({
                 success: false,
                 error: "You must be logged in as a player to register for events",
@@ -173,16 +159,16 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
                 error: "Invalid registration data",
             });
         }
-        const client = yield pool.connect();
+        const client = await pool.connect();
         try {
-            yield client.query("BEGIN");
+            await client.query("BEGIN");
             // Get event details and check if registration is open
             const eventQuery = `
         SELECT * FROM event_locations WHERE id = $1
       `;
-            const eventResult = yield client.query(eventQuery, [eventId]);
+            const eventResult = await client.query(eventQuery, [eventId]);
             if (eventResult.rows.length === 0) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(404).json({
                     success: false,
                     error: "Event not found",
@@ -192,7 +178,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
             console.log(`Event found: ${event.name}`);
             // Check if registration is closed
             if (event.registration_closed) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(400).json({
                     success: false,
                     error: "Registration for this event has been closed by staff",
@@ -202,9 +188,9 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
             const playerQuery = `
         SELECT kicks_balance FROM players WHERE id = $1 AND deleted_at IS NULL
       `;
-            const playerResult = yield client.query(playerQuery, [playerId]);
+            const playerResult = await client.query(playerQuery, [playerId]);
             if (playerResult.rows.length === 0) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(404).json({
                     success: false,
                     error: "Player not found or account inactive",
@@ -217,7 +203,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
             console.log(`Tickets needed: ${totalTicketsNeeded} (${kicksRequested} kicks × ${ticketsPerKick} tickets/kick)`);
             // Check if player has enough kicks
             if (currentKicks < kicksRequested) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(400).json({
                     success: false,
                     error: `Insufficient kicks. You have ${currentKicks} kicks but need ${kicksRequested}`,
@@ -228,12 +214,12 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
         SELECT id FROM event_registrations 
         WHERE player_id = $1 AND event_id = $2
       `;
-            const existingResult = yield client.query(existingRegistrationQuery, [
+            const existingResult = await client.query(existingRegistrationQuery, [
                 playerId,
                 eventId,
             ]);
             if (existingResult.rows.length > 0) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(400).json({
                     success: false,
                     error: "You are already registered for this event",
@@ -245,7 +231,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
         FROM event_registrations 
         WHERE event_id = $1
       `;
-            const regNumberResult = yield client.query(registrationNumberQuery, [
+            const regNumberResult = await client.query(registrationNumberQuery, [
                 eventId,
             ]);
             const registrationNumber = regNumberResult.rows[0].next_number;
@@ -256,7 +242,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id
       `;
-            const registrationResult = yield client.query(insertRegistrationQuery, [
+            const registrationResult = await client.query(insertRegistrationQuery, [
                 eventId,
                 playerId,
                 kicksRequested,
@@ -273,7 +259,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
         WHERE id = $2
         RETURNING kicks_balance
       `;
-            const updatedPlayerResult = yield client.query(updatePlayerQuery, [
+            const updatedPlayerResult = await client.query(updatePlayerQuery, [
                 kicksRequested,
                 playerId,
             ]);
@@ -284,13 +270,13 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
         (player_id, title, message, type, created_at, is_read)
         VALUES ($1, $2, $3, $4, NOW() - INTERVAL '6 hours', false)
       `;
-            yield client.query(notificationQuery, [
+            await client.query(notificationQuery, [
                 playerId,
                 `Event Registration Confirmed`,
                 `You have successfully registered for "${event.name}" using ${kicksRequested} kicks.`,
                 "event_registration",
             ]);
-            yield client.query("COMMIT");
+            await client.query("COMMIT");
             console.log("Registration completed successfully");
             res.json({
                 success: true,
@@ -302,7 +288,7 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
             });
         }
         catch (error) {
-            yield client.query("ROLLBACK");
+            await client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -316,16 +302,15 @@ router.post("/events/register", (req, res) => __awaiter(void 0, void 0, void 0, 
             error: "Registration failed",
         });
     }
-}));
+});
 // Get player's event registrations
-router.get("/events/registrations", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+router.get("/events/registrations", async (req, res) => {
     try {
         // Import pool here to avoid circular dependencies
         const { pool } = require("../config/db");
         // Check if user is logged in and is a player
         const session = req.session;
-        if (!((_a = session === null || session === void 0 ? void 0 : session.user) === null || _a === void 0 ? void 0 : _a.role) || session.user.role !== "player") {
+        if (!session?.user?.role || session.user.role !== "player") {
             return res.status(401).json({
                 success: false,
                 error: "You must be logged in as a player to view registrations",
@@ -355,7 +340,7 @@ router.get("/events/registrations", (req, res) => __awaiter(void 0, void 0, void
       WHERE er.player_id = $1
       ORDER BY er.registration_date DESC
     `;
-        const registrationsResult = yield pool.query(registrationsQuery, [
+        const registrationsResult = await pool.query(registrationsQuery, [
             playerId,
         ]);
         res.json({
@@ -371,16 +356,15 @@ router.get("/events/registrations", (req, res) => __awaiter(void 0, void 0, void
             registrations: [],
         });
     }
-}));
+});
 // Delete event registration
-router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+router.delete("/events/registrations/:id", async (req, res) => {
     try {
         // Import pool here to avoid circular dependencies
         const { pool } = require("../config/db");
         // Check if user is logged in and is a player
         const session = req.session;
-        if (!((_a = session === null || session === void 0 ? void 0 : session.user) === null || _a === void 0 ? void 0 : _a.role) || session.user.role !== "player") {
+        if (!session?.user?.role || session.user.role !== "player") {
             return res.status(401).json({
                 success: false,
                 error: "You must be logged in as a player to delete registrations",
@@ -388,9 +372,9 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
         }
         const playerId = session.user.id;
         const registrationId = req.params.id;
-        const client = yield pool.connect();
+        const client = await pool.connect();
         try {
-            yield client.query("BEGIN");
+            await client.query("BEGIN");
             // Get registration details and verify ownership
             const registrationQuery = `
         SELECT er.*, el.name as event_name
@@ -398,12 +382,12 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
         JOIN event_locations el ON er.event_id = el.id
         WHERE er.id = $1 AND er.player_id = $2
       `;
-            const registrationResult = yield client.query(registrationQuery, [
+            const registrationResult = await client.query(registrationQuery, [
                 registrationId,
                 playerId,
             ]);
             if (registrationResult.rows.length === 0) {
-                yield client.query("ROLLBACK");
+                await client.query("ROLLBACK");
                 return res.status(404).json({
                     success: false,
                     error: "Registration not found or you don't have permission to delete it",
@@ -418,7 +402,7 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
         WHERE id = $2
         RETURNING kicks_balance
       `;
-            const refundResult = yield client.query(refundQuery, [
+            const refundResult = await client.query(refundQuery, [
                 registration.kicks_requested,
                 playerId,
             ]);
@@ -428,20 +412,20 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
         DELETE FROM event_registrations 
         WHERE id = $1 AND player_id = $2
       `;
-            yield client.query(deleteQuery, [registrationId, playerId]);
+            await client.query(deleteQuery, [registrationId, playerId]);
             // Add notification for the player
             const notificationQuery = `
         INSERT INTO notifications
         (player_id, title, message, type, created_at, is_read)
         VALUES ($1, $2, $3, $4, NOW() - INTERVAL '6 hours', false)
       `;
-            yield client.query(notificationQuery, [
+            await client.query(notificationQuery, [
                 playerId,
                 `Event Registration Cancelled`,
                 `Your registration for "${registration.event_name}" has been cancelled and ${registration.kicks_requested} kicks have been refunded.`,
                 "event_cancellation",
             ]);
-            yield client.query("COMMIT");
+            await client.query("COMMIT");
             console.log("Registration deleted successfully");
             res.json({
                 success: true,
@@ -451,7 +435,7 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
             });
         }
         catch (error) {
-            yield client.query("ROLLBACK");
+            await client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -465,9 +449,9 @@ router.delete("/events/registrations/:id", (req, res) => __awaiter(void 0, void 
             error: "Failed to delete registration",
         });
     }
-}));
+});
 // Simple activity route that returns today's activities only
-router.get("/activity/today", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/activity/today", async (req, res) => {
     try {
         // Import pool here to avoid circular dependencies
         const { pool } = require("../config/db");
@@ -501,24 +485,23 @@ router.get("/activity/today", (req, res) => __awaiter(void 0, void 0, void 0, fu
       ORDER BY 
         gs.timestamp DESC
     `;
-        const result = yield pool.query(query, [todayString]);
+        const result = await pool.query(query, [todayString]);
         res.json(result.rows);
     }
     catch (error) {
         console.error("Error getting today's activity:", error);
         res.status(500).json({ error: "Failed to get today's activity" });
     }
-}));
+});
 // Raffle win notification endpoint
-router.post("/notifications/raffle-win", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+router.post("/notifications/raffle-win", async (req, res) => {
     console.log("Request body:", req.body);
     try {
         // Import pool here to avoid circular dependencies
         const { pool } = require("../config/db");
         // Check if user is logged in and is admin
         const session = req.session;
-        if (!((_a = session === null || session === void 0 ? void 0 : session.user) === null || _a === void 0 ? void 0 : _a.role) || session.user.role !== "admin") {
+        if (!session?.user?.role || session.user.role !== "admin") {
             return res.status(401).json({
                 success: false,
                 error: "You must be logged in as an admin to send notifications",
@@ -536,7 +519,7 @@ router.post("/notifications/raffle-win", (req, res) => __awaiter(void 0, void 0,
         const playerQuery = `
       SELECT name, phone FROM players WHERE id = $1 AND deleted_at IS NULL
     `;
-        const playerResult = yield pool.query(playerQuery, [playerId]);
+        const playerResult = await pool.query(playerQuery, [playerId]);
         if (playerResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -545,7 +528,7 @@ router.post("/notifications/raffle-win", (req, res) => __awaiter(void 0, void 0,
         }
         const player = playerResult.rows[0];
         // Create notifications table if it doesn't exist
-        yield pool.query(`
+        await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         player_id INTEGER NOT NULL,
@@ -575,7 +558,7 @@ router.post("/notifications/raffle-win", (req, res) => __awaiter(void 0, void 0,
         else {
             message = `Great news ${player.name}! Your ticket #${ticketNumber} won daily raffle #${raffleDrawNumber} drawn on ${formattedDate}. Please contact staff to claim your prize!`;
         }
-        const insertResult = yield pool.query(notificationQuery, [
+        const insertResult = await pool.query(notificationQuery, [
             playerId,
             title,
             message,
@@ -600,15 +583,15 @@ router.post("/notifications/raffle-win", (req, res) => __awaiter(void 0, void 0,
             error: "Failed to send notification",
         });
     }
-}));
+});
 // Staff endpoints for event registration management
-router.post("/staff/events/:eventId/close-registration", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/staff/events/:eventId/close-registration", async (req, res) => {
     try {
         const { pool } = require("../config/db");
         const eventId = parseInt(req.params.eventId);
         const session = req.session;
         // Check if user is logged in as staff
-        if (!(session === null || session === void 0 ? void 0 : session.user) || session.user.role !== "staff") {
+        if (!session?.user || session.user.role !== "staff") {
             return res.status(401).json({
                 success: false,
                 error: "Unauthorized - Staff access required",
@@ -625,7 +608,7 @@ router.post("/staff/events/:eventId/close-registration", (req, res) => __awaiter
       WHERE id = $2
       RETURNING *
     `;
-        const result = yield pool.query(updateQuery, [staffId, eventId]);
+        const result = await pool.query(updateQuery, [staffId, eventId]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -645,14 +628,14 @@ router.post("/staff/events/:eventId/close-registration", (req, res) => __awaiter
             error: "Failed to close registration",
         });
     }
-}));
-router.post("/staff/events/:eventId/open-registration", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+router.post("/staff/events/:eventId/open-registration", async (req, res) => {
     try {
         const { pool } = require("../config/db");
         const eventId = parseInt(req.params.eventId);
         const session = req.session;
         // Check if user is logged in as staff
-        if (!(session === null || session === void 0 ? void 0 : session.user) || session.user.role !== "staff") {
+        if (!session?.user || session.user.role !== "staff") {
             return res.status(401).json({
                 success: false,
                 error: "Unauthorized - Staff access required",
@@ -668,7 +651,7 @@ router.post("/staff/events/:eventId/open-registration", (req, res) => __awaiter(
       WHERE id = $1
       RETURNING *
     `;
-        const result = yield pool.query(updateQuery, [eventId]);
+        const result = await pool.query(updateQuery, [eventId]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -688,13 +671,13 @@ router.post("/staff/events/:eventId/open-registration", (req, res) => __awaiter(
             error: "Failed to open registration",
         });
     }
-}));
-router.get("/staff/events", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+router.get("/staff/events", async (req, res) => {
     try {
         const { pool } = require("../config/db");
         const session = req.session;
         // Check if user is logged in as staff
-        if (!(session === null || session === void 0 ? void 0 : session.user) || session.user.role !== "staff") {
+        if (!session?.user || session.user.role !== "staff") {
             return res.status(401).json({
                 success: false,
                 error: "Unauthorized - Staff access required",
@@ -713,7 +696,7 @@ router.get("/staff/events", (req, res) => __awaiter(void 0, void 0, void 0, func
       GROUP BY el.id, s.name
       ORDER BY el.start_date ASC
     `;
-        const result = yield pool.query(eventsQuery);
+        const result = await pool.query(eventsQuery);
         res.json({
             success: true,
             events: result.rows,
@@ -726,5 +709,5 @@ router.get("/staff/events", (req, res) => __awaiter(void 0, void 0, void 0, func
             error: "Failed to fetch events",
         });
     }
-}));
+});
 exports.default = router;

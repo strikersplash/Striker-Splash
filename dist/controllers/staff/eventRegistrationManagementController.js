@@ -1,22 +1,10 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getEventsWithRegistrations = exports.assignTicketsToRegisteredPlayers = exports.getRegisteredPlayersForEvent = void 0;
 const db_1 = require("../../config/db");
-const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
+const QueueTicket_1 = require("../../models/QueueTicket");
 // Get all registered players for an event who don't have queue tickets yet
-const getRegisteredPlayersForEvent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getRegisteredPlayersForEvent = async (req, res) => {
     try {
         const { eventId } = req.params;
         if (!eventId) {
@@ -32,7 +20,7 @@ const getRegisteredPlayersForEvent = (req, res) => __awaiter(void 0, void 0, voi
         const eventQuery = `
       SELECT * FROM event_locations WHERE id = $1
     `;
-        const eventResult = yield db_1.pool.query(eventQuery, [eventId]);
+        const eventResult = await db_1.pool.query(eventQuery, [eventId]);
         if (eventResult.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -60,7 +48,7 @@ const getRegisteredPlayersForEvent = (req, res) => __awaiter(void 0, void 0, voi
       WHERE er.event_id = $1 AND er.queue_ticket_id IS NULL
       ORDER BY er.registration_number ASC
     `;
-        const registrationsResult = yield db_1.pool.query(registrationsQuery, [eventId]);
+        const registrationsResult = await db_1.pool.query(registrationsQuery, [eventId]);
         res.json({
             success: true,
             event,
@@ -74,10 +62,10 @@ const getRegisteredPlayersForEvent = (req, res) => __awaiter(void 0, void 0, voi
             message: "Failed to get registered players",
         });
     }
-});
+};
 exports.getRegisteredPlayersForEvent = getRegisteredPlayersForEvent;
 // Assign queue tickets to registered players for an event
-const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const assignTicketsToRegisteredPlayers = async (req, res) => {
     try {
         const { eventId } = req.params;
         const { registrationIds } = req.body;
@@ -92,9 +80,9 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
             return;
         }
         // Begin transaction
-        const client = yield db_1.pool.connect();
+        const client = await db_1.pool.connect();
         try {
-            yield client.query("BEGIN");
+            await client.query("BEGIN");
             const assignedTickets = [];
             // Process each registration
             for (const registrationId of registrationIds) {
@@ -105,7 +93,7 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
           JOIN players p ON er.player_id = p.id
           WHERE er.id = $1
         `;
-                const registrationResult = yield client.query(registrationQuery, [
+                const registrationResult = await client.query(registrationQuery, [
                     registrationId,
                 ]);
                 if (registrationResult.rows.length === 0) {
@@ -120,7 +108,7 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
                 const competitionType = registration.is_competition
                     ? "for-competition"
                     : "practice";
-                const newTicket = yield QueueTicket_1.default.create({
+                const newTicket = await QueueTicket_1.default.create({
                     player_id: registration.player_id,
                     competition_type: competitionType,
                     official: true,
@@ -135,14 +123,14 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
           WHERE id = $2
           RETURNING *
         `;
-                yield client.query(updateQuery, [newTicket.id, registrationId]);
+                await client.query(updateQuery, [newTicket.id, registrationId]);
                 // Add notification for the player
                 const notificationQuery = `
           INSERT INTO notifications
           (player_id, title, message, type, created_at, is_read)
           VALUES ($1, $2, $3, $4, NOW(), false)
         `;
-                yield client.query(notificationQuery, [
+                await client.query(notificationQuery, [
                     registration.player_id,
                     `Ticket Assigned`,
                     `Your queue ticket #${newTicket.ticket_number} has been assigned for your event registration.`,
@@ -155,7 +143,7 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
                     ticketNumber: newTicket.ticket_number,
                 });
             }
-            yield client.query("COMMIT");
+            await client.query("COMMIT");
             res.json({
                 success: true,
                 message: `Successfully assigned ${assignedTickets.length} tickets`,
@@ -163,7 +151,7 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
             });
         }
         catch (error) {
-            yield client.query("ROLLBACK");
+            await client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -177,10 +165,10 @@ const assignTicketsToRegisteredPlayers = (req, res) => __awaiter(void 0, void 0,
             message: "Failed to assign tickets to registered players",
         });
     }
-});
+};
 exports.assignTicketsToRegisteredPlayers = assignTicketsToRegisteredPlayers;
 // Get all events with registered players
-const getEventsWithRegistrations = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getEventsWithRegistrations = async (req, res) => {
     try {
         console.log("getEventsWithRegistrations called");
         // Manually calculate Belize time (UTC-6) - same fix as public API
@@ -204,7 +192,7 @@ const getEventsWithRegistrations = (req, res) => __awaiter(void 0, void 0, void 
       GROUP BY el.id
       ORDER BY el.start_date ASC
     `;
-        const eventsResult = yield db_1.pool.query(eventsQuery, [today]);
+        const eventsResult = await db_1.pool.query(eventsQuery, [today]);
         res.json({
             success: true,
             events: eventsResult.rows,
@@ -217,5 +205,5 @@ const getEventsWithRegistrations = (req, res) => __awaiter(void 0, void 0, void 
             message: "Failed to get events with registrations",
         });
     }
-});
+};
 exports.getEventsWithRegistrations = getEventsWithRegistrations;

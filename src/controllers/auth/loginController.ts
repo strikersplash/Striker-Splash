@@ -115,7 +115,7 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
       (req.session as any).serverStartTime = SERVER_START_TIME;
 
       req.flash("success_msg", `Welcome back, ${player.name}`);
-      res.redirect(`/player/dashboard?phone=${player.phone}`);
+      res.redirect("/player/dashboard");
     }
   } catch (error) {
     console.error("Login error:", error);

@@ -1,25 +1,12 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePlayerName = exports.skipCurrentQueue = exports.logGoals = exports.searchPlayerByName = exports.processQRScan = void 0;
-const Player_1 = __importDefault(require("../../models/Player"));
-const GameStat_1 = __importDefault(require("../../models/GameStat"));
-const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
+const Player_1 = require("../../models/Player");
+const GameStat_1 = require("../../models/GameStat");
+const QueueTicket_1 = require("../../models/QueueTicket");
 const db_1 = require("../../config/db");
 // Process QR code scan
-const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+const processQRScan = async (req, res) => {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -47,24 +34,24 @@ const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // Find player by QR hash or ID
         let player;
         if (parsedData.hash) {
-            player = yield Player_1.default.findByQRHash(parsedData.hash);
+            player = await Player_1.default.findByQRHash(parsedData.hash);
         }
         else if (parsedData.playerId) {
-            player = yield Player_1.default.findById(parsedData.playerId);
+            player = await Player_1.default.findById(parsedData.playerId);
         }
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Get active queue tickets
-        const activeTickets = yield QueueTicket_1.default.findActiveByPlayerId(player.id);
+        const activeTickets = await QueueTicket_1.default.findActiveByPlayerId(player.id);
         // Get today's kicks count
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const kicksResult = yield Player_1.default.query(`SELECT SUM(gs.goals) as total_kicks
+        const kicksResult = await Player_1.default.query(`SELECT SUM(gs.goals) as total_kicks
        FROM game_stats gs
        WHERE gs.player_id = $1 AND gs.timestamp >= $2`, [player.id, today]);
-        const todayKicks = parseInt(((_a = kicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
+        const todayKicks = parseInt(kicksResult.rows[0]?.total_kicks || "0");
         // Get today's first five kicks status
         const firstFiveQuery = `
       SELECT COUNT(*) as count
@@ -73,7 +60,7 @@ const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* 
       AND timestamp >= $2
       AND first_five_kicks = true
     `;
-        const firstFiveResult = yield db_1.pool.query(firstFiveQuery, [
+        const firstFiveResult = await db_1.pool.query(firstFiveQuery, [
             player.id,
             today,
         ]);
@@ -108,10 +95,10 @@ const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             message: "An error occurred while processing QR code",
         });
     }
-});
+};
 exports.processQRScan = processQRScan;
 // Search player by name
-const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const searchPlayerByName = async (req, res) => {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -126,7 +113,7 @@ const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, funct
             return;
         }
         // Find players by name
-        const players = yield Player_1.default.search(name);
+        const players = await Player_1.default.search(name);
         if (players.length === 0) {
             res
                 .status(404)
@@ -145,10 +132,10 @@ const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, funct
             message: "An error occurred while searching for player",
         });
     }
-});
+};
 exports.searchPlayerByName = searchPlayerByName;
 // Log goals
-const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const logGoals = async (req, res) => {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -182,13 +169,13 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             }
         }
         // Find player
-        const player = yield Player_1.default.findById(parseInt(playerId));
+        const player = await Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Find ticket
-        const ticket = yield QueueTicket_1.default.findById(parseInt(ticketId));
+        const ticket = await QueueTicket_1.default.findById(parseInt(ticketId));
         if (!ticket) {
             res
                 .status(404)
@@ -202,7 +189,7 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return;
         }
         // Get current queue position to validate order
-        const expectedQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
+        const expectedQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
         // Check if this ticket is the next one to be served
         if (expectedQueuePosition &&
             ticket.ticket_number !== expectedQueuePosition) {
@@ -215,7 +202,7 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return;
         }
         // Mark ticket as played
-        const updatedTicket = yield QueueTicket_1.default.updateStatus(ticket.id, "played");
+        const updatedTicket = await QueueTicket_1.default.updateStatus(ticket.id, "played");
         if (!updatedTicket) {
             res
                 .status(500)
@@ -233,7 +220,7 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
       AND timestamp >= $2
       AND first_five_kicks = true
     `;
-        const firstFiveResult = yield db_1.pool.query(firstFiveQuery, [
+        const firstFiveResult = await db_1.pool.query(firstFiveQuery, [
             player.id,
             today,
         ]);
@@ -265,9 +252,9 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // This will ensure they don't show up in the leaderboard
         if (isPracticeTicket) {
             console.log("Setting ticket.official = false for practice goals");
-            yield db_1.pool.query("UPDATE queue_tickets SET official = false WHERE id = $1", [ticket.id]);
+            await db_1.pool.query("UPDATE queue_tickets SET official = false WHERE id = $1", [ticket.id]);
         }
-        const gameStat = yield GameStat_1.default.create({
+        const gameStat = await GameStat_1.default.create({
             player_id: player.id,
             goals: parseInt(goals.toString()),
             staff_id: parseInt(req.session.user.id),
@@ -287,7 +274,7 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return;
         }
         // Get current queue position
-        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
         // Include the activity ID (game stat ID) in the response for better client synchronization
         const activityId = gameStat.id;
         // Individual play response
@@ -306,10 +293,10 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             message: "An error occurred while logging goals",
         });
     }
-});
+};
 exports.logGoals = logGoals;
 // Skip current queue position
-const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const skipCurrentQueue = async (req, res) => {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -319,7 +306,7 @@ const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         // Get current queue position
-        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
         if (!currentQueuePosition) {
             res
                 .status(400)
@@ -332,7 +319,7 @@ const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, functio
       WHERE ticket_number = $1 AND status = 'in-queue'
       LIMIT 1
     `;
-        const ticketResult = yield db_1.pool.query(ticketQuery, [currentQueuePosition]);
+        const ticketResult = await db_1.pool.query(ticketQuery, [currentQueuePosition]);
         if (ticketResult.rows.length === 0) {
             res
                 .status(404)
@@ -341,7 +328,7 @@ const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         const ticket = ticketResult.rows[0];
         // Mark ticket as expired
-        const updatedTicket = yield QueueTicket_1.default.updateStatus(ticket.id, "expired");
+        const updatedTicket = await QueueTicket_1.default.updateStatus(ticket.id, "expired");
         if (!updatedTicket) {
             res
                 .status(500)
@@ -349,7 +336,7 @@ const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         // Get new queue position
-        const newQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
+        const newQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
         res.json({
             success: true,
             message: `Skipped ticket #${currentQueuePosition}`,
@@ -364,10 +351,10 @@ const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, functio
             message: "An error occurred while skipping queue position",
         });
     }
-});
+};
 exports.skipCurrentQueue = skipCurrentQueue;
 // Update player name (referee only, up to 2 times per player)
-const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const updatePlayerName = async (req, res) => {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -385,7 +372,7 @@ const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         // Find player
-        const player = yield Player_1.default.findById(parseInt(playerId));
+        const player = await Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -400,7 +387,7 @@ const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         // Update player name and increment change count
-        const updatedPlayer = yield Player_1.default.update(player.id, {
+        const updatedPlayer = await Player_1.default.update(player.id, {
             name,
             name_locked: nameChangeCount === 1, // Lock after second change
             name_change_count: nameChangeCount + 1,
@@ -424,5 +411,5 @@ const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, functio
             message: "An error occurred while updating player name",
         });
     }
-});
+};
 exports.updatePlayerName = updatePlayerName;

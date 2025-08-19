@@ -1,54 +1,42 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KickLog = void 0;
 const db_1 = require("../config/db");
 class KickLog {
-    static create(kickData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async create(kickData) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         INSERT INTO kick_log (
           player_id, staff_id, competition_type, match_id, solo_competition_id,
           goals, kicks_used, location, team_id, consecutive_kicks, notes
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *
       `;
-                const values = [
-                    kickData.player_id,
-                    kickData.staff_id,
-                    kickData.competition_type,
-                    kickData.match_id || null,
-                    kickData.solo_competition_id || null,
-                    kickData.goals,
-                    kickData.kicks_used,
-                    kickData.location,
-                    kickData.team_id || null,
-                    kickData.consecutive_kicks || null,
-                    kickData.notes || null,
-                ];
-                const result = yield client.query(query, values);
-                return result.rows[0];
-            }
-            finally {
-                client.release();
-            }
-        });
+            const values = [
+                kickData.player_id,
+                kickData.staff_id,
+                kickData.competition_type,
+                kickData.match_id || null,
+                kickData.solo_competition_id || null,
+                kickData.goals,
+                kickData.kicks_used,
+                kickData.location,
+                kickData.team_id || null,
+                kickData.consecutive_kicks || null,
+                kickData.notes || null,
+            ];
+            const result = await client.query(query, values);
+            return result.rows[0];
+        }
+        finally {
+            client.release();
+        }
     }
-    static findById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async findById(id) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT kl.*, 
                p.name as player_name,
                s.name as staff_name,
@@ -59,19 +47,17 @@ class KickLog {
         LEFT JOIN teams t ON kl.team_id = t.id
         WHERE kl.id = $1
       `;
-                const result = yield client.query(query, [id]);
-                return result.rows[0] || null;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [id]);
+            return result.rows[0] || null;
+        }
+        finally {
+            client.release();
+        }
     }
-    static findByMatch(matchId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async findByMatch(matchId) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT kl.*, 
                p.name as player_name,
                s.name as staff_name,
@@ -83,19 +69,17 @@ class KickLog {
         WHERE kl.match_id = $1
         ORDER BY kl.created_at DESC
       `;
-                const result = yield client.query(query, [matchId]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [matchId]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
-    static findBySoloCompetition(soloCompetitionId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async findBySoloCompetition(soloCompetitionId) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT kl.*, 
                p.name as player_name,
                s.name as staff_name
@@ -105,19 +89,17 @@ class KickLog {
         WHERE kl.solo_competition_id = $1
         ORDER BY kl.created_at DESC
       `;
-                const result = yield client.query(query, [soloCompetitionId]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [soloCompetitionId]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
-    static findByPlayer(playerId_1) {
-        return __awaiter(this, arguments, void 0, function* (playerId, limit = 50) {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async findByPlayer(playerId, limit = 50) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT kl.*, 
                p.name as player_name,
                s.name as staff_name,
@@ -136,19 +118,17 @@ class KickLog {
         ORDER BY kl.created_at DESC
         LIMIT $2
       `;
-                const result = yield client.query(query, [playerId, limit]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [playerId, limit]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
-    static getMatchStats(matchId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async getMatchStats(matchId) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT 
           kl.team_id,
           t.name as team_name,
@@ -168,19 +148,17 @@ class KickLog {
         GROUP BY kl.team_id, t.name
         ORDER BY total_goals DESC
       `;
-                const result = yield client.query(query, [matchId]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [matchId]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
-    static getSoloCompetitionStats(soloCompetitionId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async getSoloCompetitionStats(soloCompetitionId) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT 
           kl.player_id,
           p.name as player_name,
@@ -200,20 +178,18 @@ class KickLog {
         GROUP BY kl.player_id, p.name
         ORDER BY total_goals DESC, accuracy_percentage DESC
       `;
-                const result = yield client.query(query, [soloCompetitionId]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [soloCompetitionId]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
-    static getRecentActivity() {
-        return __awaiter(this, arguments, void 0, function* (limit = 20) {
-            const client = yield db_1.pool.connect();
-            try {
-                // Check if the tables exist to avoid errors
-                const checkTablesQuery = `
+    static async getRecentActivity(limit = 20) {
+        const client = await db_1.pool.connect();
+        try {
+            // Check if the tables exist to avoid errors
+            const checkTablesQuery = `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = 'public' 
@@ -235,14 +211,14 @@ class KickLog {
           AND table_name = 'competitions'
         ) AS competitions_exists
       `;
-                const tablesCheck = yield client.query(checkTablesQuery);
-                const { kick_log_exists, solo_comp_exists, matches_exists, competitions_exists, } = tablesCheck.rows[0];
-                // If any essential tables don't exist, return empty array
-                if (!kick_log_exists) {
-                    console.log("kick_log table does not exist, returning empty array");
-                    return [];
-                }
-                const query = `
+            const tablesCheck = await client.query(checkTablesQuery);
+            const { kick_log_exists, solo_comp_exists, matches_exists, competitions_exists, } = tablesCheck.rows[0];
+            // If any essential tables don't exist, return empty array
+            if (!kick_log_exists) {
+                console.log("kick_log table does not exist, returning empty array");
+                return [];
+            }
+            const query = `
         SELECT 
           kl.*,
           p.name as player_name,
@@ -263,23 +239,21 @@ class KickLog {
         ORDER BY kl.created_at DESC
         LIMIT $1
       `;
-                const result = yield client.query(query, [limit]);
-                return result.rows;
-            }
-            catch (error) {
-                console.error("Error in getRecentActivity:", error);
-                return [];
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [limit]);
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error in getRecentActivity:", error);
+            return [];
+        }
+        finally {
+            client.release();
+        }
     }
-    static getActivity(startDate, endDate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = yield db_1.pool.connect();
-            try {
-                const query = `
+    static async getActivity(startDate, endDate) {
+        const client = await db_1.pool.connect();
+        try {
+            const query = `
         SELECT 
           kl.*,
           p.name as player_name,
@@ -300,13 +274,12 @@ class KickLog {
         WHERE kl.created_at >= $1 AND kl.created_at <= $2
         ORDER BY kl.created_at DESC
       `;
-                const result = yield client.query(query, [startDate, endDate]);
-                return result.rows;
-            }
-            finally {
-                client.release();
-            }
-        });
+            const result = await client.query(query, [startDate, endDate]);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
     }
 }
 exports.KickLog = KickLog;

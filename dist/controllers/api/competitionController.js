@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCompetitions = exports.createCompetition = void 0;
 const db_1 = require("../../config/db");
@@ -21,8 +12,7 @@ const db_1 = require("../../config/db");
               );
             }te POST /api/competitions
  */
-const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+const createCompetition = async (req, res) => {
     try {
         console.log("Request body:", JSON.stringify(req.body, null, 2));
         const { type, name, team_size, cost, kicks_per_player, max_teams, description, teams, selected_players, participants, // Added participants for individual competitions
@@ -32,11 +22,11 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
         console.log("- Teams:", teams);
         console.log("- Participants:", participants);
         // Start a transaction
-        const client = yield db_1.pool.connect();
+        const client = await db_1.pool.connect();
         try {
-            yield client.query("BEGIN");
+            await client.query("BEGIN");
             // Insert competition record
-            const competitionResult = yield client.query(`INSERT INTO competitions (
+            const competitionResult = await client.query(`INSERT INTO competitions (
           name, 
           type, 
           team_size, 
@@ -50,18 +40,18 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
             const competitionId = competitionResult.rows[0].id;
             console.log("Created competition with ID:", competitionId);
             // Get staff ID from session for sales tracking
-            const staffId = (_b = (_a = req.session) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.id;
+            const staffId = req.session?.user?.id;
             console.log("Staff ID for sales tracking:", staffId);
             // Handle individual competition participants
             if (type === "individual" && participants && participants.length > 0) {
                 console.log("Adding individual participants:", participants);
                 for (const participantId of participants) {
                     console.log(`Inserting participant ${participantId} into competition ${competitionId}`);
-                    yield client.query(`INSERT INTO competition_players (competition_id, player_id, goals, kicks_taken)
+                    await client.query(`INSERT INTO competition_players (competition_id, player_id, goals, kicks_taken)
              VALUES ($1, $2, 0, 0)`, [competitionId, participantId]);
                     // Create transaction for sales tracking (individual competition)
                     if (staffId) {
-                        yield client.query(`INSERT INTO transactions (player_id, staff_id, amount, kicks, team_play, created_at)
+                        await client.query(`INSERT INTO transactions (player_id, staff_id, amount, kicks, team_play, created_at)
                VALUES ($1, $2, $3, $4, false, (NOW() AT TIME ZONE 'America/Belize')::timestamp)`, [participantId, staffId, cost || 0, kicks_per_player || 0]);
                         console.log(`✅ Transaction created for participant ${participantId}, amount: ${cost}`);
                     }
@@ -74,7 +64,7 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 const insertTeamValues = teams
                     .map((teamId) => `(${competitionId}, ${teamId})`)
                     .join(", ");
-                yield client.query(`
+                await client.query(`
           INSERT INTO competition_teams (competition_id, team_id)
           VALUES ${insertTeamValues}
         `);
@@ -82,16 +72,16 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 if (staffId) {
                     for (const teamId of teams) {
                         // Get team member count to calculate individual transactions
-                        const teamMembersResult = yield client.query(`SELECT COUNT(*) as member_count FROM team_members WHERE team_id = $1`, [teamId]);
+                        const teamMembersResult = await client.query(`SELECT COUNT(*) as member_count FROM team_members WHERE team_id = $1`, [teamId]);
                         const memberCount = parseInt(teamMembersResult.rows[0].member_count);
                         console.log(`Team ${teamId} has ${memberCount} members`);
                         // Get team members for individual transactions
-                        const membersResult = yield client.query(`SELECT tm.player_id FROM team_members tm 
+                        const membersResult = await client.query(`SELECT tm.player_id FROM team_members tm 
                JOIN players p ON tm.player_id = p.id 
                WHERE tm.team_id = $1 AND p.deleted_at IS NULL`, [teamId]);
                         // Create transaction for each team member
                         for (const member of membersResult.rows) {
-                            yield client.query(`INSERT INTO transactions (player_id, staff_id, amount, kicks, team_play, created_at, competition_id)
+                            await client.query(`INSERT INTO transactions (player_id, staff_id, amount, kicks, team_play, created_at, competition_id)
                  VALUES ($1, $2, $3, $4, true, (NOW() AT TIME ZONE 'America/Belize')::timestamp, $5)`, [
                                 member.player_id,
                                 staffId,
@@ -112,14 +102,14 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
                         const insertPlayerValues = playerIds
                             .map((playerId) => `(${competitionId}, ${playerId}, ${teamId})`)
                             .join(", ");
-                        yield client.query(`
+                        await client.query(`
               INSERT INTO competition_players (competition_id, player_id, team_id)
               VALUES ${insertPlayerValues}
             `);
                     }
                 }
             }
-            yield client.query("COMMIT");
+            await client.query("COMMIT");
             res.status(201).json({
                 success: true,
                 data: {
@@ -131,7 +121,7 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
         }
         catch (error) {
-            yield client.query("ROLLBACK");
+            await client.query("ROLLBACK");
             console.error("Error in transaction:", error);
             res.status(500).json({
                 success: false,
@@ -149,15 +139,15 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
             message: "Server error",
         });
     }
-});
+};
 exports.createCompetition = createCompetition;
 /**
  * Get all competitions
  * @route GET /api/competitions
  */
-const getCompetitions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getCompetitions = async (req, res) => {
     try {
-        const result = yield db_1.pool.query(`
+        const result = await db_1.pool.query(`
       SELECT * FROM competitions
       ORDER BY created_at DESC
     `);
@@ -173,5 +163,5 @@ const getCompetitions = (req, res) => __awaiter(void 0, void 0, void 0, function
             message: "Server error",
         });
     }
-});
+};
 exports.getCompetitions = getCompetitions;

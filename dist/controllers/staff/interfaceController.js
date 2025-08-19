@@ -1,24 +1,11 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInterface = void 0;
-const Player_1 = __importDefault(require("../../models/Player"));
-const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
+const Player_1 = require("../../models/Player");
+const QueueTicket_1 = require("../../models/QueueTicket");
 const db_1 = require("../../config/db");
 // Display staff interface
-const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+const getInterface = async (req, res) => {
     try {
         // Only allow staff to access this page
         if (!req.session.user ||
@@ -28,18 +15,18 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             return res.redirect("/auth/login");
         }
         // Get competition types
-        const competitionTypesResult = yield Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
+        const competitionTypesResult = await Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
         const competitionTypes = competitionTypesResult.rows;
         // Get current queue position
-        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
         // Get next ticket number
         const nextTicketQuery = `
       SELECT value as next_ticket
       FROM global_counters
       WHERE id = 'next_queue_number'
     `;
-        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
-        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
+        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
+        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
         // Get ticket information for low ticket warning using same logic as ticket management
         let ticketInfo = {
             availableTickets: 0,
@@ -52,7 +39,7 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         ORDER BY created_at DESC
         LIMIT 1
       `;
-            const rangeResult = yield db_1.pool.query(ticketRangeQuery);
+            const rangeResult = await db_1.pool.query(ticketRangeQuery);
             if (rangeResult.rows.length > 0) {
                 const ticketRangeSettings = rangeResult.rows[0];
                 const startTicket = ticketRangeSettings.start_ticket;
@@ -87,5 +74,5 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         req.flash("error_msg", "An error occurred while loading the staff interface");
         res.redirect("/");
     }
-});
+};
 exports.getInterface = getInterface;

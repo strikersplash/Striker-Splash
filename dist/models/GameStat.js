@@ -1,57 +1,65 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../config/db");
 class GameStat {
     // Execute a query directly
-    static query(text, params) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                return yield db_1.pool.query(text, params);
-            }
-            catch (error) {
-                console.error("Database query error:", error);
-                throw error;
-            }
-        });
+    static async query(text, params) {
+        try {
+            return await db_1.pool.query(text, params);
+        }
+        catch (error) {
+            console.error("Database query error:", error);
+            throw error;
+        }
     }
     // Find game stats by player ID
-    static find(criteria) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (criteria.player_id) {
-                    const result = yield db_1.pool.query("SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC", [criteria.player_id]);
-                    return result.rows;
-                }
-                const result = yield db_1.pool.query("SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100");
+    static async find(criteria) {
+        try {
+            if (criteria.player_id) {
+                const result = await db_1.pool.query("SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC", [criteria.player_id]);
                 return result.rows;
             }
-            catch (error) {
-                console.error("Error finding game stats:", error);
-                return [];
-            }
-        });
+            const result = await db_1.pool.query("SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100");
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error finding game stats:", error);
+            return [];
+        }
     }
     // Create new game stat
-    static create(gameStatData) {
-        return __awaiter(this, void 0, void 0, function* () {
+    static async create(gameStatData) {
+        try {
+            const { player_id, goals, kicks_used, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks, } = gameStatData;
+            // Try to insert with consecutive_kicks column first, fallback if column doesn't exist
+            let result;
             try {
-                const { player_id, goals, kicks_used, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks, } = gameStatData;
-                // Try to insert with consecutive_kicks column first, fallback if column doesn't exist
-                let result;
-                try {
-                    result = yield db_1.pool.query(`INSERT INTO game_stats 
+                result = await db_1.pool.query(`INSERT INTO game_stats 
            (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
            RETURNING *`, [
+                    player_id,
+                    goals,
+                    staff_id,
+                    location,
+                    competition_type || "accuracy",
+                    queue_ticket_id,
+                    requeued || false,
+                    first_five_kicks || false,
+                    player_gender,
+                    player_age_bracket,
+                    consecutive_kicks || null,
+                ]);
+            }
+            catch (columnError) {
+                // If consecutive_kicks column doesn't exist, insert without it
+                if (columnError.code === "42703") {
+                    // column does not exist
+                    console.log("consecutive_kicks column not found, inserting without it");
+                    result = await db_1.pool.query(`INSERT INTO game_stats 
+             (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+             RETURNING *`, [
                         player_id,
                         goals,
                         staff_id,
@@ -62,48 +70,24 @@ class GameStat {
                         first_five_kicks || false,
                         player_gender,
                         player_age_bracket,
-                        consecutive_kicks || null,
                     ]);
                 }
-                catch (columnError) {
-                    // If consecutive_kicks column doesn't exist, insert without it
-                    if (columnError.code === "42703") {
-                        // column does not exist
-                        console.log("consecutive_kicks column not found, inserting without it");
-                        result = yield db_1.pool.query(`INSERT INTO game_stats 
-             (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-             RETURNING *`, [
-                            player_id,
-                            goals,
-                            staff_id,
-                            location,
-                            competition_type || "accuracy",
-                            queue_ticket_id,
-                            requeued || false,
-                            first_five_kicks || false,
-                            player_gender,
-                            player_age_bracket,
-                        ]);
-                    }
-                    else {
-                        throw columnError; // Re-throw if it's a different error
-                    }
+                else {
+                    throw columnError; // Re-throw if it's a different error
                 }
-                return result.rows[0];
             }
-            catch (error) {
-                console.error("Error creating game stat:", error);
-                return null;
-            }
-        });
+            return result.rows[0];
+        }
+        catch (error) {
+            console.error("Error creating game stat:", error);
+            return null;
+        }
     }
     // Get leaderboard
-    static getLeaderboard(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { ageGroup, gender, residence, competitionType, limit } = options;
-                let query = `
+    static async getLeaderboard(options) {
+        try {
+            const { ageGroup, gender, residence, competitionType, limit } = options;
+            let query = `
         SELECT 
           p.id,
           p.name as "playerName",
@@ -122,57 +106,55 @@ class GameStat {
           qt.status = 'played'
           AND gs.first_five_kicks = true
       `;
-                const params = [];
-                let paramIndex = 1;
-                if (ageGroup) {
-                    query += ` AND p.age_group = $${paramIndex}`;
-                    params.push(ageGroup);
-                    paramIndex++;
-                }
-                if (gender) {
-                    query += ` AND p.gender = $${paramIndex}`;
-                    params.push(gender);
-                    paramIndex++;
-                }
-                if (residence) {
-                    query += ` AND p.residence ILIKE $${paramIndex}`;
-                    params.push(`%${residence}%`);
-                    paramIndex++;
-                }
-                if (competitionType) {
-                    query += ` AND gs.competition_type = $${paramIndex}`;
-                    params.push(competitionType);
-                    paramIndex++;
-                }
-                query += `
+            const params = [];
+            let paramIndex = 1;
+            if (ageGroup) {
+                query += ` AND p.age_group = $${paramIndex}`;
+                params.push(ageGroup);
+                paramIndex++;
+            }
+            if (gender) {
+                query += ` AND p.gender = $${paramIndex}`;
+                params.push(gender);
+                paramIndex++;
+            }
+            if (residence) {
+                query += ` AND p.residence ILIKE $${paramIndex}`;
+                params.push(`%${residence}%`);
+                paramIndex++;
+            }
+            if (competitionType) {
+                query += ` AND gs.competition_type = $${paramIndex}`;
+                params.push(competitionType);
+                paramIndex++;
+            }
+            query += `
         GROUP BY 
           p.id, p.name, p.age_group, p.residence, p.gender
         ORDER BY 
           "totalGoals" DESC
       `;
-                if (limit) {
-                    query += ` LIMIT $${paramIndex}`;
-                    params.push(limit);
-                }
-                const result = yield db_1.pool.query(query, params);
-                return result.rows;
+            if (limit) {
+                query += ` LIMIT $${paramIndex}`;
+                params.push(limit);
             }
-            catch (error) {
-                console.error("Error getting leaderboard:", error);
-                return [];
-            }
-        });
+            const result = await db_1.pool.query(query, params);
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error getting leaderboard:", error);
+            return [];
+        }
     }
     // Get staff activity
-    static getStaffActivity(date) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const targetDate = date || new Date();
-                const startOfDay = new Date(targetDate);
-                startOfDay.setHours(0, 0, 0, 0);
-                const endOfDay = new Date(targetDate);
-                endOfDay.setHours(23, 59, 59, 999);
-                const query = `
+    static async getStaffActivity(date) {
+        try {
+            const targetDate = date || new Date();
+            const startOfDay = new Date(targetDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(targetDate);
+            endOfDay.setHours(23, 59, 59, 999);
+            const query = `
         SELECT 
           s.id,
           s.name,
@@ -187,20 +169,18 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query, [startOfDay, endOfDay]);
-                return result.rows;
-            }
-            catch (error) {
-                console.error("Error getting staff activity:", error);
-                return [];
-            }
-        });
+            const result = await db_1.pool.query(query, [startOfDay, endOfDay]);
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error getting staff activity:", error);
+            return [];
+        }
     }
     // Get stats by competition type
-    static getStatsByCompetitionType() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const query = `
+    static async getStatsByCompetitionType() {
+        try {
+            const query = `
         SELECT 
           gs.competition_type,
           COUNT(gs.id) as "totalSessions",
@@ -213,20 +193,18 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query);
-                return result.rows;
-            }
-            catch (error) {
-                console.error("Error getting stats by competition type:", error);
-                return [];
-            }
-        });
+            const result = await db_1.pool.query(query);
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error getting stats by competition type:", error);
+            return [];
+        }
     }
     // Get stats by age group
-    static getStatsByAgeGroup() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const query = `
+    static async getStatsByAgeGroup() {
+        try {
+            const query = `
         SELECT 
           p.age_group,
           COUNT(gs.id) as "totalSessions",
@@ -241,14 +219,13 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query);
-                return result.rows;
-            }
-            catch (error) {
-                console.error("Error getting stats by age group:", error);
-                return [];
-            }
-        });
+            const result = await db_1.pool.query(query);
+            return result.rows;
+        }
+        catch (error) {
+            console.error("Error getting stats by age group:", error);
+            return [];
+        }
     }
 }
 exports.default = GameStat;

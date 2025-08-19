@@ -1,9 +1,6 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+const express_1 = require("express");
 const auth_1 = require("../../middleware/auth");
 const interfaceController_1 = require("../../controllers/staff/interfaceController");
 const scanController_1 = require("../../controllers/staff/scanController");
@@ -11,7 +8,7 @@ const nameController_1 = require("../../controllers/staff/nameController");
 const competitionController_1 = require("../../controllers/staff/competitionController");
 const liveController_1 = require("../../controllers/staff/liveController");
 const competitionSetupController_1 = require("../../controllers/staff/competitionSetupController");
-const eventRegistrationManagement_1 = __importDefault(require("./eventRegistrationManagement"));
+const eventRegistrationManagement_1 = require("./eventRegistrationManagement");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");

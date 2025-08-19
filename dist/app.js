@@ -1,43 +1,31 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SERVER_START_TIME = void 0;
-const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
-const body_parser_1 = __importDefault(require("body-parser"));
-const express_session_1 = __importDefault(require("express-session"));
-const express_flash_1 = __importDefault(require("express-flash"));
-const helmet_1 = __importDefault(require("helmet"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const express_ejs_layouts_1 = __importDefault(require("express-ejs-layouts"));
-const multer_1 = __importDefault(require("multer"));
-const fs_1 = __importDefault(require("fs"));
+const express_1 = require("express");
+const path_1 = require("path");
+const body_parser_1 = require("body-parser");
+const express_session_1 = require("express-session");
+const express_flash_1 = require("express-flash");
+const helmet_1 = require("helmet");
+const dotenv_1 = require("dotenv");
+const express_ejs_layouts_1 = require("express-ejs-layouts");
+const multer_1 = require("multer");
+const fs_1 = require("fs");
 // Import security middleware
 const security_1 = require("./middleware/security");
 // Import routes
-const auth_1 = __importDefault(require("./routes/auth"));
-const player_1 = __importDefault(require("./routes/player"));
-const staff_1 = __importDefault(require("./routes/staff"));
-const admin_1 = __importDefault(require("./routes/admin"));
-const cashier_1 = __importDefault(require("./routes/cashier"));
-const referee_1 = __importDefault(require("./routes/referee"));
-const leaderboard_1 = __importDefault(require("./routes/leaderboard"));
-const teams_1 = __importDefault(require("./routes/teams"));
-const public_1 = __importDefault(require("./routes/public"));
-const api_1 = __importDefault(require("./routes/api"));
-const error_1 = __importDefault(require("./routes/system/error"));
-const debug_1 = __importDefault(require("./routes/debug"));
+const auth_1 = require("./routes/auth");
+const player_1 = require("./routes/player");
+const staff_1 = require("./routes/staff");
+const admin_1 = require("./routes/admin");
+const cashier_1 = require("./routes/cashier");
+const referee_1 = require("./routes/referee");
+const leaderboard_1 = require("./routes/leaderboard");
+const teams_1 = require("./routes/teams");
+const public_1 = require("./routes/public");
+const api_1 = require("./routes/api");
+const error_1 = require("./routes/system/error");
+const debug_1 = require("./routes/debug");
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -195,7 +183,7 @@ app.use((req, res, next) => {
     next();
 });
 // Import our test routes
-const testRoutes_1 = __importDefault(require("./routes/testRoutes"));
+const testRoutes_1 = require("./routes/testRoutes");
 // Import the displayQR function
 const playerController_1 = require("./controllers/player/playerController");
 // Routes
@@ -214,15 +202,15 @@ app.use("/api", api_1.default);
 app.use("/debug", debug_1.default);
 app.use("/test", testRoutes_1.default);
 // Test route for search debugging
-app.get("/test-search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/test-search", async (req, res) => {
     try {
         const { searchPlayer, } = require("./controllers/cashier/transactionController");
-        yield searchPlayer(req, res);
+        await searchPlayer(req, res);
     }
     catch (error) {
         res.json({ error: String(error) });
     }
-}));
+});
 // Error routes should be last
 app.use(error_1.default);
 // 404 handler

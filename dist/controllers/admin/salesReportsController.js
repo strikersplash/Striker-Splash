@@ -1,31 +1,22 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.downloadYearlySalesReport = exports.getYearlySalesData = exports.getSalesTrackingData = exports.getSalesReports = void 0;
 const db_1 = require("../../config/db");
-const getSalesReports = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSalesReports = async (req, res) => {
     try {
         const { period = "today" } = req.query;
         // Calculate date range based on period using Central Time for consistency
         let startDate;
         let endDate;
         // Get current date in Belize Time (UTC-6) - using manual offset due to timezone database issue
-        const currentDateResult = yield (0, db_1.executeQuery)("SELECT (NOW() - interval '6 hours')::date as today");
+        const currentDateResult = await (0, db_1.executeQuery)("SELECT (NOW() - interval '6 hours')::date as today");
         const todayStr = currentDateResult.rows[0].today
             .toISOString()
             .split("T")[0];
         switch (period) {
             case "week":
                 // Start of this week (Monday) in Belize Time (UTC-6)
-                const weekStartResult = yield (0, db_1.executeQuery)(`
+                const weekStartResult = await (0, db_1.executeQuery)(`
           SELECT DATE_TRUNC('week', NOW() - interval '6 hours')::date as week_start
         `);
                 startDate = weekStartResult.rows[0].week_start
@@ -35,7 +26,7 @@ const getSalesReports = (req, res) => __awaiter(void 0, void 0, void 0, function
                 break;
             case "month":
                 // Start of this month in Belize Time (UTC-6)
-                const monthStartResult = yield (0, db_1.executeQuery)(`
+                const monthStartResult = await (0, db_1.executeQuery)(`
           SELECT DATE_TRUNC('month', NOW() - interval '6 hours')::date as month_start
         `);
                 startDate = monthStartResult.rows[0].month_start
@@ -70,7 +61,7 @@ const getSalesReports = (req, res) => __awaiter(void 0, void 0, void 0, function
       GROUP BY s.id, s.name, s.username, s.role, s.active
       ORDER BY total_revenue DESC, staff_name ASC
     `;
-        const salesResult = yield (0, db_1.executeQuery)(salesQuery, [startDate, endDate]);
+        const salesResult = await (0, db_1.executeQuery)(salesQuery, [startDate, endDate]);
         const salesData = salesResult.rows;
         // Calculate totals
         const totals = {
@@ -108,21 +99,21 @@ const getSalesReports = (req, res) => __awaiter(void 0, void 0, void 0, function
         req.flash("error_msg", "An error occurred while loading sales reports");
         res.redirect("/admin/dashboard");
     }
-});
+};
 exports.getSalesReports = getSalesReports;
 // API endpoint for real-time sales tracking data
-const getSalesTrackingData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSalesTrackingData = async (req, res) => {
     try {
         // Get current date in Belize Time (UTC-6) - using manual offset due to timezone database issue
-        const currentDateResult = yield (0, db_1.executeQuery)("SELECT (NOW() - interval '6 hours')::date as today");
+        const currentDateResult = await (0, db_1.executeQuery)("SELECT (NOW() - interval '6 hours')::date as today");
         const today = currentDateResult.rows[0].today;
         // Calculate this week's start (Sunday) using Belize timezone (UTC-6)
-        const weekStartResult = yield (0, db_1.executeQuery)(`
+        const weekStartResult = await (0, db_1.executeQuery)(`
       SELECT DATE_TRUNC('week', NOW() - interval '6 hours')::date as week_start
     `);
         const weekStart = weekStartResult.rows[0].week_start;
         // Calculate this month's start using Belize timezone (UTC-6)
-        const monthStartResult = yield (0, db_1.executeQuery)(`
+        const monthStartResult = await (0, db_1.executeQuery)(`
       SELECT DATE_TRUNC('month', NOW() - interval '6 hours')::date as month_start
     `);
         const monthStart = monthStartResult.rows[0].month_start;
@@ -150,7 +141,7 @@ const getSalesTrackingData = (req, res) => __awaiter(void 0, void 0, void 0, fun
       GROUP BY s.id, s.name, s.username, s.role, s.active
       ORDER BY revenue_today DESC, revenue_week DESC, staff_name ASC
     `;
-        const salesResult = yield (0, db_1.executeQuery)(salesQuery, [
+        const salesResult = await (0, db_1.executeQuery)(salesQuery, [
             today,
             weekStart,
             monthStart,
@@ -190,10 +181,10 @@ const getSalesTrackingData = (req, res) => __awaiter(void 0, void 0, void 0, fun
             message: "An error occurred while loading sales tracking data",
         });
     }
-});
+};
 exports.getSalesTrackingData = getSalesTrackingData;
 // Get yearly sales data for a specific year
-const getYearlySalesData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getYearlySalesData = async (req, res) => {
     try {
         const { year = new Date().getFullYear() } = req.query;
         const targetYear = parseInt(year);
@@ -230,7 +221,7 @@ const getYearlySalesData = (req, res) => __awaiter(void 0, void 0, void 0, funct
       GROUP BY s.id, s.name, s.username, s.role, s.active
       ORDER BY revenue_year DESC, staff_name ASC
     `;
-        const salesResult = yield (0, db_1.executeQuery)(salesQuery, [targetYear]);
+        const salesResult = await (0, db_1.executeQuery)(salesQuery, [targetYear]);
         const salesData = salesResult.rows;
         // Calculate yearly totals
         const totals = {
@@ -269,10 +260,10 @@ const getYearlySalesData = (req, res) => __awaiter(void 0, void 0, void 0, funct
             message: "An error occurred while loading yearly sales data",
         });
     }
-});
+};
 exports.getYearlySalesData = getYearlySalesData;
 // Download yearly sales report as CSV
-const downloadYearlySalesReport = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const downloadYearlySalesReport = async (req, res) => {
     try {
         const { year = new Date().getFullYear() } = req.query;
         const targetYear = parseInt(year);
@@ -310,7 +301,7 @@ const downloadYearlySalesReport = (req, res) => __awaiter(void 0, void 0, void 0
       GROUP BY s.id, s.name, s.username, s.role, s.active
       ORDER BY revenue_year DESC, staff_name ASC
     `;
-        const salesResult = yield (0, db_1.executeQuery)(salesQuery, [targetYear]);
+        const salesResult = await (0, db_1.executeQuery)(salesQuery, [targetYear]);
         const salesData = salesResult.rows;
         // Generate CSV content
         const csvHeaders = [
@@ -422,5 +413,5 @@ const downloadYearlySalesReport = (req, res) => __awaiter(void 0, void 0, void 0
             message: "An error occurred while generating the yearly sales report",
         });
     }
-});
+};
 exports.downloadYearlySalesReport = downloadYearlySalesReport;

@@ -1,20 +1,8 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logout = exports.postRegister = exports.getRegister = exports.postLogin = exports.getLogin = void 0;
-const Staff_1 = __importDefault(require("../../models/Staff"));
-const Player_1 = __importDefault(require("../../models/Player"));
+const Staff_1 = require("../../models/Staff");
+const Player_1 = require("../../models/Player");
 const bcrypt = require("bcryptjs");
 const db_1 = require("../../config/db");
 const app_1 = require("../../app");
@@ -24,7 +12,7 @@ const getLogin = (req, res) => {
 };
 exports.getLogin = getLogin;
 // Process login form
-const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const postLogin = async (req, res) => {
     try {
         const { username, password, userType } = req.body;
         // Validate input
@@ -36,7 +24,7 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (userType === "staff") {
             // Find staff member
             const query = "SELECT * FROM staff WHERE username = $1";
-            const { rows } = yield Staff_1.default.query(query, [username]);
+            const { rows } = await Staff_1.default.query(query, [username]);
             const staff = rows[0];
             if (!staff) {
                 console.log("Staff not found");
@@ -50,7 +38,7 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 return res.redirect("/auth/login");
             }
             // Verify password
-            const isMatch = yield bcrypt.compare(password, staff.password_hash);
+            const isMatch = await bcrypt.compare(password, staff.password_hash);
             if (!isMatch) {
                 req.flash("error_msg", "Invalid credentials");
                 return res.redirect("/auth/login");
@@ -87,14 +75,14 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             // Find player by phone (used as username) - exclude deleted players
             const query = "SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL";
-            const { rows } = yield Player_1.default.query(query, [username]);
+            const { rows } = await Player_1.default.query(query, [username]);
             const player = rows[0];
             if (!player || !player.password_hash) {
                 req.flash("error_msg", "Invalid credentials or account no longer active");
                 return res.redirect("/auth/login");
             }
             // Verify password
-            const isMatch = yield bcrypt.compare(password, player.password_hash);
+            const isMatch = await bcrypt.compare(password, player.password_hash);
             if (!isMatch) {
                 req.flash("error_msg", "Invalid credentials");
                 return res.redirect("/auth/login");
@@ -109,7 +97,7 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             // Mark session with current server start time
             req.session.serverStartTime = app_1.SERVER_START_TIME;
             req.flash("success_msg", `Welcome back, ${player.name}`);
-            res.redirect(`/player/dashboard?phone=${player.phone}`);
+            res.redirect("/player/dashboard");
         }
     }
     catch (error) {
@@ -117,7 +105,7 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         req.flash("error_msg", "An error occurred during login");
         res.redirect("/auth/login");
     }
-});
+};
 exports.postLogin = postLogin;
 // Display registration form
 const getRegister = (req, res) => {
@@ -125,7 +113,7 @@ const getRegister = (req, res) => {
 };
 exports.getRegister = getRegister;
 // Process registration form
-const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const postRegister = async (req, res) => {
     try {
         const { name, countryCode, phone, email, gender, dob, district, cityVillage, password, isChildAccount, } = req.body;
         // Combine country code and phone number
@@ -150,13 +138,13 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             parentPhone = fullPhoneNumber;
             // Generate a unique phone identifier for the child
             // Check how many children this parent already has
-            const existingChildren = yield db_1.pool.query("SELECT COUNT(*) as count FROM players WHERE parent_phone = $1", [parentPhone]);
+            const existingChildren = await db_1.pool.query("SELECT COUNT(*) as count FROM players WHERE parent_phone = $1", [parentPhone]);
             const childNumber = parseInt(existingChildren.rows[0].count) + 1;
             actualPhone = `${parentPhone}-C${childNumber}`;
         }
         // Check if player already exists (including deleted players to prevent conflicts)
         const existingPlayerQuery = "SELECT * FROM players WHERE phone = $1";
-        const existingPlayerResult = yield db_1.pool.query(existingPlayerQuery, [
+        const existingPlayerResult = await db_1.pool.query(existingPlayerQuery, [
             actualPhone,
         ]);
         const existingPlayer = existingPlayerResult.rows[0];
@@ -195,7 +183,7 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             playerData.photo_path = "/uploads/" + req.file.filename;
         }
         // Create new player
-        const player = yield Player_1.default.create(playerData);
+        const player = await Player_1.default.create(playerData);
         if (!player) {
             req.flash("error_msg", "Failed to create account");
             return res.redirect("/auth/register");
@@ -203,7 +191,7 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         // Insert upload record if photo was uploaded
         if (req.file) {
             try {
-                yield db_1.pool.query("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
+                await db_1.pool.query("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
                     player.id,
                     req.file.filename,
                     playerData.photo_path,
@@ -224,7 +212,7 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         req.flash("error_msg", "An error occurred during registration");
         res.redirect("/auth/register");
     }
-});
+};
 exports.postRegister = postRegister;
 // Logout
 const logout = (req, res) => {
