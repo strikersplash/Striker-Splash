@@ -115,8 +115,11 @@ app.use(
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      secure: process.env.NODE_ENV === "production",
+      // For DigitalOcean App Platform, let the platform handle HTTPS
+      // Set secure to false to allow sessions to work properly
+      secure: false, 
       httpOnly: true, // Prevent client-side script access
+      sameSite: 'lax', // Help with cross-origin issues
     },
   })
 );
