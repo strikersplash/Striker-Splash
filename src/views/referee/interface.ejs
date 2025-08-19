@@ -1427,7 +1427,7 @@
           '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
 
         // Send individual goal data to server
-        fetch("/staff/log-goal", {
+        fetch("/referee/api/log-goals", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
