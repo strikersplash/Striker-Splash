@@ -117,9 +117,9 @@ app.use(
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       // For DigitalOcean App Platform, let the platform handle HTTPS
       // Set secure to false to allow sessions to work properly
-      secure: false, 
+      secure: false,
       httpOnly: true, // Prevent client-side script access
-      sameSite: 'lax', // Help with cross-origin issues
+      sameSite: "lax", // Help with cross-origin issues
     },
   })
 );
@@ -127,7 +127,9 @@ app.use(
 // Flash messages
 app.use(flash());
 
-// Session validation middleware - invalidate sessions from before server restart
+// Session validation middleware - DISABLED for deployment stability
+// This was causing sessions to be invalidated too aggressively on DigitalOcean
+/* 
 app.use((req, res, next) => {
   const session = req.session as any;
 
@@ -159,6 +161,7 @@ app.use((req, res, next) => {
 
   next();
 });
+*/
 
 // Global variables middleware
 app.use((req, res, next) => {

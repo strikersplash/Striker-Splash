@@ -114,40 +114,46 @@ app.use((0, express_session_1.default)({
         // Set secure to false to allow sessions to work properly
         secure: false,
         httpOnly: true, // Prevent client-side script access
-        sameSite: 'lax', // Help with cross-origin issues
+        sameSite: "lax", // Help with cross-origin issues
     },
 }));
 // Flash messages
 app.use((0, express_flash_1.default)());
-// Session validation middleware - invalidate sessions from before server restart
+// Session validation middleware - DISABLED for deployment stability
+// This was causing sessions to be invalidated too aggressively on DigitalOcean
+/*
 app.use((req, res, next) => {
-    const session = req.session;
-    // Check if session has a user but no server start time (old session)
-    if (session && session.user && !session.serverStartTime) {
-        // Old session from before this restart - invalidate it
-        session.destroy((err) => {
-            if (err)
-                console.error("Error destroying old session:", err);
-        });
-        // Clear the session cookie
-        res.clearCookie("connect.sid");
-        return res.redirect("/auth/login");
-    }
-    // Check if session is from a different server instance
-    if (session &&
-        session.user &&
-        session.serverStartTime &&
-        session.serverStartTime !== exports.SERVER_START_TIME) {
-        session.destroy((err) => {
-            if (err)
-                console.error("Error destroying session:", err);
-        });
-        // Clear the session cookie
-        res.clearCookie("connect.sid");
-        return res.redirect("/auth/login");
-    }
-    next();
+  const session = req.session as any;
+
+  // Check if session has a user but no server start time (old session)
+  if (session && session.user && !session.serverStartTime) {
+    // Old session from before this restart - invalidate it
+    session.destroy((err: any) => {
+      if (err) console.error("Error destroying old session:", err);
+    });
+    // Clear the session cookie
+    res.clearCookie("connect.sid");
+    return res.redirect("/auth/login");
+  }
+
+  // Check if session is from a different server instance
+  if (
+    session &&
+    session.user &&
+    session.serverStartTime &&
+    session.serverStartTime !== SERVER_START_TIME
+  ) {
+    session.destroy((err: any) => {
+      if (err) console.error("Error destroying session:", err);
+    });
+    // Clear the session cookie
+    res.clearCookie("connect.sid");
+    return res.redirect("/auth/login");
+  }
+
+  next();
 });
+*/
 // Global variables middleware
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
