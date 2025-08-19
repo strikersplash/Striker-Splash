@@ -8,14 +8,18 @@ export const isAuthenticated = (
 ): void => {
   console.log(`Auth Check - URL: ${req.url}`);
   console.log(`Auth Check - Session ID: ${req.sessionID}`);
-  console.log(`Auth Check - Session User: ${(req.session as any)?.user ? 'EXISTS' : 'NONE'}`);
+  console.log(
+    `Auth Check - Session User: ${
+      (req.session as any)?.user ? "EXISTS" : "NONE"
+    }`
+  );
   console.log(`Auth Check - User Details:`, (req.session as any)?.user);
-  
+
   if ((req.session as any).user) {
     console.log(`Auth Check - PASSED for ${req.url}`);
     return next();
   }
-  
+
   console.log(`Auth Check - FAILED for ${req.url} - redirecting to login`);
   req.flash("error_msg", "Please log in to access this page");
   res.redirect("/auth/login");

@@ -6,7 +6,7 @@ const isAuthenticated = (req, res, next) => {
     var _a, _b;
     console.log(`Auth Check - URL: ${req.url}`);
     console.log(`Auth Check - Session ID: ${req.sessionID}`);
-    console.log(`Auth Check - Session User: ${((_a = req.session) === null || _a === void 0 ? void 0 : _a.user) ? 'EXISTS' : 'NONE'}`);
+    console.log(`Auth Check - Session User: ${((_a = req.session) === null || _a === void 0 ? void 0 : _a.user) ? "EXISTS" : "NONE"}`);
     console.log(`Auth Check - User Details:`, (_b = req.session) === null || _b === void 0 ? void 0 : _b.user);
     if (req.session.user) {
         console.log(`Auth Check - PASSED for ${req.url}`);

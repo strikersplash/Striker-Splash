@@ -23,6 +23,9 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const express_ejs_layouts_1 = __importDefault(require("express-ejs-layouts"));
 const multer_1 = __importDefault(require("multer"));
 const fs_1 = __importDefault(require("fs"));
+const pg_1 = require("pg");
+// Import PostgreSQL session store
+const pgSession = require('connect-pg-simple')(express_session_1.default);
 // Import security middleware
 const security_1 = require("./middleware/security");
 // Import routes
@@ -103,11 +106,21 @@ const upload = (0, multer_1.default)({
         cb(null, true);
     },
 });
-// Session setup
+// Create PostgreSQL connection pool for session store
+const sessionPool = new pg_1.Pool({
+    connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
+// Session setup with PostgreSQL store
 app.use((0, express_session_1.default)({
+    store: new pgSession({
+        pool: sessionPool,
+        tableName: 'session', // Table name for sessions
+        createTableIfMissing: true, // Auto-create session table
+    }),
     secret: process.env.SESSION_SECRET || "striker_splash_secret",
-    resave: true, // Force session save - needed for DigitalOcean
-    saveUninitialized: true, // Save uninitialized sessions - needed for DigitalOcean
+    resave: false, // Don't save session if unmodified - pgSession handles this
+    saveUninitialized: false, // Don't save empty sessions - pgSession handles this
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         // For DigitalOcean App Platform, let the platform handle HTTPS
@@ -127,10 +140,10 @@ app.use((req, res, next) => {
     const session = req.session;
     console.log(`Session Debug - URL: ${req.url}`);
     console.log(`Session ID: ${req.sessionID}`);
-    console.log(`Session User: ${(session === null || session === void 0 ? void 0 : session.user) ? 'EXISTS' : 'NONE'}`);
+    console.log(`Session User: ${(session === null || session === void 0 ? void 0 : session.user) ? "EXISTS" : "NONE"}`);
     console.log(`Session User Details:`, session === null || session === void 0 ? void 0 : session.user);
     console.log(`Cookies:`, req.headers.cookie);
-    console.log('---');
+    console.log("---");
     next();
 });
 // Session validation middleware - DISABLED for deployment stability

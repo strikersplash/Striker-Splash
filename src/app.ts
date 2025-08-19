@@ -8,6 +8,10 @@ import dotenv from "dotenv";
 import ejsLayouts from "express-ejs-layouts";
 import multer from "multer";
 import fs from "fs";
+import { Pool } from "pg";
+
+// Import PostgreSQL session store
+const pgSession = require('connect-pg-simple')(session);
 
 // Import security middleware
 import { sanitizeResponse, securityHeaders } from "./middleware/security";
@@ -107,12 +111,23 @@ const upload = multer({
   },
 });
 
-// Session setup
+// Create PostgreSQL connection pool for session store
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
+
+// Session setup with PostgreSQL store
 app.use(
   session({
+    store: new pgSession({
+      pool: sessionPool,
+      tableName: 'session', // Table name for sessions
+      createTableIfMissing: true, // Auto-create session table
+    }),
     secret: process.env.SESSION_SECRET || "striker_splash_secret",
-    resave: true, // Force session save - needed for DigitalOcean
-    saveUninitialized: true, // Save uninitialized sessions - needed for DigitalOcean
+    resave: false, // Don't save session if unmodified - pgSession handles this
+    saveUninitialized: false, // Don't save empty sessions - pgSession handles this
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       // For DigitalOcean App Platform, let the platform handle HTTPS
@@ -135,10 +150,10 @@ app.use((req, res, next) => {
   const session = req.session as any;
   console.log(`Session Debug - URL: ${req.url}`);
   console.log(`Session ID: ${req.sessionID}`);
-  console.log(`Session User: ${session?.user ? 'EXISTS' : 'NONE'}`);
+  console.log(`Session User: ${session?.user ? "EXISTS" : "NONE"}`);
   console.log(`Session User Details:`, session?.user);
   console.log(`Cookies:`, req.headers.cookie);
-  console.log('---');
+  console.log("---");
   next();
 });
 
