@@ -48,11 +48,7 @@ dotenv.config();
 const databaseConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false,
-        require: true,
-        checkServerIdentity: () => undefined
-      },
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     }
   : {
       user: process.env.DB_USER || "striker_splash",
@@ -60,11 +56,7 @@ const databaseConfig = process.env.DATABASE_URL
       database: process.env.DB_NAME || "striker_splash",
       password: process.env.DB_PASSWORD || "striker_splash",
       port: parseInt(process.env.DB_PORT || "5432"),
-      ssl: {
-        rejectUnauthorized: false,
-        require: true,
-        checkServerIdentity: () => undefined
-      },
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     };
 exports.pool = new pg_1.Pool(
   Object.assign(Object.assign({}, databaseConfig), {
