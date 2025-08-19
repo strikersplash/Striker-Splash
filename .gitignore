@@ -9,9 +9,7 @@ yarn-debug.log
 .env.local
 .env.development
 .env.test
-
-# Keep .env.production for deployment reference
-# .env.production
+.env.production
 
 # Build output
 dist/
