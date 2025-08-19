@@ -1,0 +1,27 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const router = express_1.default.Router();
+// Error routes
+router.get('/error/:code', (req, res) => {
+    const code = parseInt(req.params.code) || 500;
+    let message = 'An error occurred';
+    switch (code) {
+        case 404:
+            message = 'Page not found';
+            break;
+        case 403:
+            message = 'Access forbidden';
+            break;
+        case 401:
+            message = 'Unauthorized access';
+            break;
+        default:
+            message = 'An error occurred';
+    }
+    res.status(code).render('system/error', { code, message });
+});
+exports.default = router;

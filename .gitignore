@@ -12,7 +12,7 @@ yarn-debug.log
 .env.production
 
 # Build output
-dist/
+# dist/
 build/
 
 # Logs
