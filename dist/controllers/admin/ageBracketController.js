@@ -1,9 +1,18 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteAgeBracket = exports.updateAgeBracket = exports.addAgeBracket = exports.getAgeBrackets = void 0;
 const db_1 = require("../../config/db");
 // Display age bracket management page
-const getAgeBrackets = async (req, res) => {
+const getAgeBrackets = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this page
         if (!req.session.user || req.session.user.role !== 'admin') {
@@ -15,7 +24,7 @@ const getAgeBrackets = async (req, res) => {
       SELECT * FROM age_brackets
       ORDER BY min_age
     `;
-        const bracketsResult = await db_1.pool.query(bracketsQuery);
+        const bracketsResult = yield db_1.pool.query(bracketsQuery);
         const ageBrackets = bracketsResult.rows;
         res.render('admin/age-brackets', {
             title: 'Age Brackets',
@@ -27,10 +36,10 @@ const getAgeBrackets = async (req, res) => {
         req.flash('error_msg', 'An error occurred while loading age brackets');
         res.redirect('/admin/dashboard');
     }
-};
+});
 exports.getAgeBrackets = getAgeBrackets;
 // Add age bracket
-const addAgeBracket = async (req, res) => {
+const addAgeBracket = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user || req.session.user.role !== 'admin') {
@@ -51,7 +60,7 @@ const addAgeBracket = async (req, res) => {
         (min_age <= $2 AND max_age >= $2) OR
         (min_age >= $1 AND max_age <= $2)
     `;
-        const overlapResult = await db_1.pool.query(overlapQuery, [minAge, maxAge]);
+        const overlapResult = yield db_1.pool.query(overlapQuery, [minAge, maxAge]);
         if (overlapResult.rows.length > 0) {
             res.status(400).json({ success: false, message: 'Age range overlaps with existing bracket' });
             return;
@@ -62,7 +71,7 @@ const addAgeBracket = async (req, res) => {
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-        const insertResult = await db_1.pool.query(insertQuery, [name, minAge, maxAge, true]);
+        const insertResult = yield db_1.pool.query(insertQuery, [name, minAge, maxAge, true]);
         res.json({
             success: true,
             ageBracket: insertResult.rows[0]
@@ -72,10 +81,10 @@ const addAgeBracket = async (req, res) => {
         console.error('Add age bracket error:', error);
         res.status(500).json({ success: false, message: 'An error occurred while adding age bracket' });
     }
-};
+});
 exports.addAgeBracket = addAgeBracket;
 // Update age bracket
-const updateAgeBracket = async (req, res) => {
+const updateAgeBracket = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user || req.session.user.role !== 'admin') {
@@ -100,7 +109,7 @@ const updateAgeBracket = async (req, res) => {
           (min_age >= $2 AND max_age <= $3)
         )
     `;
-        const overlapResult = await db_1.pool.query(overlapQuery, [id, minAge, maxAge]);
+        const overlapResult = yield db_1.pool.query(overlapQuery, [id, minAge, maxAge]);
         if (overlapResult.rows.length > 0) {
             res.status(400).json({ success: false, message: 'Age range overlaps with existing bracket' });
             return;
@@ -112,7 +121,7 @@ const updateAgeBracket = async (req, res) => {
       WHERE id = $5
       RETURNING *
     `;
-        const updateResult = await db_1.pool.query(updateQuery, [name, minAge, maxAge, active, id]);
+        const updateResult = yield db_1.pool.query(updateQuery, [name, minAge, maxAge, active, id]);
         if (updateResult.rows.length === 0) {
             res.status(404).json({ success: false, message: 'Age bracket not found' });
             return;
@@ -126,10 +135,10 @@ const updateAgeBracket = async (req, res) => {
         console.error('Update age bracket error:', error);
         res.status(500).json({ success: false, message: 'An error occurred while updating age bracket' });
     }
-};
+});
 exports.updateAgeBracket = updateAgeBracket;
 // Delete age bracket
-const deleteAgeBracket = async (req, res) => {
+const deleteAgeBracket = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user || req.session.user.role !== 'admin') {
@@ -142,13 +151,13 @@ const deleteAgeBracket = async (req, res) => {
       SELECT COUNT(*) as count FROM players
       WHERE age_group = (SELECT name FROM age_brackets WHERE id = $1)
     `;
-        const usageResult = await db_1.pool.query(usageQuery, [id]);
+        const usageResult = yield db_1.pool.query(usageQuery, [id]);
         if (parseInt(usageResult.rows[0].count) > 0) {
             res.status(400).json({ success: false, message: 'Cannot delete age bracket that is in use' });
             return;
         }
         // Delete age bracket
-        await db_1.pool.query('DELETE FROM age_brackets WHERE id = $1', [id]);
+        yield db_1.pool.query('DELETE FROM age_brackets WHERE id = $1', [id]);
         res.json({
             success: true,
             message: 'Age bracket deleted successfully'
@@ -158,5 +167,5 @@ const deleteAgeBracket = async (req, res) => {
         console.error('Delete age bracket error:', error);
         res.status(500).json({ success: false, message: 'An error occurred while deleting age bracket' });
     }
-};
+});
 exports.deleteAgeBracket = deleteAgeBracket;

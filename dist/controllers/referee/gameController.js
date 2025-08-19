@@ -1,12 +1,24 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTeamMembers = exports.searchTeams = exports.getPlayerDetails = exports.fixKicksBalance = exports.updatePlayerName = exports.skipQueue = exports.logGoals = exports.searchPlayerByName = exports.searchPlayerByPhone = exports.processQRScan = exports.getRefereeInterface = void 0;
-const Player_1 = require("../../models/Player");
-const QueueTicket_1 = require("../../models/QueueTicket");
-const Team_1 = require("../../models/Team");
+const Player_1 = __importDefault(require("../../models/Player"));
+const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
+const Team_1 = __importDefault(require("../../models/Team"));
 const db_1 = require("../../config/db");
 // Display referee interface
-const getRefereeInterface = async (req, res) => {
+const getRefereeInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this page
         if (!req.session.user ||
@@ -16,10 +28,10 @@ const getRefereeInterface = async (req, res) => {
             return res.redirect("/auth/login");
         }
         // Get competition types
-        const competitionTypesResult = await Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
+        const competitionTypesResult = yield Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
         const competitionTypes = competitionTypesResult.rows;
         // Get current queue position
-        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         res.render("referee/interface", {
             title: "Referee Interface",
             competitionTypes,
@@ -32,10 +44,11 @@ const getRefereeInterface = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the referee interface");
         res.redirect("/");
     }
-};
+});
 exports.getRefereeInterface = getRefereeInterface;
 // Process QR code scan
-const processQRScan = async (req, res) => {
+const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -61,32 +74,30 @@ const processQRScan = async (req, res) => {
             return;
         }
         // Find player by QR hash
-        const player = await Player_1.default.findById(parsedData.playerId);
+        const player = yield Player_1.default.findById(parsedData.playerId);
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Get active queue tickets
-        const activeTickets = await QueueTicket_1.default.findActiveByPlayerId(player.id);
+        const activeTickets = yield QueueTicket_1.default.findActiveByPlayerId(player.id);
         // Get today's kicks count
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const kicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
-        const todayKicks = parseInt(kicksResult.rows[0]?.total_kicks || "0");
+        const kicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
+        const todayKicks = parseInt(((_a = kicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
         // Get team information if player is in a team
         let teamInfo = null;
-        const teamResult = await Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
+        const teamResult = yield Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
         if (teamResult.rows.length > 0) {
             const team = teamResult.rows[0];
-            const teamMembers = await Team_1.default.getMembers(team.id);
+            const teamMembers = yield Team_1.default.getMembers(team.id);
             // Get today's kicks for each team member
-            const membersWithKicks = await Promise.all(teamMembers.map(async (member) => {
-                const memberKicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
-                return {
-                    ...member,
-                    today_kicks: parseInt(memberKicksResult.rows[0]?.total_kicks || "0"),
-                };
-            }));
+            const membersWithKicks = yield Promise.all(teamMembers.map((member) => __awaiter(void 0, void 0, void 0, function* () {
+                var _a;
+                const memberKicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
+                return Object.assign(Object.assign({}, member), { today_kicks: parseInt(((_a = memberKicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0") });
+            })));
             teamInfo = {
                 id: team.id,
                 name: team.name,
@@ -123,10 +134,11 @@ const processQRScan = async (req, res) => {
             message: "An error occurred while processing QR code",
         });
     }
-};
+});
 exports.processQRScan = processQRScan;
 // Search player by phone
-const searchPlayerByPhone = async (req, res) => {
+const searchPlayerByPhone = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -143,32 +155,30 @@ const searchPlayerByPhone = async (req, res) => {
             return;
         }
         // Find player by phone
-        const player = await Player_1.default.findByPhone(phone);
+        const player = yield Player_1.default.findByPhone(phone);
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Get active queue tickets
-        const activeTickets = await QueueTicket_1.default.findActiveByPlayerId(player.id);
+        const activeTickets = yield QueueTicket_1.default.findActiveByPlayerId(player.id);
         // Get today's kicks count
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const kicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
-        const todayKicks = parseInt(kicksResult.rows[0]?.total_kicks || "0");
+        const kicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
+        const todayKicks = parseInt(((_a = kicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
         // Get team information if player is in a team
         let teamInfo = null;
-        const teamResult = await Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
+        const teamResult = yield Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
         if (teamResult.rows.length > 0) {
             const team = teamResult.rows[0];
-            const teamMembers = await Team_1.default.getMembers(team.id);
+            const teamMembers = yield Team_1.default.getMembers(team.id);
             // Get today's kicks for each team member
-            const membersWithKicks = await Promise.all(teamMembers.map(async (member) => {
-                const memberKicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
-                return {
-                    ...member,
-                    today_kicks: parseInt(memberKicksResult.rows[0]?.total_kicks || "0"),
-                };
-            }));
+            const membersWithKicks = yield Promise.all(teamMembers.map((member) => __awaiter(void 0, void 0, void 0, function* () {
+                var _a;
+                const memberKicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
+                return Object.assign(Object.assign({}, member), { today_kicks: parseInt(((_a = memberKicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0") });
+            })));
             teamInfo = {
                 id: team.id,
                 name: team.name,
@@ -202,10 +212,10 @@ const searchPlayerByPhone = async (req, res) => {
             message: "An error occurred while searching for player",
         });
     }
-};
+});
 exports.searchPlayerByPhone = searchPlayerByPhone;
 // Search player by name
-const searchPlayerByName = async (req, res) => {
+const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -220,7 +230,7 @@ const searchPlayerByName = async (req, res) => {
             return;
         }
         // Search for players by name (case insensitive, partial match, excluding deleted players)
-        const searchResult = await Player_1.default.query("SELECT * FROM players WHERE LOWER(name) LIKE LOWER($1) AND deleted_at IS NULL ORDER BY name LIMIT 10", ["%" + name + "%"]);
+        const searchResult = yield Player_1.default.query("SELECT * FROM players WHERE LOWER(name) LIKE LOWER($1) AND deleted_at IS NULL ORDER BY name LIMIT 10", ["%" + name + "%"]);
         const players = searchResult.rows;
         res.json({
             success: true,
@@ -242,10 +252,11 @@ const searchPlayerByName = async (req, res) => {
             message: "An error occurred while searching for players",
         });
     }
-};
+});
 exports.searchPlayerByName = searchPlayerByName;
 // Log goals - FIXED VERSION
-const logGoals = async (req, res) => {
+const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     console.log("KICKS BALANCE UPDATE ATTEMPT STARTING");
     try {
         // Only allow staff to access this API
@@ -293,7 +304,7 @@ const logGoals = async (req, res) => {
         const kicksUsedInt = parseInt(kicksUsed);
         const goalsInt = parseInt(goals);
         // Find the actual player who scored
-        const player = await Player_1.default.findById(actualPlayerId);
+        const player = yield Player_1.default.findById(actualPlayerId);
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -301,7 +312,7 @@ const logGoals = async (req, res) => {
         // Team mode validation
         if (teamPlay) {
             // Verify the team exists and the selected member is in the team
-            const teamMemberResult = await Player_1.default.query("SELECT tm.*, t.name as team_name, tm.is_captain FROM team_members tm JOIN teams t ON tm.team_id = t.id WHERE tm.team_id = $1 AND tm.player_id = $2", [parseInt(teamId), actualPlayerId]);
+            const teamMemberResult = yield Player_1.default.query("SELECT tm.*, t.name as team_name, tm.is_captain FROM team_members tm JOIN teams t ON tm.team_id = t.id WHERE tm.team_id = $1 AND tm.player_id = $2", [parseInt(teamId), actualPlayerId]);
             if (teamMemberResult.rows.length === 0) {
                 res.status(400).json({
                     success: false,
@@ -310,7 +321,7 @@ const logGoals = async (req, res) => {
                 return;
             }
             // Get all team members for balance validation
-            const teamMembers = await Team_1.default.getMembers(parseInt(teamId));
+            const teamMembers = yield Team_1.default.getMembers(parseInt(teamId));
             // Check if all team members have enough balance
             const insufficientBalanceMembers = teamMembers.filter((member) => member.kicks_balance < kicksUsedInt);
             if (insufficientBalanceMembers.length > 0) {
@@ -326,8 +337,8 @@ const logGoals = async (req, res) => {
             // Check today's kicks for the specific team member (max 3 kicks per person in team mode)
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const memberKicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2 AND gs.team_play = TRUE", [actualPlayerId, today]);
-            const memberTodayKicks = parseInt(memberKicksResult.rows[0]?.total_kicks || "0");
+            const memberKicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2 AND gs.team_play = TRUE", [actualPlayerId, today]);
+            const memberTodayKicks = parseInt(((_a = memberKicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
             if (memberTodayKicks + kicksUsedInt > 3) {
                 res.status(400).json({
                     success: false,
@@ -351,7 +362,7 @@ const logGoals = async (req, res) => {
             return;
         }
         // Find ticket
-        const ticket = await QueueTicket_1.default.findById(ticketIdInt);
+        const ticket = yield QueueTicket_1.default.findById(ticketIdInt);
         if (!ticket) {
             res
                 .status(404)
@@ -365,35 +376,35 @@ const logGoals = async (req, res) => {
             return;
         }
         // Start transaction to ensure data consistency
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             if (teamPlay) {
                 // Team mode: deduct kicks from all team members
-                const teamResult = await client.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [actualPlayerId]);
+                const teamResult = yield client.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [actualPlayerId]);
                 const team = teamResult.rows[0];
-                const teamMembers = await Team_1.default.getMembers(team.id);
+                const teamMembers = yield Team_1.default.getMembers(team.id);
                 // Deduct kicks from all team members
                 for (const member of teamMembers) {
-                    const memberPlayer = await Player_1.default.findById(member.player_id);
+                    const memberPlayer = yield Player_1.default.findById(member.player_id);
                     if (memberPlayer) {
                         const newMemberBalance = Math.max(0, memberPlayer.kicks_balance - kicksUsedInt);
-                        await client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newMemberBalance, member.player_id]);
+                        yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newMemberBalance, member.player_id]);
                     }
                 }
             }
             else {
                 // Individual mode: deduct kicks from player only
                 const newBalance = Math.max(0, player.kicks_balance - kicksUsedInt);
-                await client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newBalance, actualPlayerId]);
+                yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newBalance, actualPlayerId]);
             }
             // 2. Mark ticket as played
             // 2. Update queue ticket status to 'played' with timestamp in Belize timezone
             const updateTicketQuery = "UPDATE queue_tickets SET status = $1, played_at = (NOW() AT TIME ZONE 'America/Belize')::timestamp WHERE id = $2";
-            await client.query(updateTicketQuery, ["played", ticketIdInt]);
+            yield client.query(updateTicketQuery, ["played", ticketIdInt]);
             // 3. Log goals in game_stats
             const insertGameStatQuery = "INSERT INTO game_stats (player_id, goals, kicks_used, staff_id, location, competition_type, queue_ticket_id, requeued, team_play, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, (NOW() AT TIME ZONE 'America/Belize')::timestamp) RETURNING *";
-            const gameStatResult = await client.query(insertGameStatQuery, [
+            const gameStatResult = yield client.query(insertGameStatQuery, [
                 actualPlayerId,
                 goalsInt,
                 kicksUsedInt,
@@ -411,7 +422,7 @@ const logGoals = async (req, res) => {
                 try {
                     if (teamPlay) {
                         // Team mode requeue: create ticket for captain only, but mark as team play
-                        const ticketNumber = await QueueTicket_1.default.addToQueue(actualPlayerId, false, // not official entry
+                        const ticketNumber = yield QueueTicket_1.default.addToQueue(actualPlayerId, false, // not official entry
                         true // team play status
                         );
                         newTicket = {
@@ -423,7 +434,7 @@ const logGoals = async (req, res) => {
                     }
                     else {
                         // Individual requeue
-                        const ticketNumber = await QueueTicket_1.default.addToQueue(actualPlayerId, false, // not official entry
+                        const ticketNumber = yield QueueTicket_1.default.addToQueue(actualPlayerId, false, // not official entry
                         false // individual play
                         );
                         newTicket = {
@@ -440,11 +451,11 @@ const logGoals = async (req, res) => {
                 }
             }
             // Commit transaction
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             // Get current queue position
-            const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+            const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
             // Get updated player data to verify the balance was updated
-            const updatedPlayerResult = await client.query("SELECT * FROM players WHERE id = $1", [actualPlayerId]);
+            const updatedPlayerResult = yield client.query("SELECT * FROM players WHERE id = $1", [actualPlayerId]);
             const updatedPlayer = updatedPlayerResult.rows[0];
             res.json({
                 success: true,
@@ -465,7 +476,7 @@ const logGoals = async (req, res) => {
         }
         catch (transactionError) {
             // Rollback transaction on error
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw transactionError;
         }
         finally {
@@ -479,10 +490,10 @@ const logGoals = async (req, res) => {
             message: "An error occurred while logging goals",
         });
     }
-};
+});
 exports.logGoals = logGoals;
 // Skip current queue
-const skipQueue = async (req, res) => {
+const skipQueue = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -492,7 +503,7 @@ const skipQueue = async (req, res) => {
             return;
         }
         // Get current queue ticket and mark it as skipped
-        const currentPosition = await QueueTicket_1.default.getCurrentQueuePosition();
+        const currentPosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         if (!currentPosition) {
             res
                 .status(404)
@@ -501,7 +512,7 @@ const skipQueue = async (req, res) => {
         }
         // Find the ticket with the current queue position
         const ticketQuery = "SELECT * FROM queue_tickets WHERE ticket_number = $1 AND status = 'in-queue' LIMIT 1";
-        const ticketResult = await db_1.pool.query(ticketQuery, [currentPosition]);
+        const ticketResult = yield db_1.pool.query(ticketQuery, [currentPosition]);
         if (ticketResult.rows.length === 0) {
             res
                 .status(404)
@@ -516,9 +527,9 @@ const skipQueue = async (req, res) => {
             return;
         }
         // Mark current ticket as expired (using a valid status)
-        await QueueTicket_1.default.updateStatus(currentTicket.id, "expired");
+        yield QueueTicket_1.default.updateStatus(currentTicket.id, "expired");
         // Get new current queue position
-        const newQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+        const newQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         res.json({
             success: true,
             message: "Skipped ticket #" + currentTicket.ticket_number,
@@ -532,10 +543,10 @@ const skipQueue = async (req, res) => {
             message: "An error occurred while skipping queue",
         });
     }
-};
+});
 exports.skipQueue = skipQueue;
 // Update player name (referee can change up to 2 times)
-const updatePlayerName = async (req, res) => {
+const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -554,7 +565,7 @@ const updatePlayerName = async (req, res) => {
         }
         const playerIdInt = parseInt(playerId);
         // Find player and check current name change count
-        const player = await Player_1.default.findById(playerIdInt);
+        const player = yield Player_1.default.findById(playerIdInt);
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -569,21 +580,21 @@ const updatePlayerName = async (req, res) => {
             return;
         }
         // Update player name and increment name change count
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             const updateQuery = `
         UPDATE players 
         SET name = $1, name_change_count = $2 
         WHERE id = $3 
         RETURNING *
       `;
-            const result = await client.query(updateQuery, [
+            const result = yield client.query(updateQuery, [
                 name.trim(),
                 currentNameChanges + 1,
                 playerIdInt,
             ]);
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             const updatedPlayer = result.rows[0];
             const remainingChanges = 2 - updatedPlayer.name_change_count;
             res.json({
@@ -598,7 +609,7 @@ const updatePlayerName = async (req, res) => {
             });
         }
         catch (transactionError) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw transactionError;
         }
         finally {
@@ -612,10 +623,10 @@ const updatePlayerName = async (req, res) => {
             message: "An error occurred while updating player name",
         });
     }
-};
+});
 exports.updatePlayerName = updatePlayerName;
 // Fix kicks balance (admin function)
-const fixKicksBalance = async (req, res) => {
+const fixKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -643,7 +654,7 @@ const fixKicksBalance = async (req, res) => {
         }
         // Direct update with proper parameterization
         const updateQuery = "UPDATE players SET kicks_balance = $1 WHERE id = $2 RETURNING *";
-        const result = await db_1.pool.query(updateQuery, [amountInt, playerIdInt]);
+        const result = yield db_1.pool.query(updateQuery, [amountInt, playerIdInt]);
         if (result.rows.length === 0) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -665,10 +676,11 @@ const fixKicksBalance = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to fix kicks balance" });
     }
-};
+});
 exports.fixKicksBalance = fixKicksBalance;
 // Get detailed player information
-const getPlayerDetails = async (req, res) => {
+const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -686,32 +698,30 @@ const getPlayerDetails = async (req, res) => {
         }
         const playerIdInt = parseInt(playerId);
         // Find player
-        const player = await Player_1.default.findById(playerIdInt);
+        const player = yield Player_1.default.findById(playerIdInt);
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Get active queue tickets
-        const activeTickets = await QueueTicket_1.default.findActiveByPlayerId(player.id);
+        const activeTickets = yield QueueTicket_1.default.findActiveByPlayerId(player.id);
         // Get today's kicks count
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const kicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
-        const todayKicks = parseInt(kicksResult.rows[0]?.total_kicks || "0");
+        const kicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [player.id, today]);
+        const todayKicks = parseInt(((_a = kicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
         // Get team information if player is in a team
         let teamInfo = null;
-        const teamResult = await Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
+        const teamResult = yield Player_1.default.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [player.id]);
         if (teamResult.rows.length > 0) {
             const team = teamResult.rows[0];
-            const teamMembers = await Team_1.default.getMembers(team.id);
+            const teamMembers = yield Team_1.default.getMembers(team.id);
             // Get today's kicks for each team member
-            const membersWithKicks = await Promise.all(teamMembers.map(async (member) => {
-                const memberKicksResult = await Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
-                return {
-                    ...member,
-                    today_kicks: parseInt(memberKicksResult.rows[0]?.total_kicks || "0"),
-                };
-            }));
+            const membersWithKicks = yield Promise.all(teamMembers.map((member) => __awaiter(void 0, void 0, void 0, function* () {
+                var _a;
+                const memberKicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2", [member.player_id, today]);
+                return Object.assign(Object.assign({}, member), { today_kicks: parseInt(((_a = memberKicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0") });
+            })));
             teamInfo = {
                 id: team.id,
                 name: team.name,
@@ -748,10 +758,10 @@ const getPlayerDetails = async (req, res) => {
             message: "An error occurred while getting player details",
         });
     }
-};
+});
 exports.getPlayerDetails = getPlayerDetails;
 // Search teams by name for referee interface
-const searchTeams = async (req, res) => {
+const searchTeams = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { query } = req.query;
         if (!query || typeof query !== "string") {
@@ -777,7 +787,7 @@ const searchTeams = async (req, res) => {
       ORDER BY t.name
       LIMIT 10
     `;
-        const result = await db_1.pool.query(searchQuery, ["%" + query + "%"]);
+        const result = yield db_1.pool.query(searchQuery, ["%" + query + "%"]);
         const teams = result.rows;
         res.json({ success: true, teams: teams });
     }
@@ -788,10 +798,10 @@ const searchTeams = async (req, res) => {
             error: "An error occurred while searching teams",
         });
     }
-};
+});
 exports.searchTeams = searchTeams;
 // Get team members for team play goal logging
-const getTeamMembers = async (req, res) => {
+const getTeamMembers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { teamId } = req.params;
         console.log("Getting team members for team ID:", teamId);
@@ -802,7 +812,7 @@ const getTeamMembers = async (req, res) => {
         }
         // First check if the team exists
         const teamQuery = "SELECT * FROM teams WHERE id = $1";
-        const teamResult = await db_1.pool.query(teamQuery, [teamId]);
+        const teamResult = yield db_1.pool.query(teamQuery, [teamId]);
         if (teamResult.rows.length === 0) {
             console.log("Team with ID " + teamId + " does not exist");
             res.json({ success: false, error: "Team not found" });
@@ -830,7 +840,7 @@ const getTeamMembers = async (req, res) => {
       WHERE tm.team_id = $1 AND p.deleted_at IS NULL
       ORDER BY tm.is_captain DESC, tm.joined_at ASC
     `;
-        const result = await db_1.pool.query(membersQuery, [teamId]);
+        const result = yield db_1.pool.query(membersQuery, [teamId]);
         const members = result.rows;
         console.log("Found " + members.length + " team members for team " + teamId);
         if (members.length === 0) {
@@ -847,5 +857,5 @@ const getTeamMembers = async (req, res) => {
             error: "An error occurred while getting team members",
         });
     }
-};
+});
 exports.getTeamMembers = getTeamMembers;

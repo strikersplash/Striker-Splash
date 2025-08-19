@@ -1,10 +1,22 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.postNameChange = exports.postProfileEdit = exports.getNameChangeInterface = void 0;
-const Player_1 = require("../../models/Player");
+const Player_1 = __importDefault(require("../../models/Player"));
 const db_1 = require("../../config/db");
 // Display name change interface
-const getNameChangeInterface = async (req, res) => {
+const getNameChangeInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this page
         if (!req.session.user ||
@@ -18,7 +30,7 @@ const getNameChangeInterface = async (req, res) => {
         // Get players if search query provided
         let players = [];
         if (search) {
-            players = await Player_1.default.search(search);
+            players = yield Player_1.default.search(search);
         }
         res.render("staff/name-change", {
             title: "Edit User Profile",
@@ -31,10 +43,10 @@ const getNameChangeInterface = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the edit profile interface");
         res.redirect("/staff/dashboard");
     }
-};
+});
 exports.getNameChangeInterface = getNameChangeInterface;
 // Process full profile edit
-const postProfileEdit = async (req, res) => {
+const postProfileEdit = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -53,7 +65,7 @@ const postProfileEdit = async (req, res) => {
             return;
         }
         // Find player
-        const player = await Player_1.default.findById(parseInt(playerId));
+        const player = yield Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -127,7 +139,7 @@ const postProfileEdit = async (req, res) => {
             console.log("No file uploaded in this request");
         }
         // Update player
-        const updatedPlayer = await Player_1.default.update(player.id, updateData);
+        const updatedPlayer = yield Player_1.default.update(player.id, updateData);
         if (!updatedPlayer) {
             res
                 .status(500)
@@ -137,7 +149,7 @@ const postProfileEdit = async (req, res) => {
         // Insert upload record if photo was uploaded
         if (req.file) {
             try {
-                await db_1.pool.query("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
+                yield db_1.pool.query("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
                     player.id,
                     req.file.filename,
                     updateData.photo_path,
@@ -179,10 +191,10 @@ const postProfileEdit = async (req, res) => {
             message: "An error occurred while updating the profile",
         });
     }
-};
+});
 exports.postProfileEdit = postProfileEdit;
 // Process name change
-const postNameChange = async (req, res) => {
+const postNameChange = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this API
         if (!req.session.user ||
@@ -200,7 +212,7 @@ const postNameChange = async (req, res) => {
             return;
         }
         // Find player
-        const player = await Player_1.default.findById(parseInt(playerId));
+        const player = yield Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -215,7 +227,7 @@ const postNameChange = async (req, res) => {
             return;
         }
         // Update player name and increment change count
-        const updatedPlayer = await Player_1.default.update(player.id, {
+        const updatedPlayer = yield Player_1.default.update(player.id, {
             name,
             name_locked: nameChangeCount === 1, // Lock after second change
             name_change_count: nameChangeCount + 1,
@@ -239,5 +251,5 @@ const postNameChange = async (req, res) => {
             message: "An error occurred while updating player name",
         });
     }
-};
+});
 exports.postNameChange = postNameChange;

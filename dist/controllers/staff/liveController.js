@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteKick = exports.getSoloKicks = exports.getMatchKicks = exports.logKick = exports.getTodaysActivity = exports.getLiveSoloData = exports.getLiveMatchData = exports.logSoloKick = exports.logMatchKick = void 0;
 const KickLog_1 = require("../../models/KickLog");
@@ -6,7 +15,7 @@ const Match_1 = require("../../models/Match");
 const SoloCompetition_1 = require("../../models/SoloCompetition");
 const db_1 = require("../../config/db");
 // Log kicks in match competition
-const logMatchKick = async (req, res) => {
+const logMatchKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to log kicks
         if (!req.session.user ||
@@ -23,13 +32,13 @@ const logMatchKick = async (req, res) => {
             });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Check if match exists and is active
-            const match = await Match_1.Match.findById(parseInt(matchId));
+            const match = yield Match_1.Match.findById(parseInt(matchId));
             if (!match) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(404).json({
                     success: false,
                     message: "Match not found",
@@ -37,7 +46,7 @@ const logMatchKick = async (req, res) => {
                 return;
             }
             if (match.status !== "active") {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Match is not currently active",
@@ -50,12 +59,12 @@ const logMatchKick = async (req, res) => {
         FROM match_participants 
         WHERE match_id = $1 AND player_id = $2 AND is_active = true
       `;
-            const participantResult = await client.query(participantQuery, [
+            const participantResult = yield client.query(participantQuery, [
                 matchId,
                 playerId,
             ]);
             if (participantResult.rows.length === 0) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Player is not an active participant in this match",
@@ -64,7 +73,7 @@ const logMatchKick = async (req, res) => {
             }
             const participant = participantResult.rows[0];
             if (participant.kicks_remaining < parseInt(kicksUsed)) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: `Player only has ${participant.kicks_remaining} kicks remaining`,
@@ -86,9 +95,9 @@ const logMatchKick = async (req, res) => {
                     : undefined,
                 notes,
             };
-            const kickLog = await KickLog_1.KickLog.create(kickLogData);
+            const kickLog = yield KickLog_1.KickLog.create(kickLogData);
             // Update participant kicks
-            await Match_1.Match.updateParticipantKicks(parseInt(matchId), parseInt(playerId), parseInt(kicksUsed));
+            yield Match_1.Match.updateParticipantKicks(parseInt(matchId), parseInt(playerId), parseInt(kicksUsed));
             // Update match scores
             const updateScoreQuery = `
         INSERT INTO match_scores (match_id, team_id, total_goals, total_kicks, accuracy_percentage)
@@ -104,7 +113,7 @@ const logMatchKick = async (req, res) => {
           END,
           updated_at = CURRENT_TIMESTAMP
       `;
-            await client.query(updateScoreQuery, [
+            yield client.query(updateScoreQuery, [
                 matchId,
                 teamId,
                 parseInt(goals),
@@ -114,9 +123,9 @@ const logMatchKick = async (req, res) => {
                         100
                     : 0,
             ]);
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             // Check if player has reached the 5-kick limit
-            const updatedParticipantResult = await client.query(participantQuery, [
+            const updatedParticipantResult = yield client.query(participantQuery, [
                 matchId,
                 playerId,
             ]);
@@ -131,7 +140,7 @@ const logMatchKick = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -145,10 +154,10 @@ const logMatchKick = async (req, res) => {
             message: "An error occurred while logging the kick",
         });
     }
-};
+});
 exports.logMatchKick = logMatchKick;
 // Log kicks in solo competition
-const logSoloKick = async (req, res) => {
+const logSoloKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to log kicks
         if (!req.session.user ||
@@ -165,13 +174,13 @@ const logSoloKick = async (req, res) => {
             });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Check if competition exists and is active
-            const competition = await SoloCompetition_1.SoloCompetition.findById(parseInt(competitionId));
+            const competition = yield SoloCompetition_1.SoloCompetition.findById(parseInt(competitionId));
             if (!competition) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(404).json({
                     success: false,
                     message: "Solo competition not found",
@@ -179,7 +188,7 @@ const logSoloKick = async (req, res) => {
                 return;
             }
             if (competition.status !== "active") {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Solo competition is not currently active",
@@ -192,12 +201,12 @@ const logSoloKick = async (req, res) => {
         FROM solo_participants 
         WHERE solo_competition_id = $1 AND player_id = $2 AND is_active = true
       `;
-            const participantResult = await client.query(participantQuery, [
+            const participantResult = yield client.query(participantQuery, [
                 competitionId,
                 playerId,
             ]);
             if (participantResult.rows.length === 0) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Player is not an active participant in this solo competition",
@@ -206,7 +215,7 @@ const logSoloKick = async (req, res) => {
             }
             const participant = participantResult.rows[0];
             if (participant.kicks_remaining < parseInt(kicksUsed)) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: `Player only has ${participant.kicks_remaining} kicks remaining`,
@@ -227,12 +236,12 @@ const logSoloKick = async (req, res) => {
                     : undefined,
                 notes,
             };
-            const kickLog = await KickLog_1.KickLog.create(kickLogData);
+            const kickLog = yield KickLog_1.KickLog.create(kickLogData);
             // Update participant kicks
-            await SoloCompetition_1.SoloCompetition.updateParticipantKicks(parseInt(competitionId), parseInt(playerId), parseInt(kicksUsed));
-            await client.query("COMMIT");
+            yield SoloCompetition_1.SoloCompetition.updateParticipantKicks(parseInt(competitionId), parseInt(playerId), parseInt(kicksUsed));
+            yield client.query("COMMIT");
             // Check if player has reached the 5-kick limit
-            const updatedParticipantResult = await client.query(participantQuery, [
+            const updatedParticipantResult = yield client.query(participantQuery, [
                 competitionId,
                 playerId,
             ]);
@@ -247,7 +256,7 @@ const logSoloKick = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -261,13 +270,13 @@ const logSoloKick = async (req, res) => {
             message: "An error occurred while logging the kick",
         });
     }
-};
+});
 exports.logSoloKick = logSoloKick;
 // Get live match data for staff console
-const getLiveMatchData = async (req, res) => {
+const getLiveMatchData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const match = await Match_1.Match.findById(parseInt(id));
+        const match = yield Match_1.Match.findById(parseInt(id));
         if (!match) {
             res.status(404).json({
                 success: false,
@@ -276,11 +285,11 @@ const getLiveMatchData = async (req, res) => {
             return;
         }
         // Get participants with current kick status
-        const participants = await Match_1.Match.getParticipants(match.id);
+        const participants = yield Match_1.Match.getParticipants(match.id);
         // Get match statistics
-        const stats = await KickLog_1.KickLog.getMatchStats(match.id);
+        const stats = yield KickLog_1.KickLog.getMatchStats(match.id);
         // Get recent kicks (last 10)
-        const recentKicks = await KickLog_1.KickLog.findByMatch(match.id);
+        const recentKicks = yield KickLog_1.KickLog.findByMatch(match.id);
         res.json({
             success: true,
             match,
@@ -296,13 +305,13 @@ const getLiveMatchData = async (req, res) => {
             message: "An error occurred while fetching live match data",
         });
     }
-};
+});
 exports.getLiveMatchData = getLiveMatchData;
 // Get live solo competition data for staff console
-const getLiveSoloData = async (req, res) => {
+const getLiveSoloData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const competition = await SoloCompetition_1.SoloCompetition.findById(parseInt(id));
+        const competition = yield SoloCompetition_1.SoloCompetition.findById(parseInt(id));
         if (!competition) {
             res.status(404).json({
                 success: false,
@@ -311,11 +320,11 @@ const getLiveSoloData = async (req, res) => {
             return;
         }
         // Get participants with current kick status
-        const participants = await SoloCompetition_1.SoloCompetition.getParticipants(competition.id);
+        const participants = yield SoloCompetition_1.SoloCompetition.getParticipants(competition.id);
         // Get competition statistics/leaderboard
-        const leaderboard = await KickLog_1.KickLog.getSoloCompetitionStats(competition.id);
+        const leaderboard = yield KickLog_1.KickLog.getSoloCompetitionStats(competition.id);
         // Get recent kicks (last 10)
-        const recentKicks = await KickLog_1.KickLog.findBySoloCompetition(competition.id);
+        const recentKicks = yield KickLog_1.KickLog.findBySoloCompetition(competition.id);
         res.json({
             success: true,
             competition,
@@ -331,16 +340,16 @@ const getLiveSoloData = async (req, res) => {
             message: "An error occurred while fetching live solo competition data",
         });
     }
-};
+});
 exports.getLiveSoloData = getLiveSoloData;
 // Get today's activity for staff dashboard
-const getTodaysActivity = async (req, res) => {
+const getTodaysActivity = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
-        const activity = await KickLog_1.KickLog.getActivity(todayStart, todayEnd);
+        const activity = yield KickLog_1.KickLog.getActivity(todayStart, todayEnd);
         res.json({
             success: true,
             activity,
@@ -353,10 +362,10 @@ const getTodaysActivity = async (req, res) => {
             message: "An error occurred while fetching today's activity",
         });
     }
-};
+});
 exports.getTodaysActivity = getTodaysActivity;
 // ===== UNIFIED KICK LOGGING =====
-const logKick = async (req, res) => {
+const logKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { match_id, solo_comp_id, player_id, successful } = req.body;
         // Validate that we have either match_id or solo_comp_id, but not both
@@ -371,13 +380,13 @@ const logKick = async (req, res) => {
             // Use existing match kick logging
             req.body = { player_id, successful };
             req.params = { id: match_id.toString() };
-            await (0, exports.logMatchKick)(req, res);
+            yield (0, exports.logMatchKick)(req, res);
         }
         else if (solo_comp_id) {
             // Use existing solo kick logging
             req.body = { player_id, successful };
             req.params = { id: solo_comp_id.toString() };
-            await (0, exports.logSoloKick)(req, res);
+            yield (0, exports.logSoloKick)(req, res);
         }
     }
     catch (error) {
@@ -387,12 +396,12 @@ const logKick = async (req, res) => {
             message: "An error occurred while logging the kick",
         });
     }
-};
+});
 exports.logKick = logKick;
-const getMatchKicks = async (req, res) => {
+const getMatchKicks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const kicksResult = await db_1.pool.query(`
+        const kicksResult = yield db_1.pool.query(`
       SELECT 
         kl.*,
         p.first_name || ' ' || p.last_name as player_name,
@@ -412,12 +421,12 @@ const getMatchKicks = async (req, res) => {
             message: "Failed to fetch match kicks",
         });
     }
-};
+});
 exports.getMatchKicks = getMatchKicks;
-const getSoloKicks = async (req, res) => {
+const getSoloKicks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const kicksResult = await db_1.pool.query(`
+        const kicksResult = yield db_1.pool.query(`
       SELECT 
         kl.*,
         p.first_name || ' ' || p.last_name as player_name
@@ -435,9 +444,9 @@ const getSoloKicks = async (req, res) => {
             message: "Failed to fetch solo kicks",
         });
     }
-};
+});
 exports.getSoloKicks = getSoloKicks;
-const deleteKick = async (req, res) => {
+const deleteKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Only allow staff/admin to delete kicks
@@ -446,22 +455,22 @@ const deleteKick = async (req, res) => {
             res.status(401).json({ success: false, message: "Unauthorized access" });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
             // Get kick details before deleting for score updates
-            const kickResult = await client.query("SELECT * FROM kick_log WHERE id = $1", [id]);
+            const kickResult = yield client.query("SELECT * FROM kick_log WHERE id = $1", [id]);
             if (kickResult.rows.length === 0) {
                 res.status(404).json({ success: false, message: "Kick not found" });
                 return;
             }
             const kick = kickResult.rows[0];
             // Delete the kick
-            await client.query("DELETE FROM kick_log WHERE id = $1", [id]);
+            yield client.query("DELETE FROM kick_log WHERE id = $1", [id]);
             // Update scores if the kick was successful
             if (kick.successful) {
                 if (kick.match_id) {
                     // Update team score in match
-                    await client.query(`
+                    yield client.query(`
             UPDATE match_participants 
             SET score = GREATEST(0, score - 1) 
             WHERE match_id = $1 AND team_id = (
@@ -471,7 +480,7 @@ const deleteKick = async (req, res) => {
                 }
                 else if (kick.solo_comp_id) {
                     // Update player score in solo competition
-                    await client.query(`
+                    yield client.query(`
             UPDATE solo_participants 
             SET score = GREATEST(0, score - 1) 
             WHERE solo_comp_id = $1 AND player_id = $2
@@ -491,5 +500,5 @@ const deleteKick = async (req, res) => {
             message: "An error occurred while deleting the kick",
         });
     }
-};
+});
 exports.deleteKick = deleteKick;

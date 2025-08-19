@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../../middleware/auth");
 const eventRegistrationController_1 = require("../../controllers/player/eventRegistrationController");
-const router = express.Router();
+const router = express_1.default.Router();
 // Event registration routes
 router.get("/events/upcoming", auth_1.isAuthenticated, auth_1.isPlayer, eventRegistrationController_1.getUpcomingEvents);
 router.post("/events/register", auth_1.isAuthenticated, auth_1.isPlayer, eventRegistrationController_1.registerForEvent);

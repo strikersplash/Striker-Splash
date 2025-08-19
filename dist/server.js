@@ -7,7 +7,7 @@ const app_1 = __importDefault(require("./app"));
 const db_1 = __importDefault(require("./config/db"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables
-dotenv.config();
+dotenv_1.default.config();
 // Connect to database
 (0, db_1.default)();
 // Server configuration for cloud deployment

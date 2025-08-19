@@ -19,7 +19,7 @@ function removeSensitiveData(obj) {
         return obj.map((item) => removeSensitiveData(item));
     }
     if (obj && typeof obj === "object") {
-        const cleaned = { ...obj };
+        const cleaned = Object.assign({}, obj);
         // Remove sensitive fields
         const sensitiveFields = [
             "phone",

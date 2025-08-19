@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSoloLeaderboard = exports.getSoloLiveData = exports.getMatchLiveData = exports.endSoloCompetition = exports.resumeSoloCompetition = exports.pauseSoloCompetition = exports.startSoloCompetition = exports.endMatch = exports.resumeMatch = exports.pauseMatch = exports.startMatch = exports.getSoloLive = exports.getMatchLive = exports.getCompetitionManagement = exports.getRecentActivity = exports.getActiveCompetitions = exports.addSoloParticipant = exports.addMatchParticipant = exports.updateSoloCompetitionStatus = exports.getSoloCompetition = exports.getSoloCompetitions = exports.createSoloCompetition = exports.updateMatchStatus = exports.getMatch = exports.getMatches = exports.createMatch = void 0;
 const Match_1 = require("../../models/Match");
@@ -6,7 +15,7 @@ const SoloCompetition_1 = require("../../models/SoloCompetition");
 const KickLog_1 = require("../../models/KickLog");
 const db_1 = require("../../config/db");
 // ===== MATCH MANAGEMENT =====
-const createMatch = async (req, res) => {
+const createMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to create matches
         if (!req.session.user ||
@@ -48,7 +57,7 @@ const createMatch = async (req, res) => {
             location,
             created_by: req.session.user.id,
         };
-        const match = await Match_1.Match.create(matchData);
+        const match = yield Match_1.Match.create(matchData);
         res.json({
             success: true,
             message: "Match created successfully",
@@ -62,17 +71,17 @@ const createMatch = async (req, res) => {
             message: "An error occurred while creating the match",
         });
     }
-};
+});
 exports.createMatch = createMatch;
-const getMatches = async (req, res) => {
+const getMatches = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { status, limit } = req.query;
         let matches;
         if (status && typeof status === "string") {
-            matches = await Match_1.Match.findByStatus(status);
+            matches = yield Match_1.Match.findByStatus(status);
         }
         else {
-            matches = await Match_1.Match.findAll(limit ? parseInt(limit) : 50);
+            matches = yield Match_1.Match.findAll(limit ? parseInt(limit) : 50);
         }
         res.json({
             success: true,
@@ -86,12 +95,12 @@ const getMatches = async (req, res) => {
             message: "An error occurred while fetching matches",
         });
     }
-};
+});
 exports.getMatches = getMatches;
-const getMatch = async (req, res) => {
+const getMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const match = await Match_1.Match.findById(parseInt(id));
+        const match = yield Match_1.Match.findById(parseInt(id));
         if (!match) {
             res.status(404).json({
                 success: false,
@@ -100,9 +109,9 @@ const getMatch = async (req, res) => {
             return;
         }
         // Get participants
-        const participants = await Match_1.Match.getParticipants(match.id);
+        const participants = yield Match_1.Match.getParticipants(match.id);
         // Get kick logs
-        const kickLogs = await KickLog_1.KickLog.findByMatch(match.id);
+        const kickLogs = yield KickLog_1.KickLog.findByMatch(match.id);
         res.json({
             success: true,
             match,
@@ -117,9 +126,9 @@ const getMatch = async (req, res) => {
             message: "An error occurred while fetching the match",
         });
     }
-};
+});
 exports.getMatch = getMatch;
-const updateMatchStatus = async (req, res) => {
+const updateMatchStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to update match status
         if (!req.session.user ||
@@ -136,7 +145,7 @@ const updateMatchStatus = async (req, res) => {
             });
             return;
         }
-        const match = await Match_1.Match.updateStatus(parseInt(id), status, req.session.user.id);
+        const match = yield Match_1.Match.updateStatus(parseInt(id), status, req.session.user.id);
         if (!match) {
             res.status(404).json({
                 success: false,
@@ -157,10 +166,10 @@ const updateMatchStatus = async (req, res) => {
             message: "An error occurred while updating the match status",
         });
     }
-};
+});
 exports.updateMatchStatus = updateMatchStatus;
 // ===== SOLO COMPETITION MANAGEMENT =====
-const createSoloCompetition = async (req, res) => {
+const createSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to create competitions
         if (!req.session.user ||
@@ -185,7 +194,7 @@ const createSoloCompetition = async (req, res) => {
             location,
             created_by: req.session.user.id,
         };
-        const competition = await SoloCompetition_1.SoloCompetition.create(competitionData);
+        const competition = yield SoloCompetition_1.SoloCompetition.create(competitionData);
         res.json({
             success: true,
             message: "Solo competition created successfully",
@@ -199,17 +208,17 @@ const createSoloCompetition = async (req, res) => {
             message: "An error occurred while creating the solo competition",
         });
     }
-};
+});
 exports.createSoloCompetition = createSoloCompetition;
-const getSoloCompetitions = async (req, res) => {
+const getSoloCompetitions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { status, limit } = req.query;
         let competitions;
         if (status && typeof status === "string") {
-            competitions = await SoloCompetition_1.SoloCompetition.findByStatus(status);
+            competitions = yield SoloCompetition_1.SoloCompetition.findByStatus(status);
         }
         else {
-            competitions = await SoloCompetition_1.SoloCompetition.findAll(limit ? parseInt(limit) : 50);
+            competitions = yield SoloCompetition_1.SoloCompetition.findAll(limit ? parseInt(limit) : 50);
         }
         res.json({
             success: true,
@@ -223,12 +232,12 @@ const getSoloCompetitions = async (req, res) => {
             message: "An error occurred while fetching solo competitions",
         });
     }
-};
+});
 exports.getSoloCompetitions = getSoloCompetitions;
-const getSoloCompetition = async (req, res) => {
+const getSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const competition = await SoloCompetition_1.SoloCompetition.findById(parseInt(id));
+        const competition = yield SoloCompetition_1.SoloCompetition.findById(parseInt(id));
         if (!competition) {
             res.status(404).json({
                 success: false,
@@ -237,11 +246,11 @@ const getSoloCompetition = async (req, res) => {
             return;
         }
         // Get participants
-        const participants = await SoloCompetition_1.SoloCompetition.getParticipants(competition.id);
+        const participants = yield SoloCompetition_1.SoloCompetition.getParticipants(competition.id);
         // Get leaderboard
-        const leaderboard = await SoloCompetition_1.SoloCompetition.getLeaderboard(competition.id);
+        const leaderboard = yield SoloCompetition_1.SoloCompetition.getLeaderboard(competition.id);
         // Get kick logs
-        const kickLogs = await KickLog_1.KickLog.findBySoloCompetition(competition.id);
+        const kickLogs = yield KickLog_1.KickLog.findBySoloCompetition(competition.id);
         res.json({
             success: true,
             competition,
@@ -257,9 +266,9 @@ const getSoloCompetition = async (req, res) => {
             message: "An error occurred while fetching the solo competition",
         });
     }
-};
+});
 exports.getSoloCompetition = getSoloCompetition;
-const updateSoloCompetitionStatus = async (req, res) => {
+const updateSoloCompetitionStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to update competition status
         if (!req.session.user ||
@@ -276,7 +285,7 @@ const updateSoloCompetitionStatus = async (req, res) => {
             });
             return;
         }
-        const competition = await SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), status, req.session.user.id);
+        const competition = yield SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), status, req.session.user.id);
         if (!competition) {
             res.status(404).json({
                 success: false,
@@ -297,10 +306,10 @@ const updateSoloCompetitionStatus = async (req, res) => {
             message: "An error occurred while updating the solo competition status",
         });
     }
-};
+});
 exports.updateSoloCompetitionStatus = updateSoloCompetitionStatus;
 // ===== PARTICIPANT MANAGEMENT =====
-const addMatchParticipant = async (req, res) => {
+const addMatchParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to add participants
         if (!req.session.user ||
@@ -316,7 +325,7 @@ const addMatchParticipant = async (req, res) => {
             });
             return;
         }
-        const success = await Match_1.Match.addParticipant(parseInt(matchId), parseInt(teamId), parseInt(playerId));
+        const success = yield Match_1.Match.addParticipant(parseInt(matchId), parseInt(teamId), parseInt(playerId));
         if (!success) {
             res.status(400).json({
                 success: false,
@@ -336,9 +345,9 @@ const addMatchParticipant = async (req, res) => {
             message: "An error occurred while adding the participant",
         });
     }
-};
+});
 exports.addMatchParticipant = addMatchParticipant;
-const addSoloParticipant = async (req, res) => {
+const addSoloParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { competitionId, playerId } = req.body;
         if (!competitionId || !playerId) {
@@ -348,7 +357,7 @@ const addSoloParticipant = async (req, res) => {
             });
             return;
         }
-        const success = await SoloCompetition_1.SoloCompetition.addParticipant(parseInt(competitionId), parseInt(playerId));
+        const success = yield SoloCompetition_1.SoloCompetition.addParticipant(parseInt(competitionId), parseInt(playerId));
         if (!success) {
             res.status(400).json({
                 success: false,
@@ -368,13 +377,13 @@ const addSoloParticipant = async (req, res) => {
             message: "An error occurred while adding the participant",
         });
     }
-};
+});
 exports.addSoloParticipant = addSoloParticipant;
 // ===== LIVE CONSOLE ENDPOINTS =====
-const getActiveCompetitions = async (req, res) => {
+const getActiveCompetitions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const activeMatches = await Match_1.Match.findByStatus("active");
-        const activeSoloCompetitions = await SoloCompetition_1.SoloCompetition.findByStatus("active");
+        const activeMatches = yield Match_1.Match.findByStatus("active");
+        const activeSoloCompetitions = yield SoloCompetition_1.SoloCompetition.findByStatus("active");
         res.json({
             success: true,
             activeMatches,
@@ -388,12 +397,12 @@ const getActiveCompetitions = async (req, res) => {
             message: "An error occurred while fetching active competitions",
         });
     }
-};
+});
 exports.getActiveCompetitions = getActiveCompetitions;
-const getRecentActivity = async (req, res) => {
+const getRecentActivity = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { limit } = req.query;
-        const activity = await KickLog_1.KickLog.getRecentActivity(limit ? parseInt(limit) : 20);
+        const activity = yield KickLog_1.KickLog.getRecentActivity(limit ? parseInt(limit) : 20);
         res.json({
             success: true,
             activity,
@@ -406,10 +415,10 @@ const getRecentActivity = async (req, res) => {
             message: "An error occurred while fetching recent activity",
         });
     }
-};
+});
 exports.getRecentActivity = getRecentActivity;
 // ===== VIEW CONTROLLERS =====
-const getCompetitionManagement = async (req, res) => {
+const getCompetitionManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff/admin to access competition management
         if (!req.session.user ||
@@ -422,26 +431,26 @@ const getCompetitionManagement = async (req, res) => {
             return;
         }
         // Get active competitions, matches, and recent activity
-        const activeMatches = await Match_1.Match.findByStatus("active");
-        const activeSoloCompetitions = await SoloCompetition_1.SoloCompetition.findByStatus("active");
-        const recentMatches = await Match_1.Match.getRecent(10);
-        const recentSoloCompetitions = await SoloCompetition_1.SoloCompetition.getRecent(10);
+        const activeMatches = yield Match_1.Match.findByStatus("active");
+        const activeSoloCompetitions = yield SoloCompetition_1.SoloCompetition.findByStatus("active");
+        const recentMatches = yield Match_1.Match.getRecent(10);
+        const recentSoloCompetitions = yield SoloCompetition_1.SoloCompetition.getRecent(10);
         // Get recent activity without using ma.score
         let recentActivity = [];
         try {
-            recentActivity = await KickLog_1.KickLog.getRecentActivity(20);
+            recentActivity = yield KickLog_1.KickLog.getRecentActivity(20);
         }
         catch (activityError) {
             console.error("Error fetching recent activity:", activityError);
             // Continue without activity data
         }
         // Get teams for dropdown
-        const teamsResult = await db_1.pool.query("SELECT id, name FROM teams ORDER BY name");
+        const teamsResult = yield db_1.pool.query("SELECT id, name FROM teams ORDER BY name");
         const teams = teamsResult.rows;
         // Get custom competitions
         let customCompetitions = [];
         try {
-            const competitionsResult = await db_1.pool.query("SELECT * FROM competitions ORDER BY created_at DESC LIMIT 10");
+            const competitionsResult = yield db_1.pool.query("SELECT * FROM competitions ORDER BY created_at DESC LIMIT 10");
             customCompetitions = competitionsResult.rows;
         }
         catch (compError) {
@@ -468,12 +477,12 @@ const getCompetitionManagement = async (req, res) => {
             message: "Failed to load competition management",
         });
     }
-};
+});
 exports.getCompetitionManagement = getCompetitionManagement;
-const getMatchLive = async (req, res) => {
+const getMatchLive = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const match = await Match_1.Match.findById(parseInt(id));
+        const match = yield Match_1.Match.findById(parseInt(id));
         if (!match) {
             res.status(404).render("system/error", {
                 title: "Match Not Found",
@@ -483,7 +492,7 @@ const getMatchLive = async (req, res) => {
             return;
         }
         // Get participants with their players
-        const participantsResult = await db_1.pool.query(`
+        const participantsResult = yield db_1.pool.query(`
       SELECT 
         mp.team_id,
         t.name as team_name,
@@ -502,9 +511,9 @@ const getMatchLive = async (req, res) => {
       ) kl ON mp.team_id = kl.team_id
       WHERE mp.match_id = $1
     `, [id]);
-        const participants = await Promise.all(participantsResult.rows.map(async (participant) => {
+        const participants = yield Promise.all(participantsResult.rows.map((participant) => __awaiter(void 0, void 0, void 0, function* () {
             // Get players for this team with their kick counts
-            const playersResult = await db_1.pool.query(`
+            const playersResult = yield db_1.pool.query(`
           SELECT 
             p.id,
             p.name,
@@ -515,22 +524,17 @@ const getMatchLive = async (req, res) => {
             SELECT player_id FROM match_participants WHERE match_id = $2
           )
         `, [participant.team_id, id]);
-            const playersWithKicks = await Promise.all(playersResult.rows.map(async (player) => {
-                const kickResult = await db_1.pool.query(`
+            const playersWithKicks = yield Promise.all(playersResult.rows.map((player) => __awaiter(void 0, void 0, void 0, function* () {
+                var _a;
+                const kickResult = yield db_1.pool.query(`
               SELECT COUNT(*) as kick_count
               FROM kick_log
               WHERE match_id = $1 AND player_id = $2
             `, [id, player.id]);
-                return {
-                    ...player,
-                    kick_count: parseInt(kickResult.rows[0]?.kick_count || "0"),
-                };
-            }));
-            return {
-                ...participant,
-                players: playersWithKicks,
-            };
-        }));
+                return Object.assign(Object.assign({}, player), { kick_count: parseInt(((_a = kickResult.rows[0]) === null || _a === void 0 ? void 0 : _a.kick_count) || "0") });
+            })));
+            return Object.assign(Object.assign({}, participant), { players: playersWithKicks });
+        })));
         res.render("staff/match-live", {
             title: `Live Match: ${match.name}`,
             match,
@@ -546,12 +550,12 @@ const getMatchLive = async (req, res) => {
             message: "Failed to load match live view",
         });
     }
-};
+});
 exports.getMatchLive = getMatchLive;
-const getSoloLive = async (req, res) => {
+const getSoloLive = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const soloComp = await SoloCompetition_1.SoloCompetition.findById(parseInt(id));
+        const soloComp = yield SoloCompetition_1.SoloCompetition.findById(parseInt(id));
         if (!soloComp) {
             res.status(404).render("system/error", {
                 title: "Solo Competition Not Found",
@@ -561,7 +565,7 @@ const getSoloLive = async (req, res) => {
             return;
         }
         // Get participants with their stats
-        const participantsResult = await db_1.pool.query(`
+        const participantsResult = yield db_1.pool.query(`
       SELECT 
         sp.player_id,
         p.name,
@@ -594,13 +598,13 @@ const getSoloLive = async (req, res) => {
             message: "Failed to load solo live view",
         });
     }
-};
+});
 exports.getSoloLive = getSoloLive;
 // ===== MATCH CONTROL ENDPOINTS =====
-const startMatch = async (req, res) => {
+const startMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const match = await Match_1.Match.findById(parseInt(id));
+        const match = yield Match_1.Match.findById(parseInt(id));
         if (!match) {
             res.status(404).json({ success: false, message: "Match not found" });
             return;
@@ -611,56 +615,56 @@ const startMatch = async (req, res) => {
                 .json({ success: false, message: "Match cannot be started" });
             return;
         }
-        await Match_1.Match.updateStatus(parseInt(id), "active");
+        yield Match_1.Match.updateStatus(parseInt(id), "active");
         res.json({ success: true, message: "Match started successfully" });
     }
     catch (error) {
         console.error("Error starting match:", error);
         res.status(500).json({ success: false, message: "Failed to start match" });
     }
-};
+});
 exports.startMatch = startMatch;
-const pauseMatch = async (req, res) => {
+const pauseMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await Match_1.Match.updateStatus(parseInt(id), "paused");
+        yield Match_1.Match.updateStatus(parseInt(id), "paused");
         res.json({ success: true, message: "Match paused successfully" });
     }
     catch (error) {
         console.error("Error pausing match:", error);
         res.status(500).json({ success: false, message: "Failed to pause match" });
     }
-};
+});
 exports.pauseMatch = pauseMatch;
-const resumeMatch = async (req, res) => {
+const resumeMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await Match_1.Match.updateStatus(parseInt(id), "active");
+        yield Match_1.Match.updateStatus(parseInt(id), "active");
         res.json({ success: true, message: "Match resumed successfully" });
     }
     catch (error) {
         console.error("Error resuming match:", error);
         res.status(500).json({ success: false, message: "Failed to resume match" });
     }
-};
+});
 exports.resumeMatch = resumeMatch;
-const endMatch = async (req, res) => {
+const endMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await Match_1.Match.updateStatus(parseInt(id), "completed");
+        yield Match_1.Match.updateStatus(parseInt(id), "completed");
         res.json({ success: true, message: "Match ended successfully" });
     }
     catch (error) {
         console.error("Error ending match:", error);
         res.status(500).json({ success: false, message: "Failed to end match" });
     }
-};
+});
 exports.endMatch = endMatch;
 // ===== SOLO COMPETITION CONTROL ENDPOINTS =====
-const startSoloCompetition = async (req, res) => {
+const startSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const soloComp = await SoloCompetition_1.SoloCompetition.findById(parseInt(id));
+        const soloComp = yield SoloCompetition_1.SoloCompetition.findById(parseInt(id));
         if (!soloComp) {
             res
                 .status(404)
@@ -674,7 +678,7 @@ const startSoloCompetition = async (req, res) => {
             });
             return;
         }
-        await SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "active");
+        yield SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "active");
         res.json({
             success: true,
             message: "Solo competition started successfully",
@@ -686,12 +690,12 @@ const startSoloCompetition = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to start solo competition" });
     }
-};
+});
 exports.startSoloCompetition = startSoloCompetition;
-const pauseSoloCompetition = async (req, res) => {
+const pauseSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "paused");
+        yield SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "paused");
         res.json({
             success: true,
             message: "Solo competition paused successfully",
@@ -703,12 +707,12 @@ const pauseSoloCompetition = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to pause solo competition" });
     }
-};
+});
 exports.pauseSoloCompetition = pauseSoloCompetition;
-const resumeSoloCompetition = async (req, res) => {
+const resumeSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "active");
+        yield SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "active");
         res.json({
             success: true,
             message: "Solo competition resumed successfully",
@@ -720,12 +724,12 @@ const resumeSoloCompetition = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to resume solo competition" });
     }
-};
+});
 exports.resumeSoloCompetition = resumeSoloCompetition;
-const endSoloCompetition = async (req, res) => {
+const endSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        await SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "completed");
+        yield SoloCompetition_1.SoloCompetition.updateStatus(parseInt(id), "completed");
         res.json({ success: true, message: "Solo competition ended successfully" });
     }
     catch (error) {
@@ -734,19 +738,19 @@ const endSoloCompetition = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to end solo competition" });
     }
-};
+});
 exports.endSoloCompetition = endSoloCompetition;
 // ===== LIVE DATA ENDPOINTS =====
-const getMatchLiveData = async (req, res) => {
+const getMatchLiveData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const match = await Match_1.Match.findById(parseInt(id));
+        const match = yield Match_1.Match.findById(parseInt(id));
         if (!match) {
             res.status(404).json({ success: false, message: "Match not found" });
             return;
         }
         // Get updated participants data
-        const participantsResult = await db_1.pool.query(`
+        const participantsResult = yield db_1.pool.query(`
       SELECT 
         mp.team_id,
         t.name as team_name,
@@ -755,8 +759,8 @@ const getMatchLiveData = async (req, res) => {
       JOIN teams t ON mp.team_id = t.id
       WHERE mp.match_id = $1
     `, [id]);
-        const participants = await Promise.all(participantsResult.rows.map(async (participant) => {
-            const playersResult = await db_1.pool.query(`
+        const participants = yield Promise.all(participantsResult.rows.map((participant) => __awaiter(void 0, void 0, void 0, function* () {
+            const playersResult = yield db_1.pool.query(`
           SELECT 
             p.id,
             p.name,
@@ -766,11 +770,8 @@ const getMatchLiveData = async (req, res) => {
           WHERE p.team_id = $2
           GROUP BY p.id, p.name
         `, [id, participant.team_id]);
-            return {
-                ...participant,
-                players: playersResult.rows,
-            };
-        }));
+            return Object.assign(Object.assign({}, participant), { players: playersResult.rows });
+        })));
         res.json({
             success: true,
             status: match.status,
@@ -783,12 +784,12 @@ const getMatchLiveData = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to get match data" });
     }
-};
+});
 exports.getMatchLiveData = getMatchLiveData;
-const getSoloLiveData = async (req, res) => {
+const getSoloLiveData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const soloComp = await SoloCompetition_1.SoloCompetition.findById(parseInt(id));
+        const soloComp = yield SoloCompetition_1.SoloCompetition.findById(parseInt(id));
         if (!soloComp) {
             res
                 .status(404)
@@ -796,7 +797,7 @@ const getSoloLiveData = async (req, res) => {
             return;
         }
         // Get updated participants data
-        const participantsResult = await db_1.pool.query(`
+        const participantsResult = yield db_1.pool.query(`
       SELECT 
         sp.player_id,
         p.name,
@@ -820,12 +821,12 @@ const getSoloLiveData = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to get solo data" });
     }
-};
+});
 exports.getSoloLiveData = getSoloLiveData;
-const getSoloLeaderboard = async (req, res) => {
+const getSoloLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const leaderboardResult = await db_1.pool.query(`
+        const leaderboardResult = yield db_1.pool.query(`
       SELECT 
         sp.player_id,
         p.name as player_name,
@@ -846,5 +847,5 @@ const getSoloLeaderboard = async (req, res) => {
             .status(500)
             .json({ success: false, message: "Failed to get leaderboard" });
     }
-};
+});
 exports.getSoloLeaderboard = getSoloLeaderboard;

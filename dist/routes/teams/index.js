@@ -1,9 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express = require("express");
+const express_1 = __importDefault(require("express"));
 const auth_1 = require("../../middleware/auth");
 const teamController_1 = require("../../controllers/teams/teamController");
-const router = express.Router();
+const router = express_1.default.Router();
 // Team routes
 router.get("/create", auth_1.isAuthenticated, teamController_1.getCreateTeamForm);
 router.post("/create", auth_1.isAuthenticated, teamController_1.createTeam);

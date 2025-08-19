@@ -1,9 +1,18 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveActiveTeamPlayers = exports.getActiveTeamPlayers = exports.getParticipantsWithLoggedGoals = exports.getCompetitionActivity = exports.logCompetitionGoals = exports.getTeamLeaderboard = exports.getIndividualLeaderboard = exports.getCompetitionLive = exports.cancelCompetition = exports.endCompetition = exports.startCompetition = exports.getCompetitionQueue = exports.createCompetition = exports.getCompetitionSetup = void 0;
 const db_1 = require("../../config/db");
 // Display competition setup page
-const getCompetitionSetup = async (req, res) => {
+const getCompetitionSetup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff to access this page
         if (!req.session.user ||
@@ -22,10 +31,10 @@ const getCompetitionSetup = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading competition setup");
         res.redirect("/staff/interface");
     }
-};
+});
 exports.getCompetitionSetup = getCompetitionSetup;
 // Create a new competition
-const createCompetition = async (req, res) => {
+const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log("=== COMPETITION CREATION DEBUG ===");
         console.log("Request body:", JSON.stringify(req.body, null, 2));
@@ -47,9 +56,9 @@ const createCompetition = async (req, res) => {
             });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Create competition record
             const competitionQuery = `
         INSERT INTO competitions (
@@ -70,7 +79,7 @@ const createCompetition = async (req, res) => {
                 competitionData.description || null,
                 req.session.user.id,
             ];
-            const competitionResult = await client.query(competitionQuery, competitionValues);
+            const competitionResult = yield client.query(competitionQuery, competitionValues);
             const competition = competitionResult.rows[0];
             // Add participants/teams
             console.log("=== PARTICIPANT ADDITION LOGIC ===");
@@ -78,7 +87,7 @@ const createCompetition = async (req, res) => {
                 competitionData.participants) {
                 for (const participantId of competitionData.participants) {
                     console.log(`Inserting participant ${participantId} into competition ${competition.id}`);
-                    const insertResult = await client.query(`INSERT INTO competition_players (competition_id, player_id)
+                    const insertResult = yield client.query(`INSERT INTO competition_players (competition_id, player_id)
              VALUES ($1, $2) RETURNING *`, [competition.id, participantId]);
                 }
                 console.log("✓ All participants added successfully");
@@ -86,7 +95,7 @@ const createCompetition = async (req, res) => {
             else if (competitionData.type === "team" && competitionData.teams) {
                 console.log("✓ ADDING TEAM PARTICIPANTS");
                 for (const teamId of competitionData.teams) {
-                    await client.query(`INSERT INTO competition_teams (competition_id, team_id)
+                    yield client.query(`INSERT INTO competition_teams (competition_id, team_id)
              VALUES ($1, $2)`, [competition.id, teamId]);
                     // If this is an 11+ player team and we have selected players
                     if (competitionData.team_size &&
@@ -96,7 +105,7 @@ const createCompetition = async (req, res) => {
                         // Store the selected players for this team
                         const selectedPlayers = competitionData.selected_players[teamId];
                         for (const playerId of selectedPlayers) {
-                            await client.query(`INSERT INTO custom_competition_active_players 
+                            yield client.query(`INSERT INTO custom_competition_active_players 
                  (competition_id, team_id, player_id, status, selected_at)
                  VALUES ($1, $2, $3, 'active', NOW())`, [competition.id, teamId, playerId]);
                         }
@@ -106,7 +115,7 @@ const createCompetition = async (req, res) => {
             else {
                 console.log("❌ NO PARTICIPANTS ADDED - conditions not met");
             }
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             res.json({
                 success: true,
                 message: "Competition created successfully",
@@ -114,7 +123,7 @@ const createCompetition = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -128,10 +137,10 @@ const createCompetition = async (req, res) => {
             message: "An error occurred while creating the competition",
         });
     }
-};
+});
 exports.createCompetition = createCompetition;
 // Get competition queue
-const getCompetitionQueue = async (req, res) => {
+const getCompetitionQueue = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const query = `
       SELECT 
@@ -145,13 +154,10 @@ const getCompetitionQueue = async (req, res) => {
       GROUP BY c.id
       ORDER BY c.created_at ASC
     `;
-        const result = await db_1.pool.query(query);
-        const competitions = result.rows.map((comp) => ({
-            ...comp,
+        const result = yield db_1.pool.query(query);
+        const competitions = result.rows.map((comp) => (Object.assign(Object.assign({}, comp), { 
             // Convert string counts to numbers for proper display
-            participant_count: parseInt(comp.participant_count) || 0,
-            team_count: parseInt(comp.team_count) || 0,
-        }));
+            participant_count: parseInt(comp.participant_count) || 0, team_count: parseInt(comp.team_count) || 0 })));
         res.json({
             success: true,
             competitions: competitions,
@@ -164,10 +170,10 @@ const getCompetitionQueue = async (req, res) => {
             message: "An error occurred while getting the competition queue",
         });
     }
-};
+});
 exports.getCompetitionQueue = getCompetitionQueue;
 // Start a competition
-const startCompetition = async (req, res) => {
+const startCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Update competition status to active
@@ -177,7 +183,7 @@ const startCompetition = async (req, res) => {
       WHERE id = $1 AND status = 'waiting'
       RETURNING *
     `;
-        const result = await db_1.pool.query(updateQuery, [id]);
+        const result = yield db_1.pool.query(updateQuery, [id]);
         if (result.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -198,15 +204,15 @@ const startCompetition = async (req, res) => {
             message: "An error occurred while starting the competition",
         });
     }
-};
+});
 exports.startCompetition = startCompetition;
 // End a competition
-const endCompetition = async (req, res) => {
+const endCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Update competition status to completed
             const updateQuery = `
         UPDATE competitions 
@@ -214,9 +220,9 @@ const endCompetition = async (req, res) => {
         WHERE id = $1 AND status = 'active'
         RETURNING *
       `;
-            const result = await client.query(updateQuery, [id]);
+            const result = yield client.query(updateQuery, [id]);
             if (result.rows.length === 0) {
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(404).json({
                     success: false,
                     message: "Competition not found or not active",
@@ -227,7 +233,7 @@ const endCompetition = async (req, res) => {
             // Note: Removed status updates for competition_players and competition_teams
             // as these tables don't have status columns. The competition status in the
             // main competitions table is sufficient to track completion.
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             res.json({
                 success: true,
                 message: "Competition ended successfully",
@@ -235,7 +241,7 @@ const endCompetition = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -249,10 +255,10 @@ const endCompetition = async (req, res) => {
             message: "An error occurred while ending the competition",
         });
     }
-};
+});
 exports.endCompetition = endCompetition;
 // Cancel a competition
-const cancelCompetition = async (req, res) => {
+const cancelCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Update competition status to cancelled
@@ -262,7 +268,7 @@ const cancelCompetition = async (req, res) => {
       WHERE id = $1 AND status IN ('waiting', 'active')
       RETURNING *
     `;
-        const result = await db_1.pool.query(updateQuery, [id]);
+        const result = yield db_1.pool.query(updateQuery, [id]);
         if (result.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -283,17 +289,17 @@ const cancelCompetition = async (req, res) => {
             message: "An error occurred while cancelling the competition",
         });
     }
-};
+});
 exports.cancelCompetition = cancelCompetition;
 // Get competition live view
-const getCompetitionLive = async (req, res) => {
+const getCompetitionLive = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Get competition details
         const competitionQuery = `
       SELECT * FROM competitions WHERE id = $1
     `;
-        const competitionResult = await db_1.pool.query(competitionQuery, [id]);
+        const competitionResult = yield db_1.pool.query(competitionQuery, [id]);
         if (competitionResult.rows.length === 0) {
             res.status(404).render("system/error", {
                 title: "Competition Not Found",
@@ -316,7 +322,7 @@ const getCompetitionLive = async (req, res) => {
         WHERE cp.competition_id = $1
         ORDER BY p.name ASC
       `;
-            const participantsResult = await db_1.pool.query(participantsQuery, [id]);
+            const participantsResult = yield db_1.pool.query(participantsQuery, [id]);
             // Calculate format based on number of players
             const participantCount = participantsResult.rows.length;
             let format = "Individual";
@@ -331,7 +337,7 @@ const getCompetitionLive = async (req, res) => {
             }
             res.render("staff/competition-live", {
                 title: `Live Competition: ${competition.name}`,
-                competition: { ...competition, format },
+                competition: Object.assign(Object.assign({}, competition), { format }),
                 participants: participantsResult.rows,
                 teams: [],
                 user: req.session.user,
@@ -355,7 +361,7 @@ const getCompetitionLive = async (req, res) => {
         GROUP BY ct.id, t.id, t.name, p.name
         ORDER BY t.name ASC
       `;
-            const teamsResult = await db_1.pool.query(teamsQuery, [id]);
+            const teamsResult = yield db_1.pool.query(teamsQuery, [id]);
             // Calculate format for team competitions
             const teamCount = teamsResult.rows.length;
             let format = "Team";
@@ -370,7 +376,7 @@ const getCompetitionLive = async (req, res) => {
             console.log(`Calculated team competition format: ${format}`);
             res.render("staff/competition-live", {
                 title: `Live Competition: ${competition.name}`,
-                competition: { ...competition, format },
+                competition: Object.assign(Object.assign({}, competition), { format }),
                 participants: [],
                 teams: teamsResult.rows,
                 user: req.session.user,
@@ -385,10 +391,10 @@ const getCompetitionLive = async (req, res) => {
             message: "Failed to load competition live view",
         });
     }
-};
+});
 exports.getCompetitionLive = getCompetitionLive;
 // Get individual competition leaderboard
-const getIndividualLeaderboard = async (req, res) => {
+const getIndividualLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         const query = `
@@ -409,7 +415,7 @@ const getIndividualLeaderboard = async (req, res) => {
       WHERE cp.competition_id = $1 AND p.deleted_at IS NULL
       ORDER BY COALESCE(cp.goals, 0) DESC, COALESCE(cp.kicks_taken, 0) ASC, p.name ASC
     `;
-        const result = await db_1.pool.query(query, [id]);
+        const result = yield db_1.pool.query(query, [id]);
         res.json({
             success: true,
             leaderboard: result.rows,
@@ -423,10 +429,10 @@ const getIndividualLeaderboard = async (req, res) => {
             message: "An error occurred while getting the leaderboard",
         });
     }
-};
+});
 exports.getIndividualLeaderboard = getIndividualLeaderboard;
 // Get team competition leaderboard
-const getTeamLeaderboard = async (req, res) => {
+const getTeamLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         const query = `
@@ -453,7 +459,7 @@ const getTeamLeaderboard = async (req, res) => {
       GROUP BY ct.id, t.id, t.name, cc.kicks_per_player
       ORDER BY COALESCE(SUM(cp.goals), 0) DESC, COALESCE(SUM(cp.kicks_taken), 0) ASC, t.name ASC
     `;
-        const result = await db_1.pool.query(query, [id]);
+        const result = yield db_1.pool.query(query, [id]);
         res.json({
             success: true,
             leaderboard: result.rows,
@@ -467,10 +473,10 @@ const getTeamLeaderboard = async (req, res) => {
             message: "An error occurred while getting the team leaderboard",
         });
     }
-};
+});
 exports.getTeamLeaderboard = getTeamLeaderboard;
 // Log goals in competition
-const logCompetitionGoals = async (req, res) => {
+const logCompetitionGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log("Log goals request body:", req.body);
         const { competitionId, participantId, teamId, kicksUsed, goals, consecutiveKicks, notes, } = req.body;
@@ -516,9 +522,9 @@ const logCompetitionGoals = async (req, res) => {
             });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Check if user session exists and get user ID
             let userId = 1; // Default to ID 1 if session doesn't exist
             try {
@@ -536,12 +542,12 @@ const logCompetitionGoals = async (req, res) => {
             }
             // Get competition details
             const competitionQuery = `SELECT * FROM competitions WHERE id = $1`;
-            const competitionResult = await client.query(competitionQuery, [
+            const competitionResult = yield client.query(competitionQuery, [
                 competitionId,
             ]);
             if (competitionResult.rows.length === 0) {
                 console.error("Competition not found with ID:", competitionId);
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(404).json({
                     success: false,
                     message: "Competition not found",
@@ -557,7 +563,7 @@ const logCompetitionGoals = async (req, res) => {
             }
             else {
                 console.error("Invalid participantId:", participantId);
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Invalid participant ID",
@@ -572,14 +578,14 @@ const logCompetitionGoals = async (req, res) => {
           WHERE id = $3
           RETURNING *
         `;
-                const updateResult = await client.query(updateQuery, [
+                const updateResult = yield client.query(updateQuery, [
                     goals,
                     kicksUsed,
                     participantId,
                 ]);
                 if (updateResult.rows.length === 0) {
                     console.error("No participant found to update");
-                    await client.query("ROLLBACK");
+                    yield client.query("ROLLBACK");
                     res.status(404).json({
                         success: false,
                         message: "Participant not found in competition",
@@ -608,7 +614,7 @@ const logCompetitionGoals = async (req, res) => {
                         kicksUsed,
                     ];
                     try {
-                        const gameStatsResult = await client.query(gameStatsQuery, gameStatsParams);
+                        const gameStatsResult = yield client.query(gameStatsQuery, gameStatsParams);
                     }
                     catch (error) {
                         console.error("Error inserting game stats:", error);
@@ -633,7 +639,7 @@ const logCompetitionGoals = async (req, res) => {
             JOIN competition_teams cct ON cct.team_id = t.id
             WHERE tm.player_id = $1 AND cct.competition_id = $2
           `;
-                    const findTeamResult = await client.query(findTeamQuery, [
+                    const findTeamResult = yield client.query(findTeamQuery, [
                         actualPlayerId,
                         competitionId,
                     ]);
@@ -642,7 +648,7 @@ const logCompetitionGoals = async (req, res) => {
                     }
                     else {
                         console.error("No team found for player:", actualPlayerId);
-                        await client.query("ROLLBACK");
+                        yield client.query("ROLLBACK");
                         res.status(404).json({
                             success: false,
                             message: "Player is not part of any team in this competition",
@@ -660,7 +666,7 @@ const logCompetitionGoals = async (req, res) => {
             SELECT id FROM competition_players 
             WHERE competition_id = $1 AND player_id = $2 AND team_id = $3
           `;
-                    const existingPlayerResult = await client.query(checkPlayerQuery, [
+                    const existingPlayerResult = yield client.query(checkPlayerQuery, [
                         competitionId,
                         actualPlayerId,
                         teamIdToUpdate,
@@ -673,7 +679,7 @@ const logCompetitionGoals = async (req, res) => {
               WHERE competition_id = $3 AND player_id = $4 AND team_id = $5
               RETURNING *
             `;
-                        const playerUpdateResult = await client.query(updatePlayerQuery, [
+                        const playerUpdateResult = yield client.query(updatePlayerQuery, [
                             goals,
                             kicksUsed,
                             competitionId,
@@ -688,7 +694,7 @@ const logCompetitionGoals = async (req, res) => {
               VALUES ($1, $2, $3, $4, $5)
               RETURNING *
             `;
-                        const playerInsertResult = await client.query(insertPlayerQuery, [
+                        const playerInsertResult = yield client.query(insertPlayerQuery, [
                             competitionId,
                             actualPlayerId,
                             teamIdToUpdate,
@@ -703,7 +709,7 @@ const logCompetitionGoals = async (req, res) => {
               SELECT id FROM team_stats 
               WHERE team_id = $1 AND competition_id = $2
             `;
-                        const existingResult = await client.query(checkExistingQuery, [
+                        const existingResult = yield client.query(checkExistingQuery, [
                             teamIdToUpdate,
                             competitionId,
                         ]);
@@ -717,7 +723,7 @@ const logCompetitionGoals = async (req, res) => {
                 WHERE team_id = $1 AND competition_id = $2
                 RETURNING *
               `;
-                            const teamStatsResult = await client.query(updateQuery, [
+                            const teamStatsResult = yield client.query(updateQuery, [
                                 teamIdToUpdate,
                                 competitionId,
                                 goals,
@@ -732,7 +738,7 @@ const logCompetitionGoals = async (req, res) => {
                 ) VALUES ($1, $2, $3, $4, NOW())
                 RETURNING *
               `;
-                            const teamStatsResult = await client.query(insertQuery, [
+                            const teamStatsResult = yield client.query(insertQuery, [
                                 teamIdToUpdate,
                                 competitionId,
                                 goals,
@@ -764,7 +770,7 @@ const logCompetitionGoals = async (req, res) => {
                             true, // team_play set to true for team competitions
                         ];
                         try {
-                            const gameStatsResult = await client.query(gameStatsQuery, gameStatsParams);
+                            const gameStatsResult = yield client.query(gameStatsQuery, gameStatsParams);
                         }
                         catch (error) {
                             console.error("Error inserting game stats for player:", error);
@@ -775,7 +781,7 @@ const logCompetitionGoals = async (req, res) => {
             }
             else {
                 console.error("Unknown competition type:", competition.type);
-                await client.query("ROLLBACK");
+                yield client.query("ROLLBACK");
                 res.status(400).json({
                     success: false,
                     message: "Unknown competition type",
@@ -811,21 +817,21 @@ const logCompetitionGoals = async (req, res) => {
                 userId,
             ];
             try {
-                const activityResult = await client.query(activityQuery, activityParams);
+                const activityResult = yield client.query(activityQuery, activityParams);
             }
             catch (error) {
                 console.error("Error inserting activity:", error);
                 // Don't rollback the transaction for activity logging failures
                 // The main goal logging was successful, so we should continue
             }
-            await client.query("COMMIT");
+            yield client.query("COMMIT");
             res.json({
                 success: true,
                 message: "Goals logged successfully",
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -849,10 +855,10 @@ const logCompetitionGoals = async (req, res) => {
             });
         }
     }
-};
+});
 exports.logCompetitionGoals = logCompetitionGoals;
 // Get competition activity
-const getCompetitionActivity = async (req, res) => {
+const getCompetitionActivity = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         const query = `
@@ -867,7 +873,7 @@ const getCompetitionActivity = async (req, res) => {
       WHERE cca.competition_id = $1
       ORDER BY cca.logged_at DESC
     `;
-        const result = await db_1.pool.query(query, [id]);
+        const result = yield db_1.pool.query(query, [id]);
         res.json({
             success: true,
             activity: result.rows,
@@ -882,10 +888,10 @@ const getCompetitionActivity = async (req, res) => {
             });
         }
     }
-};
+});
 exports.getCompetitionActivity = getCompetitionActivity;
 // Get participants with logged goals
-const getParticipantsWithLoggedGoals = async (req, res) => {
+const getParticipantsWithLoggedGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { competitionId } = req.params;
         if (!competitionId) {
@@ -900,7 +906,7 @@ const getParticipantsWithLoggedGoals = async (req, res) => {
       FROM custom_competition_activity
       WHERE competition_id = $1
     `;
-        const result = await db_1.pool.query(query, [competitionId]);
+        const result = yield db_1.pool.query(query, [competitionId]);
         res.json({
             success: true,
             participantsWithGoals: result.rows,
@@ -913,14 +919,14 @@ const getParticipantsWithLoggedGoals = async (req, res) => {
             message: "An error occurred while getting participants with logged goals",
         });
     }
-};
+});
 exports.getParticipantsWithLoggedGoals = getParticipantsWithLoggedGoals;
 // Get active players for a competition
-const getActiveTeamPlayers = async (req, res) => {
+const getActiveTeamPlayers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const competitionId = req.params.competitionId;
         // Check if competition exists and is team competition
-        const competitionQuery = await db_1.pool.query("SELECT * FROM competitions WHERE id = $1", [competitionId]);
+        const competitionQuery = yield db_1.pool.query("SELECT * FROM competitions WHERE id = $1", [competitionId]);
         if (competitionQuery.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -937,7 +943,7 @@ const getActiveTeamPlayers = async (req, res) => {
             return;
         }
         // Get active players for each team
-        const activePlayersQuery = await db_1.pool.query(`SELECT cp.competition_id, cp.team_id, cp.player_id, cp.status,
+        const activePlayersQuery = yield db_1.pool.query(`SELECT cp.competition_id, cp.team_id, cp.player_id, cp.status,
               p.name as player_name
        FROM custom_competition_active_players cp
        JOIN players p ON cp.player_id = p.id
@@ -956,10 +962,10 @@ const getActiveTeamPlayers = async (req, res) => {
             message: "An error occurred while getting active players",
         });
     }
-};
+});
 exports.getActiveTeamPlayers = getActiveTeamPlayers;
 // Save active players for a team in a competition
-const saveActiveTeamPlayers = async (req, res) => {
+const saveActiveTeamPlayers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const competitionId = req.params.competitionId;
         const teamId = req.params.teamId;
@@ -973,7 +979,7 @@ const saveActiveTeamPlayers = async (req, res) => {
             return;
         }
         // Check if competition exists and is team competition
-        const competitionQuery = await db_1.pool.query("SELECT * FROM competitions WHERE id = $1", [competitionId]);
+        const competitionQuery = yield db_1.pool.query("SELECT * FROM competitions WHERE id = $1", [competitionId]);
         if (competitionQuery.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -990,7 +996,7 @@ const saveActiveTeamPlayers = async (req, res) => {
             return;
         }
         // Check if team exists in the competition
-        const teamQuery = await db_1.pool.query(`SELECT * FROM competition_teams WHERE competition_id = $1 AND team_id = $2`, [competitionId, teamId]);
+        const teamQuery = yield db_1.pool.query(`SELECT * FROM competition_teams WHERE competition_id = $1 AND team_id = $2`, [competitionId, teamId]);
         if (teamQuery.rows.length === 0) {
             res.status(404).json({
                 success: false,
@@ -999,31 +1005,31 @@ const saveActiveTeamPlayers = async (req, res) => {
             return;
         }
         // Start transaction
-        await db_1.pool.query("BEGIN");
+        yield db_1.pool.query("BEGIN");
         // First, set all players for this team to inactive
-        await db_1.pool.query(`UPDATE custom_competition_active_players 
+        yield db_1.pool.query(`UPDATE custom_competition_active_players 
        SET status = 'inactive' 
        WHERE competition_id = $1 AND team_id = $2`, [competitionId, teamId]);
         // Then, for each active player, either update or insert
         for (const playerId of activePlayers) {
             // Check if player already exists in the table
-            const playerQuery = await db_1.pool.query(`SELECT * FROM custom_competition_active_players 
+            const playerQuery = yield db_1.pool.query(`SELECT * FROM custom_competition_active_players 
          WHERE competition_id = $1 AND team_id = $2 AND player_id = $3`, [competitionId, teamId, playerId]);
             if (playerQuery.rows.length > 0) {
                 // Update existing record
-                await db_1.pool.query(`UPDATE custom_competition_active_players 
+                yield db_1.pool.query(`UPDATE custom_competition_active_players 
            SET status = 'active' 
            WHERE competition_id = $1 AND team_id = $2 AND player_id = $3`, [competitionId, teamId, playerId]);
             }
             else {
                 // Insert new record
-                await db_1.pool.query(`INSERT INTO custom_competition_active_players 
+                yield db_1.pool.query(`INSERT INTO custom_competition_active_players 
            (competition_id, team_id, player_id, status) 
            VALUES ($1, $2, $3, 'active')`, [competitionId, teamId, playerId]);
             }
         }
         // Commit transaction
-        await db_1.pool.query("COMMIT");
+        yield db_1.pool.query("COMMIT");
         res.status(200).json({
             success: true,
             message: "Active players updated successfully",
@@ -1031,12 +1037,12 @@ const saveActiveTeamPlayers = async (req, res) => {
     }
     catch (error) {
         // Rollback transaction in case of error
-        await db_1.pool.query("ROLLBACK");
+        yield db_1.pool.query("ROLLBACK");
         console.error("Error saving active team players:", error);
         res.status(500).json({
             success: false,
             message: "An error occurred while saving active team players",
         });
     }
-};
+});
 exports.saveActiveTeamPlayers = saveActiveTeamPlayers;

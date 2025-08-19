@@ -1,11 +1,23 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express = require("express");
+const express_1 = __importDefault(require("express"));
 const db_1 = require("../../config/db");
 const auth_1 = require("../../middleware/auth");
-const QueueTicket_1 = require("../../models/QueueTicket");
+const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
 const transactionController_1 = require("../../controllers/cashier/transactionController");
-const router = express.Router();
+const router = express_1.default.Router();
 // API routes
 router.get("/api/search", auth_1.isCashierAPI, transactionController_1.searchPlayer);
 router.get("/api/search-teams", auth_1.isCashierAPI, transactionController_1.searchTeams);
@@ -17,13 +29,13 @@ router.post("/api/requeue-team", auth_1.isCashierAPI, transactionController_1.pr
 router.get("/api/queue-status", auth_1.isCashierAPI, transactionController_1.getQueueStatus);
 router.get("/api/transactions/today", auth_1.isCashierAPI, transactionController_1.getTodaysTransactions);
 // Debug endpoint to check transactions
-router.get("/api/debug/transactions", auth_1.isCashierAPI, async (req, res) => {
+router.get("/api/debug/transactions", auth_1.isCashierAPI, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = parseInt(req.session.user.id); // Convert string to integer
         const userRole = req.session.user.role;
         // Get today's date in Belize timezone (UTC-6) to match other queries
         const centralTimeQuery = `SELECT (NOW() - interval '6 hours')::date as today`;
-        const centralTimeResult = await db_1.pool.query(centralTimeQuery);
+        const centralTimeResult = yield db_1.pool.query(centralTimeQuery);
         const today = centralTimeResult.rows[0].today.toISOString().split("T")[0];
         // Get all today's transactions using Central timezone range converted to UTC
         const allTransactionsQuery = `
@@ -36,7 +48,7 @@ router.get("/api/debug/transactions", auth_1.isCashierAPI, async (req, res) => {
         AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp)
       ORDER BY t.created_at DESC
     `;
-        const allTransactions = await db_1.pool.query(allTransactionsQuery, [today]);
+        const allTransactions = yield db_1.pool.query(allTransactionsQuery, [today]);
         // Get transactions for this user using Central timezone range converted to UTC
         const userTransactionsQuery = `
       SELECT t.id, t.player_id, t.staff_id, t.kicks, t.amount, t.created_at,
@@ -49,7 +61,7 @@ router.get("/api/debug/transactions", auth_1.isCashierAPI, async (req, res) => {
         AND t.staff_id = $2
       ORDER BY t.created_at DESC
     `;
-        const userTransactions = await db_1.pool.query(userTransactionsQuery, [
+        const userTransactions = yield db_1.pool.query(userTransactionsQuery, [
             today,
             userId,
         ]);
@@ -69,7 +81,7 @@ router.get("/api/debug/transactions", auth_1.isCashierAPI, async (req, res) => {
             error: error instanceof Error ? error.message : "Unknown error",
         });
     }
-});
+}));
 // Root route for cashier - allow access for staff
 router.get("/", (req, res) => {
     res.redirect("/cashier/interface");
@@ -78,10 +90,10 @@ router.get("/", (req, res) => {
 router.get("/interface", transactionController_1.getCashierInterface);
 // Process kick sales
 // Requeue player (using existing kicks balance)
-router.post("/requeue", auth_1.isCashier, async (req, res) => {
-    const client = await db_1.pool.connect();
+router.post("/requeue", auth_1.isCashier, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const client = yield db_1.pool.connect();
     try {
-        await client.query("BEGIN");
+        yield client.query("BEGIN");
         const { playerId, kicks, officialEntry, teamPlay } = req.body;
         // Validate input
         if (!playerId || !kicks) {
@@ -99,7 +111,7 @@ router.post("/requeue", auth_1.isCashier, async (req, res) => {
             });
         }
         // Check if player exists and has enough kicks (exclude deleted players)
-        const playerCheck = await client.query("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [playerIdInt]);
+        const playerCheck = yield client.query("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [playerIdInt]);
         if (playerCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -115,14 +127,14 @@ router.post("/requeue", auth_1.isCashier, async (req, res) => {
             });
         }
         // Deduct kicks from player's balance
-        await client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicksInt, playerIdInt]);
+        yield client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicksInt, playerIdInt]);
         // Create queue ticket
-        const ticketNumber = await QueueTicket_1.default.addToQueue(playerIdInt, officialEntry === true, teamPlay === true);
+        const ticketNumber = yield QueueTicket_1.default.addToQueue(playerIdInt, officialEntry === true, teamPlay === true);
         // Record transaction with zero amount using proper Belize timezone (UTC-6)
-        await client.query("INSERT INTO transactions (player_id, kicks, amount, team_play, created_at) VALUES ($1, $2, $3, $4, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [playerIdInt, kicksInt, 0, teamPlay === true]);
+        yield client.query("INSERT INTO transactions (player_id, kicks, amount, team_play, created_at) VALUES ($1, $2, $3, $4, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [playerIdInt, kicksInt, 0, teamPlay === true]);
         // Get next ticket number
-        const nextTicket = await QueueTicket_1.default.getNextTicketNumber();
-        await client.query("COMMIT");
+        const nextTicket = yield QueueTicket_1.default.getNextTicketNumber();
+        yield client.query("COMMIT");
         res.json({
             success: true,
             message: "Player requeued successfully",
@@ -131,7 +143,7 @@ router.post("/requeue", auth_1.isCashier, async (req, res) => {
         });
     }
     catch (error) {
-        await client.query("ROLLBACK");
+        yield client.query("ROLLBACK");
         console.error("Error requeuing player:", error);
         res.status(500).json({
             success: false,
@@ -141,15 +153,15 @@ router.post("/requeue", auth_1.isCashier, async (req, res) => {
     finally {
         client.release();
     }
-});
-router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
+}));
+router.post("/sell-kicks", auth_1.isCashier, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Debug mode - just return request details
     if (req.body.debug) {
         return res.status(200).send("Debug info logged to server console");
     }
-    const client = await db_1.pool.connect();
+    const client = yield db_1.pool.connect();
     try {
-        await client.query("BEGIN");
+        yield client.query("BEGIN");
         const { playerId, kicks, amount, addToQueue, officialEntry, teamPlay } = req.body;
         // Validate input
         if (!playerId || !kicks || !amount) {
@@ -165,7 +177,7 @@ router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
             });
         }
         // Check if player exists (exclude deleted players)
-        const playerCheck = await client.query("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [playerId]);
+        const playerCheck = yield client.query("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [playerId]);
         if (playerCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -180,7 +192,7 @@ router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')
       RETURNING id
     `;
-        const transactionResult = await client.query(transactionQuery, [
+        const transactionResult = yield client.query(transactionQuery, [
             playerId,
             kicks,
             amount,
@@ -194,22 +206,22 @@ router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
           updated_at = NOW()
       WHERE id = $2
     `;
-        await client.query(updateBalanceQuery, [kicks, playerId]);
+        yield client.query(updateBalanceQuery, [kicks, playerId]);
         let ticketNumber = null;
         let nextTicket = null;
         // Add to queue if requested
         if (addToQueue) {
             try {
-                ticketNumber = await QueueTicket_1.default.addToQueue(playerId, officialEntry, teamPlay);
+                ticketNumber = yield QueueTicket_1.default.addToQueue(playerId, officialEntry, teamPlay);
                 // Get the next ticket number without incrementing
-                nextTicket = await QueueTicket_1.default.getNextTicketNumber();
+                nextTicket = yield QueueTicket_1.default.getNextTicketNumber();
             }
             catch (queueError) {
                 console.error("Queue error:", queueError);
                 // Don't fail the entire transaction if queue fails
             }
         }
-        await client.query("COMMIT");
+        yield client.query("COMMIT");
         res.json({
             success: true,
             message: "Sale completed successfully",
@@ -219,7 +231,7 @@ router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
         });
     }
     catch (error) {
-        await client.query("ROLLBACK");
+        yield client.query("ROLLBACK");
         console.error("Error processing sale - DETAILED ERROR:", error);
         console.error("Request body:", JSON.stringify(req.body));
         console.error("User session:", JSON.stringify(req.session.user));
@@ -237,9 +249,9 @@ router.post("/sell-kicks", auth_1.isCashier, async (req, res) => {
     finally {
         client.release();
     }
-});
+}));
 // Get player profile with picture
-router.get("/player/:id", auth_1.isCashier, async (req, res) => {
+router.get("/player/:id", auth_1.isCashier, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const playerId = req.params.id;
         const query = `
@@ -249,7 +261,7 @@ router.get("/player/:id", auth_1.isCashier, async (req, res) => {
       FROM players p
       WHERE p.id = $1
     `;
-        const result = await db_1.pool.query(query, [playerId]);
+        const result = yield db_1.pool.query(query, [playerId]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Player not found" });
         }
@@ -264,5 +276,5 @@ router.get("/player/:id", auth_1.isCashier, async (req, res) => {
         console.error("Error fetching player:", error);
         res.status(500).json({ error: "Failed to fetch player" });
     }
-});
+}));
 exports.default = router;

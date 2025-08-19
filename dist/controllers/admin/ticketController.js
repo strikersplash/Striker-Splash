@@ -1,9 +1,19 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setTicketRange = exports.updateNextTicket = exports.getTicketManagement = void 0;
 const db_1 = require("../../config/db");
 // Display ticket management page
-const getTicketManagement = async (req, res) => {
+const getTicketManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow admin to access this page
         if (!req.session.user ||
@@ -26,7 +36,7 @@ const getTicketManagement = async (req, res) => {
         FROM 
           queue_tickets
       `;
-            const ticketResult = await db_1.pool.query(ticketQuery);
+            const ticketResult = yield db_1.pool.query(ticketQuery);
             ticketRange = ticketResult.rows[0];
         }
         catch (e) {
@@ -40,14 +50,14 @@ const getTicketManagement = async (req, res) => {
         FROM global_counters
         WHERE id = 'next_queue_number'
       `;
-            const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-            nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+            const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+            nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         }
         catch (e) {
             console.error("Error getting next ticket number:", e);
             // Create global_counters table if it doesn't exist
             try {
-                await db_1.pool.query(`
+                yield db_1.pool.query(`
           CREATE TABLE IF NOT EXISTS global_counters (
             id VARCHAR(50) PRIMARY KEY,
             value INTEGER NOT NULL,
@@ -55,7 +65,7 @@ const getTicketManagement = async (req, res) => {
           )
         `);
                 // Insert next_queue_number if it doesn't exist
-                await db_1.pool.query(`
+                yield db_1.pool.query(`
           INSERT INTO global_counters (id, value)
           VALUES ('next_queue_number', 1000)
           ON CONFLICT (id) DO NOTHING
@@ -69,7 +79,7 @@ const getTicketManagement = async (req, res) => {
         let ticketRangeSettings = null;
         try {
             // Create ticket_ranges table if it doesn't exist
-            await db_1.pool.query(`
+            yield db_1.pool.query(`
         CREATE TABLE IF NOT EXISTS ticket_ranges (
           id SERIAL PRIMARY KEY,
           start_ticket INTEGER NOT NULL,
@@ -83,7 +93,7 @@ const getTicketManagement = async (req, res) => {
         ORDER BY created_at DESC
         LIMIT 1
       `;
-            const rangeResult = await db_1.pool.query(rangeQuery);
+            const rangeResult = yield db_1.pool.query(rangeQuery);
             ticketRangeSettings = rangeResult.rows[0];
         }
         catch (e) {
@@ -102,10 +112,10 @@ const getTicketManagement = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading ticket management");
         res.redirect("/admin/dashboard");
     }
-};
+});
 exports.getTicketManagement = getTicketManagement;
 // Update next ticket number
-const updateNextTicket = async (req, res) => {
+const updateNextTicket = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -124,7 +134,7 @@ const updateNextTicket = async (req, res) => {
         }
         // Create global_counters table if it doesn't exist
         try {
-            await db_1.pool.query(`
+            yield db_1.pool.query(`
         CREATE TABLE IF NOT EXISTS global_counters (
           id VARCHAR(50) PRIMARY KEY,
           value INTEGER NOT NULL,
@@ -136,7 +146,7 @@ const updateNextTicket = async (req, res) => {
             console.error("Error creating global_counters table:", e);
         }
         // Update next ticket number
-        await db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2", ["next_queue_number", parseInt(nextTicket)]);
+        yield db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2", ["next_queue_number", parseInt(nextTicket)]);
         res.json({
             success: true,
             message: "Next ticket number updated successfully",
@@ -150,10 +160,11 @@ const updateNextTicket = async (req, res) => {
             message: "An error occurred while updating next ticket number",
         });
     }
-};
+});
 exports.updateNextTicket = updateNextTicket;
 // Set ticket range
-const setTicketRange = async (req, res) => {
+const setTicketRange = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -182,7 +193,7 @@ const setTicketRange = async (req, res) => {
         }
         // Create ticket_ranges table if it doesn't exist
         try {
-            await db_1.pool.query(`
+            yield db_1.pool.query(`
         CREATE TABLE IF NOT EXISTS ticket_ranges (
           id SERIAL PRIMARY KEY,
           start_ticket INTEGER NOT NULL,
@@ -196,7 +207,7 @@ const setTicketRange = async (req, res) => {
             console.error("Error creating ticket_ranges table:", e);
         }
         // Insert new ticket range
-        await db_1.pool.query("INSERT INTO ticket_ranges (start_ticket, end_ticket, created_by) VALUES ($1, $2, $3)", [parseInt(startTicket), parseInt(endTicket), req.session.user.id]);
+        yield db_1.pool.query("INSERT INTO ticket_ranges (start_ticket, end_ticket, created_by) VALUES ($1, $2, $3)", [parseInt(startTicket), parseInt(endTicket), req.session.user.id]);
         // Update next ticket number properly considering existing tickets
         try {
             const nextTicketQuery = `
@@ -204,15 +215,15 @@ const setTicketRange = async (req, res) => {
         FROM global_counters
         WHERE id = 'next_queue_number'
       `;
-            const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-            const currentNextTicket = nextTicketResult.rows[0]?.next_ticket || 0;
+            const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+            const currentNextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 0;
             // Get the maximum existing ticket number
             const maxTicketQuery = `
         SELECT MAX(ticket_number) as max_ticket
         FROM queue_tickets
       `;
-            const maxTicketResult = await db_1.pool.query(maxTicketQuery);
-            const maxExistingTicket = maxTicketResult.rows[0]?.max_ticket || 0;
+            const maxTicketResult = yield db_1.pool.query(maxTicketQuery);
+            const maxExistingTicket = ((_b = maxTicketResult.rows[0]) === null || _b === void 0 ? void 0 : _b.max_ticket) || 0;
             // The next ticket number should be the higher of:
             // 1. startTicket (if no existing tickets)
             // 2. maxExistingTicket + 1 (if there are existing tickets with higher numbers)
@@ -231,10 +242,10 @@ const setTicketRange = async (req, res) => {
             }
             console.log(`Setting next_queue_number: current=${currentNextTicket}, max_existing=${maxExistingTicket}, start_ticket=${startTicket}, new_next=${newNextTicket}`);
             // Update or insert the counter
-            const updateCounterResult = await db_1.pool.query("UPDATE global_counters SET value = $1 WHERE id = $2", [newNextTicket, "next_queue_number"]);
+            const updateCounterResult = yield db_1.pool.query("UPDATE global_counters SET value = $1 WHERE id = $2", [newNextTicket, "next_queue_number"]);
             if (updateCounterResult.rowCount === 0) {
                 // If no row was updated, insert the counter
-                await db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2)", ["next_queue_number", newNextTicket]);
+                yield db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2)", ["next_queue_number", newNextTicket]);
             }
         }
         catch (e) {
@@ -254,5 +265,5 @@ const setTicketRange = async (req, res) => {
             message: "An error occurred while setting ticket range",
         });
     }
-};
+});
 exports.setTicketRange = setTicketRange;

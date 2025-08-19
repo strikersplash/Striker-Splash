@@ -1,13 +1,26 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTodaysTransactions = exports.getQueueStatus = exports.processCreditTransfer = exports.processRequeueTeam = exports.processReQueue = exports.processPurchaseKicksTeam = exports.processKicksPurchase = exports.processQRScan = exports.searchTeams = exports.searchPlayer = exports.getCashierInterface = void 0;
-const Player_1 = require("../../models/Player");
-const Team_1 = require("../../models/Team");
-const Shot_1 = require("../../models/Shot");
-const QueueTicket_1 = require("../../models/QueueTicket");
+const Player_1 = __importDefault(require("../../models/Player"));
+const Team_1 = __importDefault(require("../../models/Team"));
+const Shot_1 = __importDefault(require("../../models/Shot"));
+const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
 const db_1 = require("../../config/db");
 // Display cashier interface
-const getCashierInterface = async (req, res) => {
+const getCashierInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Allow staff, admin, and sales to access this page
         if (!req.session.user ||
@@ -18,12 +31,12 @@ const getCashierInterface = async (req, res) => {
             return res.redirect("/auth/login");
         }
         // Get competition types
-        const competitionTypesResult = await Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
+        const competitionTypesResult = yield Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
         const competitionTypes = competitionTypesResult.rows;
         // Get next ticket number
         const nextTicketQuery = "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         // For sales users, pre-load their transactions directly
         let preloadedTransactions = [];
         if (req.session.user.role === "sales") {
@@ -32,7 +45,7 @@ const getCashierInterface = async (req, res) => {
             const timestamp = new Date().getTime();
             // Query to get transactions for this sales user - using Central timezone range converted to UTC
             const transactionsQuery = "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN (SELECT player_id, ticket_number, competition_type, created_at FROM queue_tickets WHERE created_at >= timezone('UTC', (NOW() - interval '6 hours')::date) AND created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day')) qt ON t.player_id = qt.player_id AND t.official_entry = true AND DATE(t.created_at) = DATE(qt.created_at) WHERE t.staff_id = $1 AND t.created_at >= timezone('UTC', (NOW() - interval '6 hours')::date) AND t.created_at < timezone('UTC', (NOW() - interval '6 hours')::date + interval '1 day') ORDER BY t.created_at DESC LIMIT 200";
-            const result = await db_1.pool.query(transactionsQuery, [userId]);
+            const result = yield db_1.pool.query(transactionsQuery, [userId]);
             preloadedTransactions = result.rows;
             console.log("Sample preloaded transactions:", preloadedTransactions.slice(0, 3));
         }
@@ -55,10 +68,10 @@ const getCashierInterface = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the cashier interface");
         res.redirect("/");
     }
-};
+});
 exports.getCashierInterface = getCashierInterface;
 // Search player
-const searchPlayer = async (req, res) => {
+const searchPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Allow admin, staff, and sales to access this API
         if (!req.session.user ||
@@ -75,7 +88,7 @@ const searchPlayer = async (req, res) => {
                 .json({ success: false, message: "Search query is required" });
             return;
         }
-        const players = await Player_1.default.search(query);
+        const players = yield Player_1.default.search(query);
         res.json({ success: true, players });
     }
     catch (error) {
@@ -85,10 +98,10 @@ const searchPlayer = async (req, res) => {
             message: "An error occurred while searching for players",
         });
     }
-};
+});
 exports.searchPlayer = searchPlayer;
 // Search teams by name for cashier interface
-const searchTeams = async (req, res) => {
+const searchTeams = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { query } = req.query;
         if (!query || typeof query !== "string") {
@@ -109,7 +122,7 @@ const searchTeams = async (req, res) => {
       ORDER BY t.name
       LIMIT 10
     `;
-        const result = await db_1.pool.query(searchQuery, [`%${query}%`]);
+        const result = yield db_1.pool.query(searchQuery, [`%${query}%`]);
         const teams = result.rows;
         res.json({ success: true, teams: teams });
     }
@@ -120,10 +133,11 @@ const searchTeams = async (req, res) => {
             error: "An error occurred while searching teams",
         });
     }
-};
+});
 exports.searchTeams = searchTeams;
 // Process QR code scan
-const processQRScan = async (req, res) => {
+const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -152,25 +166,25 @@ const processQRScan = async (req, res) => {
         // Find player by QR hash or ID
         let player;
         if (parsedData.hash) {
-            player = await Player_1.default.findByQRHash(parsedData.hash);
+            player = yield Player_1.default.findByQRHash(parsedData.hash);
         }
         else if (parsedData.playerId) {
-            player = await Player_1.default.findById(parsedData.playerId);
+            player = yield Player_1.default.findById(parsedData.playerId);
         }
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
         // Get active queue tickets
-        const activeTickets = await QueueTicket_1.default.findActiveByPlayerId(player.id);
+        const activeTickets = yield QueueTicket_1.default.findActiveByPlayerId(player.id);
         // Get next ticket number
         const nextTicketQuery = `
       SELECT value as next_ticket
       FROM global_counters
       WHERE id = 'next_queue_number'
     `;
-        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         res.json({
             success: true,
             player: {
@@ -195,10 +209,11 @@ const processQRScan = async (req, res) => {
             message: "An error occurred while processing QR code",
         });
     }
-};
+});
 exports.processQRScan = processQRScan;
 // Process kicks purchase
-const processKicksPurchase = async (req, res) => {
+const processKicksPurchase = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -218,7 +233,7 @@ const processKicksPurchase = async (req, res) => {
             return;
         }
         // Find player
-        const player = await Player_1.default.findById(parseInt(playerId));
+        const player = yield Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -226,7 +241,7 @@ const processKicksPurchase = async (req, res) => {
         // Calculate amount ($1 per kick)
         const amount = parseInt(kicksQuantity);
         // Create shot transaction
-        const shot = await Shot_1.default.create({
+        const shot = yield Shot_1.default.create({
             player_id: player.id,
             amount,
             shots_quantity: kicksQuantity,
@@ -240,7 +255,7 @@ const processKicksPurchase = async (req, res) => {
             return;
         }
         // Update player's kicks balance
-        const updatedPlayer = await Player_1.default.updateKicksBalance(player.id, kicksQuantity);
+        const updatedPlayer = yield Player_1.default.updateKicksBalance(player.id, kicksQuantity);
         if (!updatedPlayer) {
             res.status(500).json({
                 success: false,
@@ -256,10 +271,10 @@ const processKicksPurchase = async (req, res) => {
             const ticketsToCreate = Math.min(Math.floor(kicksQuantity / 5), 1); // Max 1 ticket per transaction
             if (ticketsToCreate > 0) {
                 // Deduct kicks from balance
-                await Player_1.default.updateKicksBalance(player.id, -(ticketsToCreate * 5));
+                yield Player_1.default.updateKicksBalance(player.id, -(ticketsToCreate * 5));
                 remainingKicks = updatedPlayer.kicks_balance - ticketsToCreate * 5;
                 // Create ticket
-                const ticket = await QueueTicket_1.default.create({
+                const ticket = yield QueueTicket_1.default.create({
                     player_id: player.id,
                     competition_type: competitionType || "accuracy",
                     official: true,
@@ -274,11 +289,11 @@ const processKicksPurchase = async (req, res) => {
             // Competition or practice kick purchase - create queue ticket if 5+ kicks
             if (kicksQuantity >= 5) {
                 // Deduct 5 kicks from balance for the queue ticket
-                await Player_1.default.updateKicksBalance(player.id, -5);
+                yield Player_1.default.updateKicksBalance(player.id, -5);
                 remainingKicks = updatedPlayer.kicks_balance - 5;
                 // Create ticket
                 const isCompetition = purchaseType === "balance-and-kick-for-competition";
-                const ticket = await QueueTicket_1.default.create({
+                const ticket = yield QueueTicket_1.default.create({
                     player_id: player.id,
                     competition_type: isCompetition ? "standard" : "practice",
                     official: true,
@@ -297,7 +312,7 @@ const processKicksPurchase = async (req, res) => {
             console.log("processKicksPurchase - Tickets created:", tickets.map((t) => ({ id: t.id, ticket_number: t.ticket_number })));
         }
         const insertTransactionQuery = "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5)";
-        await db_1.pool.query(insertTransactionQuery, [
+        yield db_1.pool.query(insertTransactionQuery, [
             player.id,
             kicksQuantity,
             amount,
@@ -307,17 +322,14 @@ const processKicksPurchase = async (req, res) => {
         console.log("processKicksPurchase - Transaction INSERT completed for staff_id:", staffId);
         // Verify the transaction was created by querying it back
         const verifyQuery = "SELECT id, staff_id, player_id, kicks, amount FROM transactions WHERE staff_id = $1 AND player_id = $2 ORDER BY created_at DESC LIMIT 1";
-        const verifyResult = await db_1.pool.query(verifyQuery, [staffId, player.id]);
+        const verifyResult = yield db_1.pool.query(verifyQuery, [staffId, player.id]);
         // Get next ticket number
         const nextTicketQuery = "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         res.json({
             success: true,
-            player: {
-                ...updatedPlayer,
-                kicks_balance: remainingKicks,
-            },
+            player: Object.assign(Object.assign({}, updatedPlayer), { kicks_balance: remainingKicks }),
             transaction: shot,
             tickets,
             nextTicket,
@@ -330,10 +342,10 @@ const processKicksPurchase = async (req, res) => {
             message: "An error occurred while processing kicks purchase",
         });
     }
-};
+});
 exports.processKicksPurchase = processKicksPurchase;
 // Process team kick purchases
-const processPurchaseKicksTeam = async (req, res) => {
+const processPurchaseKicksTeam = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -358,20 +370,20 @@ const processPurchaseKicksTeam = async (req, res) => {
             return;
         }
         // Get team info and captain
-        const team = await Team_1.default.getById(teamId);
+        const team = yield Team_1.default.getById(teamId);
         if (!team) {
             res.json({ success: false, message: "Team not found" });
             return;
         }
         // Get captain ID
-        const captainResult = await db_1.pool.query("SELECT player_id FROM team_members WHERE team_id = $1 AND is_captain = true", [teamId]);
+        const captainResult = yield db_1.pool.query("SELECT player_id FROM team_members WHERE team_id = $1 AND is_captain = true", [teamId]);
         if (captainResult.rows.length === 0) {
             res.json({ success: false, message: "Team captain not found" });
             return;
         }
         const captainId = captainResult.rows[0].player_id;
         // Get team members
-        const membersResult = await db_1.pool.query("SELECT p.id, p.name FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1", [teamId]);
+        const membersResult = yield db_1.pool.query("SELECT p.id, p.name FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1", [teamId]);
         const teamMembers = membersResult.rows;
         if (teamMembers.length === 0) {
             res.json({ success: false, message: "No team members found" });
@@ -379,14 +391,14 @@ const processPurchaseKicksTeam = async (req, res) => {
         }
         const totalCost = kicks * teamMembers.length;
         // Process the purchase for each team member
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             for (const member of teamMembers) {
                 // Add kicks to each member's balance
-                await client.query("UPDATE players SET kicks_balance = kicks_balance + $1 WHERE id = $2", [kicks, member.id]);
+                yield client.query("UPDATE players SET kicks_balance = kicks_balance + $1 WHERE id = $2", [kicks, member.id]);
                 // Record the transaction for each member using proper Belize timezone (UTC-6)
-                await client.query("INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, $2, $3, $4, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [
+                yield client.query("INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, $2, $3, $4, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [
                     member.id,
                     kicks,
                     kicks, // $1 per kick
@@ -397,12 +409,12 @@ const processPurchaseKicksTeam = async (req, res) => {
             const isCompetition = purchaseType === "balance-and-kick-for-competition";
             // Deduct kicks from each member's balance for immediate play
             for (const member of teamMembers) {
-                await client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicks, member.id]);
+                yield client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicks, member.id]);
             }
             // Create team queue ticket
-            const ticketNumber = await QueueTicket_1.default.incrementTicketNumber();
-            await client.query("INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')", [ticketNumber, captainId, isCompetition ? "standard" : "practice"]);
-            await client.query("COMMIT");
+            const ticketNumber = yield QueueTicket_1.default.incrementTicketNumber();
+            yield client.query("INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')", [ticketNumber, captainId, isCompetition ? "standard" : "practice"]);
+            yield client.query("COMMIT");
             const successMessage = "Successfully purchased " +
                 kicks +
                 " kicks for each of " +
@@ -418,7 +430,7 @@ const processPurchaseKicksTeam = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -432,10 +444,11 @@ const processPurchaseKicksTeam = async (req, res) => {
             message: "An error occurred while processing the team purchase",
         });
     }
-};
+});
 exports.processPurchaseKicksTeam = processPurchaseKicksTeam;
 // Process re-queue
-const processReQueue = async (req, res) => {
+const processReQueue = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -454,7 +467,7 @@ const processReQueue = async (req, res) => {
             return;
         }
         // Find player
-        const player = await Player_1.default.findById(parseInt(playerId));
+        const player = yield Player_1.default.findById(parseInt(playerId));
         if (!player) {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
@@ -469,7 +482,7 @@ const processReQueue = async (req, res) => {
             return;
         }
         // Deduct 5 kicks from balance
-        const updatedPlayer = await Player_1.default.updateKicksBalance(player.id, -5);
+        const updatedPlayer = yield Player_1.default.updateKicksBalance(player.id, -5);
         if (!updatedPlayer) {
             res.status(500).json({
                 success: false,
@@ -478,14 +491,14 @@ const processReQueue = async (req, res) => {
             return;
         }
         // Create queue ticket
-        const ticket = await QueueTicket_1.default.create({
+        const ticket = yield QueueTicket_1.default.create({
             player_id: player.id,
             competition_type: competitionType || "accuracy",
             official: true,
         });
         if (!ticket) {
             // Refund kicks if ticket creation fails
-            await Player_1.default.updateKicksBalance(player.id, 5);
+            yield Player_1.default.updateKicksBalance(player.id, 5);
             res
                 .status(500)
                 .json({ success: false, message: "Failed to create queue ticket" });
@@ -495,7 +508,7 @@ const processReQueue = async (req, res) => {
         const staffId = parseInt(req.session.user.id);
         try {
             const insertQuery = "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4)";
-            await db_1.pool.query(insertQuery, [player.id, -5, 0, staffId] // -5 kicks, $0 amount for requeue
+            yield db_1.pool.query(insertQuery, [player.id, -5, 0, staffId] // -5 kicks, $0 amount for requeue
             );
         }
         catch (transactionError) {
@@ -503,11 +516,11 @@ const processReQueue = async (req, res) => {
             // Don't fail the requeue if transaction logging fails
         }
         // Get current queue position
-        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         // Get next ticket number
         const nextTicketQuery = "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         res.json({
             success: true,
             player: updatedPlayer,
@@ -523,10 +536,10 @@ const processReQueue = async (req, res) => {
             message: "An error occurred while processing re-queue",
         });
     }
-};
+});
 exports.processReQueue = processReQueue;
 // Process team requeue
-const processRequeueTeam = async (req, res) => {
+const processRequeueTeam = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -551,20 +564,20 @@ const processRequeueTeam = async (req, res) => {
             return;
         }
         // Get team info and captain
-        const team = await Team_1.default.getById(teamId);
+        const team = yield Team_1.default.getById(teamId);
         if (!team) {
             res.json({ success: false, message: "Team not found" });
             return;
         }
         // Get captain ID
-        const captainResult = await db_1.pool.query("SELECT player_id FROM team_members WHERE team_id = $1 AND is_captain = true", [teamId]);
+        const captainResult = yield db_1.pool.query("SELECT player_id FROM team_members WHERE team_id = $1 AND is_captain = true", [teamId]);
         if (captainResult.rows.length === 0) {
             res.json({ success: false, message: "Team captain not found" });
             return;
         }
         const captainId = captainResult.rows[0].player_id;
         // Get team members
-        const membersResult = await db_1.pool.query("SELECT p.id, p.name, p.kicks_balance FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1 AND p.deleted_at IS NULL", [teamId]);
+        const membersResult = yield db_1.pool.query("SELECT p.id, p.name, p.kicks_balance FROM players p JOIN team_members tm ON p.id = tm.player_id WHERE tm.team_id = $1 AND p.deleted_at IS NULL", [teamId]);
         const teamMembers = membersResult.rows;
         if (teamMembers.length === 0) {
             res.json({ success: false, message: "No team members found" });
@@ -582,20 +595,20 @@ const processRequeueTeam = async (req, res) => {
             });
             return;
         }
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Deduct kicks from each member's balance
             for (const member of teamMembers) {
-                await client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicks, member.id]);
+                yield client.query("UPDATE players SET kicks_balance = kicks_balance - $1 WHERE id = $2", [kicks, member.id]);
                 // Record the requeue transaction for each member using proper Belize timezone (UTC-6)
-                await client.query("INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, official_entry, created_at) VALUES ($1, $2, 0, $3, true, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [member.id, kicks, userId]);
+                yield client.query("INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, official_entry, created_at) VALUES ($1, $2, 0, $3, true, true, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC')", [member.id, kicks, userId]);
             }
             // Create team queue ticket
             const isCompetition = requeueType === "kick-for-competition";
-            const ticketNumber = await QueueTicket_1.default.incrementTicketNumber();
-            await client.query("INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')", [ticketNumber, captainId, isCompetition ? "standard" : "practice"]);
-            await client.query("COMMIT");
+            const ticketNumber = yield QueueTicket_1.default.incrementTicketNumber();
+            yield client.query("INSERT INTO queue_tickets (ticket_number, player_id, competition_type, team_play, status) VALUES ($1, $2, $3, true, 'in-queue')", [ticketNumber, captainId, isCompetition ? "standard" : "practice"]);
+            yield client.query("COMMIT");
             res.json({
                 success: true,
                 message: "Successfully requeued team " +
@@ -608,7 +621,7 @@ const processRequeueTeam = async (req, res) => {
             });
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -622,10 +635,10 @@ const processRequeueTeam = async (req, res) => {
             message: "An error occurred while processing the team requeue",
         });
     }
-};
+});
 exports.processRequeueTeam = processRequeueTeam;
 // Process credit transfer
-const processCreditTransfer = async (req, res) => {
+const processCreditTransfer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow staff, admin, or sales to access this API
         if (!req.session.user ||
@@ -645,7 +658,7 @@ const processCreditTransfer = async (req, res) => {
             return;
         }
         // Find recipient player
-        const toPlayer = await Player_1.default.findById(parseInt(toPlayerId));
+        const toPlayer = yield Player_1.default.findById(parseInt(toPlayerId));
         if (!toPlayer) {
             res
                 .status(404)
@@ -653,14 +666,14 @@ const processCreditTransfer = async (req, res) => {
             return;
         }
         // Record credit transfer
-        await Player_1.default.query("INSERT INTO credit_transfers (from_player_id, to_player_id, amount, staff_id) VALUES ($1, $2, $3, $4)", [
+        yield Player_1.default.query("INSERT INTO credit_transfers (from_player_id, to_player_id, amount, staff_id) VALUES ($1, $2, $3, $4)", [
             fromPlayerId || null,
             toPlayerId,
             amount,
             parseInt(req.session.user.id),
         ]);
         // Update recipient's kicks balance
-        const updatedPlayer = await Player_1.default.updateKicksBalance(toPlayer.id, amount);
+        const updatedPlayer = yield Player_1.default.updateKicksBalance(toPlayer.id, amount);
         if (!updatedPlayer) {
             res.status(500).json({
                 success: false,
@@ -680,17 +693,18 @@ const processCreditTransfer = async (req, res) => {
             message: "An error occurred while processing credit transfer",
         });
     }
-};
+});
 exports.processCreditTransfer = processCreditTransfer;
 // Get queue status for cashier interface
-const getQueueStatus = async (req, res) => {
+const getQueueStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Use the same logic as getCurrentQueuePosition for consistency
-        const currentTicket = await QueueTicket_1.default.getCurrentQueuePosition();
+        const currentTicket = yield QueueTicket_1.default.getCurrentQueuePosition();
         // Get next ticket number
         const nextTicketQuery = "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-        const nextTicketResult = await db_1.pool.query(nextTicketQuery);
-        const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
+        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
         res.json({
             success: true,
             currentNumber: currentTicket || null,
@@ -704,10 +718,10 @@ const getQueueStatus = async (req, res) => {
             error: "An error occurred while getting queue status",
         });
     }
-};
+});
 exports.getQueueStatus = getQueueStatus;
 // Get today's transactions for cashier interface
-const getTodaysTransactions = async (req, res) => {
+const getTodaysTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Allow staff, admin, and sales to access this API
         if (!req.session.user ||
@@ -719,7 +733,7 @@ const getTodaysTransactions = async (req, res) => {
         }
         // Get today's date in Belize timezone (UTC-6) to match preloaded transactions
         const centralTimeQuery = "SELECT (NOW() - interval '6 hours')::date as today";
-        const centralTimeResult = await db_1.pool.query(centralTimeQuery);
+        const centralTimeResult = yield db_1.pool.query(centralTimeQuery);
         const today = centralTimeResult.rows[0].today.toISOString().split("T")[0];
         const userId = parseInt(req.session.user.id); // Convert string to integer
         const userRole = req.session.user.role;
@@ -727,13 +741,13 @@ const getTodaysTransactions = async (req, res) => {
         // Get transactions for this specific user (staff member) - using Belize timezone range converted to UTC
         // Fixed query to prevent duplicates from multiple queue tickets
         const transactionsQuery = "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN (SELECT player_id, ticket_number, competition_type, created_at FROM queue_tickets WHERE created_at >= ($1::date + interval '6 hours')::timestamp AND created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp) qt ON t.player_id = qt.player_id AND t.official_entry = true AND DATE(t.created_at - interval '6 hours') = DATE(qt.created_at - interval '6 hours') WHERE t.staff_id = $2 AND t.created_at >= ($1::date + interval '6 hours')::timestamp AND t.created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp ORDER BY t.created_at DESC LIMIT 200";
-        const result = await db_1.pool.query(transactionsQuery, [today, userId]);
+        const result = yield db_1.pool.query(transactionsQuery, [today, userId]);
         // Debug: Log a sample of the data we're sending back
         if (result.rows.length > 0) {
         }
         // Debug: Let's also check all transactions for today regardless of staff_id (using Central timezone range converted to UTC)
         const allTodayQuery = "SELECT t.id, t.staff_id, t.player_id, t.kicks, t.amount, p.name as player_name, s.name as staff_name, s.role as staff_role FROM transactions t LEFT JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id WHERE t.created_at >= timezone('UTC', ($1::date)::timestamp) AND t.created_at < timezone('UTC', ($1::date + interval '1 day')::timestamp) ORDER BY t.created_at DESC";
-        const allTodayResult = await db_1.pool.query(allTodayQuery, [today]);
+        const allTodayResult = yield db_1.pool.query(allTodayQuery, [today]);
         // Log transactions for this user separately from the full query
         const userTransactions = allTodayResult.rows.filter((t) => t.staff_id === userId);
         // If inconsistent, log a warning
@@ -765,5 +779,5 @@ const getTodaysTransactions = async (req, res) => {
             error: "An error occurred while getting today's transactions",
         });
     }
-};
+});
 exports.getTodaysTransactions = getTodaysTransactions;

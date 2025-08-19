@@ -1,17 +1,26 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getHome = void 0;
 const leaderboardService_1 = require("../../services/leaderboardService");
 const db_1 = require("../../config/db");
 const contentController_1 = require("../contentController");
 // Display home page
-const getHome = async (req, res) => {
+const getHome = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Get filter parameters
         const ageGroup = req.query.ageGroup || "all";
         const location = req.query.location || "all";
         // Get leaderboard data
-        const leaderboard = await (0, leaderboardService_1.getLeaderboard)(ageGroup !== "all" ? ageGroup : undefined, location !== "all" ? location : undefined, 10);
+        const leaderboard = yield (0, leaderboardService_1.getLeaderboard)(ageGroup !== "all" ? ageGroup : undefined, location !== "all" ? location : undefined, 10);
         // Get event locations
         let eventLocations = [];
         try {
@@ -24,7 +33,7 @@ const getHome = async (req, res) => {
         WHERE end_date >= $1 
         ORDER BY start_date ASC
       `;
-            const locationsResult = await db_1.pool.query(locationsQuery, [todayString]);
+            const locationsResult = yield db_1.pool.query(locationsQuery, [todayString]);
             eventLocations = locationsResult.rows;
         }
         catch (error) {
@@ -32,9 +41,9 @@ const getHome = async (req, res) => {
             // Table might not exist yet, we'll use default locations in the view
         }
         // Get editable content
-        const heroContent = await (0, contentController_1.getContentBySection)("home_hero");
-        const featuresContent = await (0, contentController_1.getContentBySection)("home_features");
-        const stepsContent = await (0, contentController_1.getContentBySection)("home_steps");
+        const heroContent = yield (0, contentController_1.getContentBySection)("home_hero");
+        const featuresContent = yield (0, contentController_1.getContentBySection)("home_features");
+        const stepsContent = yield (0, contentController_1.getContentBySection)("home_steps");
         // Render home page
         res.render("public/home", {
             title: "Striker Splash",
@@ -66,5 +75,5 @@ const getHome = async (req, res) => {
             stepsContent: {},
         });
     }
-};
+});
 exports.getHome = getHome;

@@ -1,12 +1,25 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getQueueStatus = exports.displayQR = exports.downloadQR = exports.updateProfile = exports.getEditProfile = exports.getDashboard = void 0;
 const db_1 = require("../../config/db");
-const Player_1 = require("../../models/Player");
-const QueueTicket_1 = require("../../models/QueueTicket");
-const qrcode_1 = require("qrcode");
+const Player_1 = __importDefault(require("../../models/Player"));
+const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
+const qrcode_1 = __importDefault(require("qrcode"));
 // Display player dashboard
-const getDashboard = async (req, res) => {
+const getDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         // Only allow players to access this page
         if (!req.session.user ||
@@ -21,7 +34,7 @@ const getDashboard = async (req, res) => {
         let player;
         if (!playerSlug) {
             // No slug provided - show logged-in player's dashboard
-            player = await Player_1.default.findById(loggedInPlayerId);
+            player = yield Player_1.default.findById(loggedInPlayerId);
         }
         else {
             // Slug provided - verify ownership before showing dashboard
@@ -33,11 +46,11 @@ const getDashboard = async (req, res) => {
                     req.flash("error_msg", "You can only view your own dashboard");
                     return res.redirect("/player/dashboard");
                 }
-                player = await Player_1.default.findById(requestedPlayerId);
+                player = yield Player_1.default.findById(requestedPlayerId);
             }
             else {
                 // It's a slug - verify the slug belongs to the logged-in user
-                const foundPlayer = await Player_1.default.findBySlug(playerSlug);
+                const foundPlayer = yield Player_1.default.findBySlug(playerSlug);
                 if (!foundPlayer || foundPlayer.id !== loggedInPlayerId) {
                     req.flash("error_msg", "You can only view your own dashboard");
                     return res.redirect("/player/dashboard");
@@ -59,7 +72,7 @@ const getDashboard = async (req, res) => {
       WHERE 
         gs.player_id = $1
     `;
-        const statsResult = await db_1.pool.query(statsQuery, [player.id]);
+        const statsResult = yield db_1.pool.query(statsQuery, [player.id]);
         const stats = statsResult.rows[0] || { total_goals: 0, total_attempts: 0 };
         // Get best consecutive kicks
         let bestConsecutiveKicks = 0;
@@ -73,8 +86,8 @@ const getDashboard = async (req, res) => {
           player_id = $1 
           AND consecutive_kicks IS NOT NULL
       `;
-            const consecutiveResult = await db_1.pool.query(consecutiveQuery, [player.id]);
-            bestConsecutiveKicks = consecutiveResult.rows[0]?.best_consecutive || 0;
+            const consecutiveResult = yield db_1.pool.query(consecutiveQuery, [player.id]);
+            bestConsecutiveKicks = ((_a = consecutiveResult.rows[0]) === null || _a === void 0 ? void 0 : _a.best_consecutive) || 0;
         }
         catch (error) {
             console.error("Error fetching best consecutive kicks:", error);
@@ -100,7 +113,7 @@ const getDashboard = async (req, res) => {
           gs.timestamp DESC
         LIMIT 5
       `;
-            const activityResult = await db_1.pool.query(activityQuery, [player.id]);
+            const activityResult = yield db_1.pool.query(activityQuery, [player.id]);
             recentActivity = activityResult.rows;
         }
         catch (error) {
@@ -117,7 +130,7 @@ const getDashboard = async (req, res) => {
         WHERE tm.player_id = $1
         ORDER BY t.name ASC
       `;
-            const teamResult = await db_1.pool.query(teamQuery, [player.id]);
+            const teamResult = yield db_1.pool.query(teamQuery, [player.id]);
             if (teamResult.rows.length > 0) {
                 allTeams = teamResult.rows;
                 teamInfo = teamResult.rows[0]; // Keep for backward compatibility
@@ -136,10 +149,10 @@ const getDashboard = async (req, res) => {
         WHERE player_id = $1 AND status = 'in-queue'
         ORDER BY ticket_number ASC
       `;
-            const ticketsResult = await db_1.pool.query(ticketsQuery, [player.id]);
+            const ticketsResult = yield db_1.pool.query(ticketsQuery, [player.id]);
             activeTickets = ticketsResult.rows;
             // Get current queue position (now serving)
-            currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+            currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         }
         catch (error) {
             console.error("Error fetching queue tickets:", error);
@@ -160,10 +173,10 @@ const getDashboard = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the dashboard");
         res.redirect("/");
     }
-};
+});
 exports.getDashboard = getDashboard;
 // Display edit profile form
-const getEditProfile = async (req, res) => {
+const getEditProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow players to access this page
         if (!req.session.user ||
@@ -173,7 +186,7 @@ const getEditProfile = async (req, res) => {
         }
         const playerId = parseInt(req.session.user.id);
         // Get player details
-        const player = await Player_1.default.findById(playerId);
+        const player = yield Player_1.default.findById(playerId);
         if (!player) {
             req.flash("error_msg", "Player not found");
             return res.redirect("/auth/logout");
@@ -184,7 +197,7 @@ const getEditProfile = async (req, res) => {
       WHERE active = true
       ORDER BY min_age
     `;
-        const ageBracketsResult = await db_1.pool.query(ageBracketsQuery);
+        const ageBracketsResult = yield db_1.pool.query(ageBracketsQuery);
         const ageBrackets = ageBracketsResult.rows;
         res.render("player/edit-profile", {
             title: "Edit Profile",
@@ -197,10 +210,10 @@ const getEditProfile = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the edit profile page");
         res.redirect("/player/dashboard");
     }
-};
+});
 exports.getEditProfile = getEditProfile;
 // Update player profile
-const updateProfile = async (req, res) => {
+const updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow players to access this API
         if (!req.session.user ||
@@ -216,7 +229,7 @@ const updateProfile = async (req, res) => {
             return res.redirect("/player/edit-profile");
         }
         // Update player
-        const updatedPlayer = await Player_1.default.update(playerId, {
+        const updatedPlayer = yield Player_1.default.update(playerId, {
             phone,
             email: email || null,
             residence,
@@ -234,10 +247,10 @@ const updateProfile = async (req, res) => {
         req.flash("error_msg", "An error occurred while updating profile");
         res.redirect("/player/edit-profile");
     }
-};
+});
 exports.updateProfile = updateProfile;
 // Download QR code
-const downloadQR = async (req, res) => {
+const downloadQR = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow players to access this API
         if (!req.session.user ||
@@ -247,7 +260,7 @@ const downloadQR = async (req, res) => {
         }
         const playerId = parseInt(req.session.user.id);
         // Get player details
-        const player = await Player_1.default.findById(playerId);
+        const player = yield Player_1.default.findById(playerId);
         if (!player) {
             req.flash("error_msg", "Player not found");
             return res.redirect("/auth/logout");
@@ -259,7 +272,7 @@ const downloadQR = async (req, res) => {
             // phone: REMOVED for security,
         });
         // Generate QR code
-        const qrCodeDataURL = await qrcode_1.default.toDataURL(qrData);
+        const qrCodeDataURL = yield qrcode_1.default.toDataURL(qrData);
         // Convert data URL to buffer
         const data = qrCodeDataURL.replace(/^data:image\/png;base64,/, "");
         const buffer = Buffer.from(data, "base64");
@@ -274,10 +287,10 @@ const downloadQR = async (req, res) => {
         req.flash("error_msg", "An error occurred while downloading QR code");
         res.redirect("/player/dashboard");
     }
-};
+});
 exports.downloadQR = downloadQR;
 // Display QR code inline
-const displayQR = async (req, res) => {
+const displayQR = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const playerId = parseInt(req.params.id);
         if (isNaN(playerId)) {
@@ -285,7 +298,7 @@ const displayQR = async (req, res) => {
             return;
         }
         // Get player details
-        const player = await Player_1.default.findById(playerId);
+        const player = yield Player_1.default.findById(playerId);
         if (!player) {
             res.status(404).send("Player not found");
             return;
@@ -296,7 +309,7 @@ const displayQR = async (req, res) => {
             hash: player.qr_hash,
         });
         // Generate QR code as buffer
-        const qrBuffer = await qrcode_1.default.toBuffer(qrData, {
+        const qrBuffer = yield qrcode_1.default.toBuffer(qrData, {
             width: 200,
             margin: 2,
         });
@@ -310,10 +323,10 @@ const displayQR = async (req, res) => {
         console.error("Display QR code error:", error);
         res.status(500).send("Error generating QR code");
     }
-};
+});
 exports.displayQR = displayQR;
 // Get queue status for player
-const getQueueStatus = async (req, res) => {
+const getQueueStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow players to access this API
         if (!req.session.user ||
@@ -323,7 +336,7 @@ const getQueueStatus = async (req, res) => {
         }
         const playerId = parseInt(req.session.user.id);
         // Get current queue position
-        const currentQueuePosition = await QueueTicket_1.default.getCurrentQueuePosition();
+        const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         console.log(`Current queue position: ${currentQueuePosition}`);
         // Get player's active tickets
         const ticketsQuery = `
@@ -331,7 +344,7 @@ const getQueueStatus = async (req, res) => {
       WHERE player_id = $1 AND status = 'in-queue'
       ORDER BY ticket_number ASC
     `;
-        const ticketsResult = await db_1.pool.query(ticketsQuery, [playerId]);
+        const ticketsResult = yield db_1.pool.query(ticketsQuery, [playerId]);
         const playerTickets = ticketsResult.rows;
         const response = {
             success: true,
@@ -347,5 +360,5 @@ const getQueueStatus = async (req, res) => {
             message: "An error occurred while fetching queue status",
         });
     }
-};
+});
 exports.getQueueStatus = getQueueStatus;

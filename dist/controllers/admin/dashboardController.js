@@ -1,10 +1,22 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteEventLocation = exports.addEventLocation = exports.getSettings = exports.deleteStaff = exports.editStaff = exports.addStaff = exports.getStaffManagement = exports.getDashboard = void 0;
 const db_1 = require("../../config/db");
-const bcryptjs_1 = require("bcryptjs");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 // Display admin dashboard
-const getDashboard = async (req, res) => {
+const getDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this page
         if (!req.session.user ||
@@ -25,7 +37,7 @@ const getDashboard = async (req, res) => {
         try {
             // Get total players
             const playersQuery = "SELECT COUNT(*) as count FROM players";
-            const playersResult = await db_1.pool.query(playersQuery);
+            const playersResult = yield db_1.pool.query(playersQuery);
             stats.totalPlayers = parseInt(playersResult.rows[0].count) || 50; // Fallback to 50 if query fails
         }
         catch (e) {
@@ -42,7 +54,7 @@ const getDashboard = async (req, res) => {
         FROM transactions
         WHERE created_at >= $1
       `;
-            const kicksResult = await db_1.pool.query(kicksQuery, [today]);
+            const kicksResult = yield db_1.pool.query(kicksQuery, [today]);
             const regularKicks = parseInt(kicksResult.rows[0].total_kicks) || 0;
             // Competition kicks from game_stats (includes competition entries)
             const competitionKicksQuery = `
@@ -50,7 +62,7 @@ const getDashboard = async (req, res) => {
         FROM game_stats
         WHERE timestamp >= $1
       `;
-            const competitionKicksResult = await db_1.pool.query(competitionKicksQuery, [
+            const competitionKicksResult = yield db_1.pool.query(competitionKicksQuery, [
                 today,
             ]);
             const competitionKicks = parseInt(competitionKicksResult.rows[0].competition_kicks) || 0;
@@ -60,7 +72,7 @@ const getDashboard = async (req, res) => {
         FROM custom_competition_activity
         WHERE logged_at >= $1
       `;
-            const customCompetitionKicksResult = await db_1.pool.query(customCompetitionKicksQuery, [today]);
+            const customCompetitionKicksResult = yield db_1.pool.query(customCompetitionKicksQuery, [today]);
             const customCompetitionKicks = parseInt(customCompetitionKicksResult.rows[0].custom_kicks) || 0;
             // Total today's kicks (regular + competition + custom competition)
             stats.todayKicks =
@@ -77,7 +89,7 @@ const getDashboard = async (req, res) => {
         SELECT SUM(amount) as total_revenue
         FROM transactions
       `;
-            const revenueResult = await db_1.pool.query(revenueQuery);
+            const revenueResult = yield db_1.pool.query(revenueQuery);
             const transactionRevenue = parseFloat(revenueResult.rows[0].total_revenue) || 0;
             // Get competition revenue from custom competitions
             const competitionRevenueQuery = `
@@ -85,7 +97,7 @@ const getDashboard = async (req, res) => {
         FROM custom_competitions
         WHERE status IN ('active', 'completed')
       `;
-            const competitionRevenueResult = await db_1.pool.query(competitionRevenueQuery);
+            const competitionRevenueResult = yield db_1.pool.query(competitionRevenueQuery);
             const competitionRevenue = parseFloat(competitionRevenueResult.rows[0].competition_revenue) || 0;
             // Get revenue from competition kicks ($1 per kick from game_stats)
             const competitionKickRevenueQuery = `
@@ -93,14 +105,14 @@ const getDashboard = async (req, res) => {
         FROM game_stats
         WHERE competition_type IS NOT NULL
       `;
-            const competitionKickRevenueResult = await db_1.pool.query(competitionKickRevenueQuery);
+            const competitionKickRevenueResult = yield db_1.pool.query(competitionKickRevenueQuery);
             const competitionKickRevenue = parseFloat(competitionKickRevenueResult.rows[0].kick_revenue) || 0;
             // Get revenue from custom competition activities ($1 per kick)
             const customCompetitionKickRevenueQuery = `
         SELECT SUM(kicks_used) * 1.00 as custom_kick_revenue
         FROM custom_competition_activity
       `;
-            const customCompetitionKickRevenueResult = await db_1.pool.query(customCompetitionKickRevenueQuery);
+            const customCompetitionKickRevenueResult = yield db_1.pool.query(customCompetitionKickRevenueQuery);
             const customCompetitionKickRevenue = parseFloat(customCompetitionKickRevenueResult.rows[0].custom_kick_revenue) || 0;
             // Total revenue (transactions + competition entries + kick revenue)
             stats.totalRevenue =
@@ -122,7 +134,7 @@ const getDashboard = async (req, res) => {
         FROM queue_tickets
         WHERE status = 'in-queue'
       `;
-            const queueResult = await db_1.pool.query(queueQuery);
+            const queueResult = yield db_1.pool.query(queueQuery);
             stats.queueSize = parseInt(queueResult.rows[0].count);
         }
         catch (e) {
@@ -140,7 +152,7 @@ const getDashboard = async (req, res) => {
         ORDER BY created_at DESC
         LIMIT 1
       `;
-            const [nextTicketResult, rangeResult] = await Promise.all([
+            const [nextTicketResult, rangeResult] = yield Promise.all([
                 db_1.pool.query(nextTicketQuery),
                 db_1.pool.query(ticketRangeQuery),
             ]);
@@ -209,7 +221,7 @@ const getDashboard = async (req, res) => {
           activity_time DESC
         LIMIT 10
       `;
-            const activityResult = await db_1.pool.query(activityQuery, [today]);
+            const activityResult = yield db_1.pool.query(activityQuery, [today]);
             recentActivity = activityResult.rows;
         }
         catch (e) {
@@ -225,7 +237,7 @@ const getDashboard = async (req, res) => {
         ORDER BY start_date ASC
         LIMIT 5
       `;
-            const eventsResult = await db_1.pool.query(eventsQuery);
+            const eventsResult = yield db_1.pool.query(eventsQuery);
             upcomingEvents = eventsResult.rows;
         }
         catch (e) { }
@@ -242,10 +254,10 @@ const getDashboard = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading the admin dashboard");
         res.redirect("/");
     }
-};
+});
 exports.getDashboard = getDashboard;
 // Display staff management page
-const getStaffManagement = async (req, res) => {
+const getStaffManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this page
         if (!req.session.user ||
@@ -257,7 +269,7 @@ const getStaffManagement = async (req, res) => {
         let staff = [];
         try {
             const staffQuery = "SELECT *, CASE WHEN active = false THEN true ELSE false END as is_deactivated FROM staff ORDER BY active DESC, name";
-            const staffResult = await db_1.pool.query(staffQuery);
+            const staffResult = yield db_1.pool.query(staffQuery);
             staff = staffResult.rows;
         }
         catch (e) {
@@ -274,10 +286,10 @@ const getStaffManagement = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading staff management");
         res.redirect("/admin/dashboard");
     }
-};
+});
 exports.getStaffManagement = getStaffManagement;
 // Add new staff
-const addStaff = async (req, res) => {
+const addStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -295,7 +307,7 @@ const addStaff = async (req, res) => {
         }
         // Check if username already exists
         const checkQuery = "SELECT * FROM staff WHERE username = $1";
-        const checkResult = await db_1.pool.query(checkQuery, [username]);
+        const checkResult = yield db_1.pool.query(checkQuery, [username]);
         if (checkResult.rows.length > 0) {
             res
                 .status(400)
@@ -303,15 +315,15 @@ const addStaff = async (req, res) => {
             return;
         }
         // Hash the password before storing
-        const salt = await bcryptjs_1.default.genSalt(10);
-        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
+        const salt = yield bcryptjs_1.default.genSalt(10);
+        const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
         // Insert new staff
         const insertQuery = `
       INSERT INTO staff (name, username, password_hash, role)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-        const insertResult = await db_1.pool.query(insertQuery, [
+        const insertResult = yield db_1.pool.query(insertQuery, [
             name,
             username,
             hashedPassword,
@@ -328,10 +340,10 @@ const addStaff = async (req, res) => {
             message: "An error occurred while adding staff",
         });
     }
-};
+});
 exports.addStaff = addStaff;
 // Edit staff
-const editStaff = async (req, res) => {
+const editStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -351,7 +363,7 @@ const editStaff = async (req, res) => {
         }
         // Check if username already exists for another staff
         const checkQuery = "SELECT * FROM staff WHERE username = $1 AND id != $2";
-        const checkResult = await db_1.pool.query(checkQuery, [username, id]);
+        const checkResult = yield db_1.pool.query(checkQuery, [username, id]);
         if (checkResult.rows.length > 0) {
             res
                 .status(400)
@@ -363,8 +375,8 @@ const editStaff = async (req, res) => {
         let params = [];
         if (password) {
             // Hash the password before storing
-            const salt = await bcryptjs_1.default.genSalt(10);
-            const hashedPassword = await bcryptjs_1.default.hash(password, salt);
+            const salt = yield bcryptjs_1.default.genSalt(10);
+            const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
             updateQuery = `
         UPDATE staff
         SET name = $1, username = $2, password_hash = $3, role = $4
@@ -382,7 +394,7 @@ const editStaff = async (req, res) => {
       `;
             params = [name, username, role, id];
         }
-        const updateResult = await db_1.pool.query(updateQuery, params);
+        const updateResult = yield db_1.pool.query(updateQuery, params);
         const updatedStaff = updateResult.rows[0];
         req.flash("success_msg", "Staff member updated successfully");
         res.redirect("/admin/staff");
@@ -394,10 +406,10 @@ const editStaff = async (req, res) => {
             message: "An error occurred while editing staff",
         });
     }
-};
+});
 exports.editStaff = editStaff;
 // Delete staff member
-const deleteStaff = async (req, res) => {
+const deleteStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -413,7 +425,7 @@ const deleteStaff = async (req, res) => {
         }
         // Check if staff member exists
         const checkQuery = `SELECT * FROM staff WHERE id = $1`;
-        const checkResult = await db_1.pool.query(checkQuery, [id]);
+        const checkResult = yield db_1.pool.query(checkQuery, [id]);
         if (checkResult.rows.length === 0) {
             req.flash("error_msg", "Staff member not found");
             return res.redirect("/admin/staff");
@@ -422,7 +434,7 @@ const deleteStaff = async (req, res) => {
         // Prevent deletion of the last admin
         if (staffMember.role === "admin") {
             const adminCountQuery = `SELECT COUNT(*) as count FROM staff WHERE role = 'admin' AND active = true`;
-            const adminCountResult = await db_1.pool.query(adminCountQuery);
+            const adminCountResult = yield db_1.pool.query(adminCountQuery);
             const adminCount = parseInt(adminCountResult.rows[0].count);
             if (adminCount <= 1) {
                 req.flash("error_msg", "Cannot deactivate the last active admin user");
@@ -430,17 +442,17 @@ const deleteStaff = async (req, res) => {
             }
         }
         // Handle staff deactivation (soft deletion) with transaction preservation
-        const client = await db_1.pool.connect();
+        const client = yield db_1.pool.connect();
         try {
-            await client.query("BEGIN");
+            yield client.query("BEGIN");
             // Deactivate the staff account instead of deleting
             // This preserves all transaction history and maintains referential integrity
-            await client.query(`UPDATE staff SET active = false, updated_at = NOW() WHERE id = $1`, [id]);
-            await client.query("COMMIT");
+            yield client.query(`UPDATE staff SET active = false, updated_at = NOW() WHERE id = $1`, [id]);
+            yield client.query("COMMIT");
             req.flash("success_msg", `Staff member "${staffMember.name}" has been deactivated. They can no longer log in, but their transaction history is preserved for reports.`);
         }
         catch (error) {
-            await client.query("ROLLBACK");
+            yield client.query("ROLLBACK");
             throw error;
         }
         finally {
@@ -453,10 +465,10 @@ const deleteStaff = async (req, res) => {
         req.flash("error_msg", "An error occurred while deleting staff member");
         res.redirect("/admin/staff");
     }
-};
+});
 exports.deleteStaff = deleteStaff;
 // Display event locations page
-const getSettings = async (req, res) => {
+const getSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this page
         if (!req.session.user ||
@@ -472,7 +484,7 @@ const getSettings = async (req, res) => {
         WHERE end_date >= CURRENT_DATE 
         ORDER BY start_date DESC
       `;
-            const locationsResult = await db_1.pool.query(locationsQuery);
+            const locationsResult = yield db_1.pool.query(locationsQuery);
             locations = locationsResult.rows;
         }
         catch (e) { }
@@ -487,10 +499,10 @@ const getSettings = async (req, res) => {
         req.flash("error_msg", "An error occurred while loading settings");
         res.redirect("/admin/dashboard");
     }
-};
+});
 exports.getSettings = getSettings;
 // Add event location
-const addEventLocation = async (req, res) => {
+const addEventLocation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -517,7 +529,7 @@ const addEventLocation = async (req, res) => {
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
-        await db_1.pool.query(insertQuery, [
+        yield db_1.pool.query(insertQuery, [
             name,
             address,
             startDate,
@@ -534,10 +546,10 @@ const addEventLocation = async (req, res) => {
         req.flash("error_msg", "An error occurred while adding event location");
         res.redirect("/admin/event-locations");
     }
-};
+});
 exports.addEventLocation = addEventLocation;
 // Delete event location
-const deleteEventLocation = async (req, res) => {
+const deleteEventLocation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Only allow admin to access this API
         if (!req.session.user ||
@@ -548,7 +560,7 @@ const deleteEventLocation = async (req, res) => {
         const { id } = req.params;
         // Delete location
         const deleteQuery = "DELETE FROM event_locations WHERE id = $1";
-        await db_1.pool.query(deleteQuery, [id]);
+        yield db_1.pool.query(deleteQuery, [id]);
         req.flash("success_msg", "Event location deleted successfully");
         res.redirect("/admin/event-locations");
     }
@@ -557,5 +569,5 @@ const deleteEventLocation = async (req, res) => {
         req.flash("error_msg", "An error occurred while deleting event location");
         res.redirect("/admin/event-locations");
     }
-};
+});
 exports.deleteEventLocation = deleteEventLocation;

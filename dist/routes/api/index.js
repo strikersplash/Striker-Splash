@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const router = express.Router();
+const router = express_1.default.Router();
 // Test route to verify API is working
 router.get("/test", (req, res) => {
     res.json({ message: "API is working", timestamp: new Date().toISOString() });
