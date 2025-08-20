@@ -140,13 +140,13 @@ app.use((req, res, next) => {
     if (req.session.user && req.session.serverStartTime) {
         // If session has a server start time that's different from current, invalidate session
         if (req.session.serverStartTime !== exports.SERVER_START_TIME) {
-            console.log('Invalidating session due to server restart');
+            console.log("Invalidating session due to server restart");
             req.session.destroy((err) => {
                 if (err) {
-                    console.error('Error destroying session:', err);
+                    console.error("Error destroying session:", err);
                 }
             });
-            return res.redirect('/auth/login');
+            return res.redirect("/auth/login");
         }
     }
     next();
