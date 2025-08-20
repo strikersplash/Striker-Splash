@@ -135,6 +135,22 @@ app.use((0, express_session_1.default)({
 }));
 // Flash messages
 app.use((0, express_flash_1.default)());
+// Session invalidation middleware - logout users when server restarts
+app.use((req, res, next) => {
+    if (req.session.user && req.session.serverStartTime) {
+        // If session has a server start time that's different from current, invalidate session
+        if (req.session.serverStartTime !== exports.SERVER_START_TIME) {
+            console.log('Invalidating session due to server restart');
+            req.session.destroy((err) => {
+                if (err) {
+                    console.error('Error destroying session:', err);
+                }
+            });
+            return res.redirect('/auth/login');
+        }
+    }
+    next();
+});
 // Global variables middleware
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
