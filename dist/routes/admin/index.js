@@ -13,16 +13,6 @@ const playerController_1 = require("../../controllers/admin/playerController");
 const contentController_1 = require("../../controllers/contentController");
 const salesReportsController_1 = require("../../controllers/admin/salesReportsController");
 const router = express_1.default.Router();
-// Test admin login route (for development only)
-router.get("/test-login", (req, res) => {
-    req.session.user = {
-        id: 1,
-        role: "admin",
-        username: "test_admin",
-        name: "Test Administrator",
-    };
-    res.redirect("/admin/raffle");
-});
 // Admin dashboard routes
 router.get("/dashboard", auth_1.isAdmin, dashboardController_1.getDashboard);
 // Staff management routes

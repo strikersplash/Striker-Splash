@@ -14,9 +14,9 @@ const db_1 = require("../../config/db");
 // Display player management page
 const getPlayerManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this page
+        // Allow admin or staff to access this page
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -71,9 +71,9 @@ exports.getPlayerManagement = getPlayerManagement;
 // Display player details
 const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this page
+        // Allow admin or staff to access this page
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -120,9 +120,9 @@ exports.getPlayerDetails = getPlayerDetails;
 // Update player
 const updatePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this API
+        // Allow admin or staff to access this API
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             res.status(401).json({ success: false, message: "Unauthorized access" });
             return;
         }
@@ -168,9 +168,9 @@ exports.updatePlayer = updatePlayer;
 // Update kicks balance
 const updateKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this API
+        // Allow admin or staff to access this API
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -246,9 +246,9 @@ exports.updateKicksBalance = updateKicksBalance;
 // Delete player account (soft delete - preserves transaction history for sales reports)
 const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this function
+        // Allow admin or staff to access this function
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -302,9 +302,9 @@ exports.deletePlayer = deletePlayer;
 // Restore deleted player account
 const restorePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow admin to access this function
+        // Allow admin or staff to access this function
         if (!req.session.user ||
-            req.session.user.role !== "admin") {
+            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }

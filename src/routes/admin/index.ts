@@ -52,17 +52,6 @@ import {
 
 const router = express.Router();
 
-// Test admin login route (for development only)
-router.get("/test-login", (req, res) => {
-  (req.session as any).user = {
-    id: 1,
-    role: "admin",
-    username: "test_admin",
-    name: "Test Administrator",
-  };
-  res.redirect("/admin/raffle");
-});
-
 // Admin dashboard routes
 router.get("/dashboard", isAdmin, getDashboard);
 

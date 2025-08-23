@@ -12,14 +12,6 @@ const isAuthenticated = (req, res, next) => {
 exports.isAuthenticated = isAuthenticated;
 // Check if user is admin
 const isAdmin = (req, res, next) => {
-    // For testing purposes, create a temporary admin session
-    if (!req.session.user) {
-        req.session.user = {
-            id: 1,
-            role: "admin",
-            username: "test_admin",
-        };
-    }
     if (req.session.user && req.session.user.role === "admin") {
         return next();
     }

@@ -19,15 +19,6 @@ export const isAdmin = (
   res: Response,
   next: NextFunction
 ): void => {
-  // For testing purposes, create a temporary admin session
-  if (!(req.session as any).user) {
-    (req.session as any).user = {
-      id: 1,
-      role: "admin",
-      username: "test_admin",
-    };
-  }
-
   if ((req.session as any).user && (req.session as any).user.role === "admin") {
     return next();
   }

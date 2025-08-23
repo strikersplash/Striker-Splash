@@ -117,15 +117,15 @@ app.use((0, express_session_1.default)({
         pool: sessionPool,
         tableName: "session", // Table name for sessions
         createTableIfMissing: true, // Auto-create session table
+        errorLog: console.error, // Log session store errors
     }),
     secret: process.env.SESSION_SECRET || "striker_splash_secret",
     resave: false, // Don't save session if unmodified - pgSession handles this
     saveUninitialized: false, // Don't save empty sessions - pgSession handles this
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        // For DigitalOcean App Platform, let the platform handle HTTPS
-        // Set secure to false to allow sessions to work properly
-        secure: false,
+        // For DigitalOcean App Platform with proper HTTPS handling
+        secure: process.env.NODE_ENV === "production" && process.env.TRUST_PROXY === "true",
         httpOnly: true, // Prevent client-side script access
         sameSite: "lax", // Help with cross-origin issues
     },
@@ -135,6 +135,18 @@ app.use((0, express_session_1.default)({
 }));
 // Flash messages
 app.use((0, express_flash_1.default)());
+// Debug middleware for session issues (only in production)
+if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+        if (req.path.includes('/admin/')) {
+            console.log(`[DEBUG] Admin route access: ${req.path}`);
+            console.log(`[DEBUG] Session exists: ${!!req.session.user}`);
+            console.log(`[DEBUG] User role: ${req.session.user?.role || 'none'}`);
+            console.log(`[DEBUG] Session ID: ${req.sessionID}`);
+        }
+        next();
+    });
+}
 // Session invalidation middleware - logout users when server restarts
 app.use((req, res, next) => {
     if (req.session.user && req.session.serverStartTime) {

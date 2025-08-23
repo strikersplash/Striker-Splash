@@ -10,7 +10,8 @@ export const getPlayerManagement = async (
     // Allow admin or staff to access this page
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -81,7 +82,8 @@ export const getPlayerDetails = async (
     // Allow admin or staff to access this page
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -147,7 +149,8 @@ export const updatePlayer = async (
     // Allow admin or staff to access this API
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
@@ -205,7 +208,8 @@ export const updateKicksBalance = async (
     // Allow admin or staff to access this API
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -305,7 +309,8 @@ export const deletePlayer = async (
     // Allow admin or staff to access this function
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -384,7 +389,8 @@ export const restorePlayer = async (
     // Allow admin or staff to access this function
     if (
       !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
+      ((req.session as any).user.role !== "admin" &&
+        (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
