@@ -1,4 +1,4 @@
-import { pool } from "../config/db";
+import { pool, executeQuery } from "../config/db";
 import { PoolClient } from "pg";
 
 export interface ISoloCompetition {

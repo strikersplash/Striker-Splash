@@ -5,6 +5,18 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
+// Add global error handlers to prevent server crashes
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught Exception:", error);
+  console.error("❌ Stack:", error.stack);
+  // Don't exit the process - just log the error
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  // Don't exit the process - just log the error
+});
+
 // Connect to database
 connectDB();
 

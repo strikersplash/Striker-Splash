@@ -1,4 +1,4 @@
-import { pool } from "../config/db";
+import { pool, executeQuery } from "../config/db";
 
 export default class Team {
   static async create(name: string, captainId: number): Promise<any> {
@@ -85,7 +85,7 @@ export default class Team {
   }
 
   static async getById(teamId: number): Promise<any> {
-    const result = await pool.query("SELECT * FROM teams WHERE id = $1", [
+    const result = await executeQuery("SELECT * FROM teams WHERE id = $1", [
       teamId,
     ]);
     return result.rows[0];
@@ -93,7 +93,7 @@ export default class Team {
 
   static async getAll(): Promise<any[]> {
     // Using DISTINCT ON to avoid duplicates from multiple team_stats entries
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT DISTINCT ON (t.id) t.*, 
               COALESCE(ts.total_goals, 0) as total_goals, 
               COALESCE(ts.total_attempts, 0) as total_attempts,
@@ -108,7 +108,7 @@ export default class Team {
   }
 
   static async getMembers(teamId: number): Promise<any[]> {
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT tm.*, p.name, p.residence, p.gender, p.age_group,
         (SELECT SUM(gs.goals) FROM game_stats gs WHERE gs.player_id = p.id AND gs.team_play = TRUE) as goals
        FROM team_members tm
@@ -122,7 +122,7 @@ export default class Team {
 
   static async addMember(teamId: number, playerId: number): Promise<boolean> {
     // Get team's maximum size
-    const teamResult = await pool.query(
+    const teamResult = await executeQuery(
       "SELECT team_size FROM teams WHERE id = $1",
       [teamId]
     );
@@ -134,7 +134,7 @@ export default class Team {
     const maxMembers = teamResult.rows[0].team_size;
 
     // Check if team has reached capacity
-    const countResult = await pool.query(
+    const countResult = await executeQuery(
       `SELECT COUNT(*) FROM team_members tm 
        JOIN players p ON tm.player_id = p.id 
        WHERE tm.team_id = $1 AND p.deleted_at IS NULL`,
@@ -146,7 +146,7 @@ export default class Team {
     }
 
     // Check if player is already in a team - REMOVED: Allow multiple team memberships
-    // const playerTeamResult = await pool.query(
+    // const playerTeamResult = await executeQuery(
     //   "SELECT * FROM team_members WHERE player_id = $1",
     //   [playerId]
     // );
@@ -155,7 +155,7 @@ export default class Team {
     //   return false;
     // }
 
-    await pool.query(
+    await executeQuery(
       "INSERT INTO team_members (team_id, player_id) VALUES ($1, $2)",
       [teamId, playerId]
     );
@@ -165,14 +165,14 @@ export default class Team {
 
   static async getTeamStats(teamId: number): Promise<any> {
     // Get only global team stats (without competition_id)
-    const result = await pool.query(
+    const result = await executeQuery(
       "SELECT * FROM team_stats WHERE team_id = $1 AND competition_id IS NULL",
       [teamId]
     );
 
     // If no global stats exist, calculate from custom_competition_activity
     if (!result.rows.length) {
-      const activityResult = await pool.query(
+      const activityResult = await executeQuery(
         `SELECT 
           SUM(cca.goals) as total_goals, 
           SUM(cca.kicks_used) as total_attempts 
@@ -188,7 +188,7 @@ export default class Team {
 
   static async updateTeamStats(teamId: number): Promise<void> {
     // Get all team members
-    const membersResult = await pool.query(
+    const membersResult = await executeQuery(
       "SELECT player_id FROM team_members WHERE team_id = $1",
       [teamId]
     );
@@ -197,10 +197,10 @@ export default class Team {
       return;
     }
 
-    const playerIds = membersResult.rows.map((row) => row.player_id);
+    const playerIds = membersResult.rows.map((row: any) => row.player_id);
 
     // Calculate team stats - only count team_play=true
-    const statsResult = await pool.query(
+    const statsResult = await executeQuery(
       `SELECT 
         SUM(gs.goals) as total_goals,
         COUNT(gs.id) * 5 as total_attempts
@@ -212,7 +212,7 @@ export default class Team {
     const stats = statsResult.rows[0];
 
     // Update team stats
-    await pool.query(
+    await executeQuery(
       `UPDATE team_stats
        SET total_goals = $1, total_attempts = $2, last_updated = CURRENT_TIMESTAMP
        WHERE team_id = $3`,
@@ -232,7 +232,7 @@ export default class Team {
     await this.updateTeamStats(team1Id);
     await this.updateTeamStats(team2Id);
 
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT 
         t.id, t.name, ts.total_goals, ts.total_attempts,
         CASE WHEN ts.total_attempts = 0 THEN 0
@@ -247,7 +247,7 @@ export default class Team {
   }
 
   static async getPlayerTeam(playerId: number): Promise<any> {
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT t.* 
        FROM teams t
        JOIN team_members tm ON t.id = tm.team_id
@@ -258,7 +258,7 @@ export default class Team {
   }
 
   static async getPlayerTeams(playerId: number): Promise<any[]> {
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT t.* 
        FROM teams t
        JOIN team_members tm ON t.id = tm.team_id
@@ -410,7 +410,7 @@ export default class Team {
   static async getBySlug(slug: string): Promise<any> {
     // First try to find by actual slug column if it exists
     try {
-      const result = await pool.query("SELECT * FROM teams WHERE slug = $1", [
+      const result = await executeQuery("SELECT * FROM teams WHERE slug = $1", [
         slug,
       ]);
       if (result.rows.length > 0) {
@@ -421,7 +421,7 @@ export default class Team {
     }
 
     // Fallback: find by matching generated slug from name
-    const allTeams = await pool.query("SELECT * FROM teams");
+    const allTeams = await executeQuery("SELECT * FROM teams");
     for (const team of allTeams.rows) {
       if (this.generateSlug(team.name) === slug) {
         return team;
@@ -439,7 +439,7 @@ export default class Team {
 
   // Check if player is captain of a team
   static async isCaptain(playerId: number, teamId: number): Promise<boolean> {
-    const result = await pool.query(
+    const result = await executeQuery(
       "SELECT is_captain FROM team_members WHERE player_id = $1 AND team_id = $2",
       [playerId, teamId]
     );
@@ -540,7 +540,7 @@ export default class Team {
       const isCaptain = await this.isCaptain(captainId, teamId);
       if (!isCaptain) return false;
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "UPDATE teams SET name = $1 WHERE id = $2",
         [newName, teamId]
       );
@@ -631,7 +631,7 @@ export default class Team {
       const validSizes = [3, 5, 10, 11, 18, 23];
       if (!validSizes.includes(newSize)) return false;
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "UPDATE teams SET team_size = $1 WHERE id = $2",
         [newSize, teamId]
       );
@@ -657,14 +657,14 @@ export default class Team {
       // if (existingTeam) return false;
 
       // Check if request already exists (any status)
-      const existingRequest = await pool.query(
+      const existingRequest = await executeQuery(
         "SELECT * FROM team_join_requests WHERE player_id = $1 AND team_id = $2",
         [playerId, teamId]
       );
 
       if (existingRequest.rows.length > 0) return false;
 
-      await pool.query(
+      await executeQuery(
         "INSERT INTO team_join_requests (player_id, team_id, message) VALUES ($1, $2, $3)",
         [playerId, teamId, message || null]
       );
@@ -684,7 +684,7 @@ export default class Team {
 
   // Get pending join requests for a team
   static async getJoinRequests(teamId: number): Promise<any[]> {
-    const result = await pool.query(
+    const result = await executeQuery(
       `SELECT tjr.*, p.name, p.residence, p.gender, p.age_group,
         (SELECT SUM(gs.goals) FROM game_stats gs WHERE gs.player_id = p.id) as total_goals,
         (SELECT COUNT(*) FROM game_stats gs WHERE gs.player_id = p.id) as total_games

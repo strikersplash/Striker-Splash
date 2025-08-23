@@ -1,4 +1,4 @@
-import { pool } from "../config/db";
+import { pool, executeQuery } from "../config/db";
 
 export interface IGameStat {
   id: number;
@@ -22,7 +22,7 @@ class GameStat {
   // Execute a query directly
   static async query(text: string, params: any[]): Promise<any> {
     try {
-      return await pool.query(text, params);
+      return await executeQuery(text, params);
     } catch (error) {
       console.error("Database query error:", error);
       throw error;
@@ -33,14 +33,14 @@ class GameStat {
   static async find(criteria: { player_id?: number }): Promise<IGameStat[]> {
     try {
       if (criteria.player_id) {
-        const result = await pool.query(
+        const result = await executeQuery(
           "SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC",
           [criteria.player_id]
         );
         return result.rows;
       }
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100"
       );
       return result.rows;
@@ -73,7 +73,7 @@ class GameStat {
       // Try to insert with consecutive_kicks column first, fallback if column doesn't exist
       let result;
       try {
-        result = await pool.query(
+        result = await executeQuery(
           `INSERT INTO game_stats 
            (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
@@ -99,7 +99,7 @@ class GameStat {
           console.log(
             "consecutive_kicks column not found, inserting without it"
           );
-          result = await pool.query(
+          result = await executeQuery(
             `INSERT INTO game_stats 
              (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
@@ -199,7 +199,7 @@ class GameStat {
         params.push(limit);
       }
 
-      const result = await pool.query(query, params);
+      const result = await executeQuery(query, params);
       return result.rows;
     } catch (error) {
       console.error("Error getting leaderboard:", error);
@@ -233,7 +233,7 @@ class GameStat {
           "totalSessions" DESC
       `;
 
-      const result = await pool.query(query, [startOfDay, endOfDay]);
+      const result = await executeQuery(query, [startOfDay, endOfDay]);
       return result.rows;
     } catch (error) {
       console.error("Error getting staff activity:", error);
@@ -258,7 +258,7 @@ class GameStat {
           "totalSessions" DESC
       `;
 
-      const result = await pool.query(query);
+      const result = await executeQuery(query);
       return result.rows;
     } catch (error) {
       console.error("Error getting stats by competition type:", error);
@@ -285,7 +285,7 @@ class GameStat {
           "totalSessions" DESC
       `;
 
-      const result = await pool.query(query);
+      const result = await executeQuery(query);
       return result.rows;
     } catch (error) {
       console.error("Error getting stats by age group:", error);

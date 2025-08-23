@@ -16,7 +16,7 @@ class TeamStat {
         return __awaiter(this, arguments, void 0, function* (teamId, goals, attempts = 5) {
             try {
                 console.log(`Updating team stats for team ${teamId}: +${goals} goals, +${attempts} attempts`);
-                const result = yield db_1.pool.query(`UPDATE team_stats 
+                const result = yield (0, db_1.executeQuery)(`UPDATE team_stats 
          SET total_goals = total_goals + $1, 
              total_attempts = total_attempts + $2,
              last_updated = NOW()
@@ -38,7 +38,7 @@ class TeamStat {
     static getByTeamId(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM team_stats WHERE team_id = $1", [teamId]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM team_stats WHERE team_id = $1", [teamId]);
                 return result.rows[0] || null;
             }
             catch (error) {
@@ -57,7 +57,7 @@ class TeamStat {
                     return existing;
                 }
                 // If not, create new stats
-                const result = yield db_1.pool.query(`INSERT INTO team_stats (team_id, total_goals, total_attempts) 
+                const result = yield (0, db_1.executeQuery)(`INSERT INTO team_stats (team_id, total_goals, total_attempts) 
          VALUES ($1, 0, 0) 
          RETURNING *`, [teamId]);
                 return result.rows[0] || null;

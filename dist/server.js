@@ -8,6 +8,16 @@ const db_1 = __importDefault(require("./config/db"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables
 dotenv_1.default.config();
+// Add global error handlers to prevent server crashes
+process.on("uncaughtException", (error) => {
+    console.error("❌ Uncaught Exception:", error);
+    console.error("❌ Stack:", error.stack);
+    // Don't exit the process - just log the error
+});
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+    // Don't exit the process - just log the error
+});
 // Connect to database
 (0, db_1.default)();
 // Server configuration for cloud deployment

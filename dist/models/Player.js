@@ -12,15 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../config/db");
 const bcrypt = require("bcryptjs");
 class Player {
-    // Execute a query directly
+    // Execute a query with enhanced error handling
     static query(text, params) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield db_1.pool.query(text, params);
+                return yield (0, db_1.executeQuery)(text, params);
             }
             catch (error) {
-                console.error("Database query error:", error);
-                throw error;
+                console.error("❌ Player.query error:", error);
+                // Return safe fallback instead of throwing
+                return { rows: [], rowCount: 0 };
             }
         });
     }
@@ -28,11 +29,11 @@ class Player {
     static findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [id]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL", [id]);
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error finding player by ID:", error);
+                console.error("❌ Error finding player by ID:", error);
                 return null;
             }
         });
@@ -41,13 +42,13 @@ class Player {
     static findByIdIncludeDeleted(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM players WHERE id = $1", [
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players WHERE id = $1", [
                     id,
                 ]);
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error finding player by ID (include deleted):", error);
+                console.error("❌ Error finding player by ID (include deleted):", error);
                 return null;
             }
         });
@@ -56,11 +57,11 @@ class Player {
     static findByPhone(phone) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL", [phone]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL", [phone]);
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error finding player by phone:", error);
+                console.error("❌ Error finding player by phone:", error);
                 return null;
             }
         });
@@ -69,11 +70,11 @@ class Player {
     static findByEmail(email) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM players WHERE email = $1 AND deleted_at IS NULL", [email]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players WHERE email = $1 AND deleted_at IS NULL", [email]);
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error finding player by email:", error);
+                console.error("❌ Error finding player by email:", error);
                 return null;
             }
         });
@@ -82,11 +83,11 @@ class Player {
     static findByQRHash(qrHash) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM players WHERE qr_hash = $1 AND deleted_at IS NULL", [qrHash]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players WHERE qr_hash = $1 AND deleted_at IS NULL", [qrHash]);
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error finding player by QR hash:", error);
+                console.error("❌ Error finding player by QR hash:", error);
                 return null;
             }
         });
@@ -102,7 +103,7 @@ class Player {
                     const salt = yield bcrypt.genSalt(10);
                     hashedPassword = yield bcrypt.hash(password_hash, salt);
                 }
-                const result = yield db_1.pool.query("INSERT INTO players (name, phone, email, dob, residence, city_village, qr_hash, age_group, gender, photo_path, password_hash, name_locked, name_change_count, kicks_balance, is_child_account, parent_phone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, 0, 0, $12, $13) RETURNING *", [
+                const result = yield (0, db_1.executeQuery)("INSERT INTO players (name, phone, email, dob, residence, city_village, qr_hash, age_group, gender, photo_path, password_hash, name_locked, name_change_count, kicks_balance, is_child_account, parent_phone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, 0, 0, $12, $13) RETURNING *", [
                     name,
                     phone,
                     email,
@@ -120,7 +121,7 @@ class Player {
                 return result.rows[0];
             }
             catch (error) {
-                console.error("Error creating player:", error);
+                console.error("❌ Error creating player:", error);
                 return null;
             }
         });
@@ -136,7 +137,7 @@ class Player {
                     const salt = yield bcrypt.genSalt(10);
                     hashedPassword = yield bcrypt.hash(password_hash, salt);
                 }
-                const result = yield db_1.pool.query("UPDATE players SET name = COALESCE($1, name), phone = COALESCE($2, phone), email = COALESCE($3, email), dob = COALESCE($4, dob), residence = COALESCE($5, residence), city_village = COALESCE($6, city_village), gender = COALESCE($7, gender), photo_path = COALESCE($8, photo_path), password_hash = COALESCE($9, password_hash), name_locked = COALESCE($10, name_locked), name_change_count = COALESCE($11, name_change_count), updated_at = NOW() WHERE id = $12 RETURNING *", [
+                const result = yield (0, db_1.executeQuery)("UPDATE players SET name = COALESCE($1, name), phone = COALESCE($2, phone), email = COALESCE($3, email), dob = COALESCE($4, dob), residence = COALESCE($5, residence), city_village = COALESCE($6, city_village), gender = COALESCE($7, gender), photo_path = COALESCE($8, photo_path), password_hash = COALESCE($9, password_hash), name_locked = COALESCE($10, name_locked), name_change_count = COALESCE($11, name_change_count), updated_at = NOW() WHERE id = $12 RETURNING *", [
                     name,
                     phone,
                     email,
@@ -169,15 +170,15 @@ class Player {
                 });
                 // First check current balance
                 const checkQuery = "SELECT kicks_balance FROM players WHERE id = $1";
-                const checkResult = yield db_1.pool.query(checkQuery, [id]);
+                const checkResult = yield (0, db_1.executeQuery)(checkQuery, [id]);
                 const currentBalance = ((_a = checkResult.rows[0]) === null || _a === void 0 ? void 0 : _a.kicks_balance) || 0;
                 console.log("KICKS DEBUG - Current balance:", currentBalance);
-                const result = yield db_1.pool.query("UPDATE players SET kicks_balance = kicks_balance + $1, updated_at = NOW() WHERE id = $2 RETURNING *", [amount, id]);
+                const result = yield (0, db_1.executeQuery)("UPDATE players SET kicks_balance = kicks_balance + $1, updated_at = NOW() WHERE id = $2 RETURNING *", [amount, id]);
                 const newBalance = ((_b = result.rows[0]) === null || _b === void 0 ? void 0 : _b.kicks_balance) || 0;
                 return result.rows[0] || null;
             }
             catch (error) {
-                console.error("Error updating kicks balance:", error);
+                console.error("❌ Error updating kicks balance:", error);
                 return null;
             }
         });
@@ -192,11 +193,11 @@ class Player {
     static countDocuments() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT COUNT(*) FROM players");
+                const result = yield (0, db_1.executeQuery)("SELECT COUNT(*) FROM players");
                 return parseInt(result.rows[0].count);
             }
             catch (error) {
-                console.error("Error counting players:", error);
+                console.error("❌ Error counting players:", error);
                 return 0;
             }
         });
@@ -224,7 +225,7 @@ class Player {
         ) ranked_results
         ORDER BY match_rank, name
         LIMIT 10`;
-                const result = yield db_1.pool.query(searchQuery, [
+                const result = yield (0, db_1.executeQuery)(searchQuery, [
                     cleanQuery, // For exact match
                     `${cleanQuery}%`, // For starts with
                     `${cleanQuery}`, // For exact match ILIKE
@@ -235,7 +236,7 @@ class Player {
                 return result.rows;
             }
             catch (error) {
-                console.error("Error searching players:", error);
+                console.error("❌ Error searching players:", error);
                 return [];
             }
         });
@@ -254,7 +255,7 @@ class Player {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Check if we have multiple players with the same slug
-                const result = yield db_1.pool.query("SELECT * FROM players");
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM players");
                 const players = result.rows;
                 const matchingPlayers = players.filter((player) => this.getSlug(player) === slug);
                 if (matchingPlayers.length === 0) {

@@ -72,7 +72,7 @@ class Team {
     }
     static getById(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query("SELECT * FROM teams WHERE id = $1", [
+            const result = yield (0, db_1.executeQuery)("SELECT * FROM teams WHERE id = $1", [
                 teamId,
             ]);
             return result.rows[0];
@@ -81,7 +81,7 @@ class Team {
     static getAll() {
         return __awaiter(this, void 0, void 0, function* () {
             // Using DISTINCT ON to avoid duplicates from multiple team_stats entries
-            const result = yield db_1.pool.query(`SELECT DISTINCT ON (t.id) t.*, 
+            const result = yield (0, db_1.executeQuery)(`SELECT DISTINCT ON (t.id) t.*, 
               COALESCE(ts.total_goals, 0) as total_goals, 
               COALESCE(ts.total_attempts, 0) as total_attempts,
               (SELECT COUNT(*) FROM team_members tm 
@@ -95,7 +95,7 @@ class Team {
     }
     static getMembers(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query(`SELECT tm.*, p.name, p.residence, p.gender, p.age_group,
+            const result = yield (0, db_1.executeQuery)(`SELECT tm.*, p.name, p.residence, p.gender, p.age_group,
         (SELECT SUM(gs.goals) FROM game_stats gs WHERE gs.player_id = p.id AND gs.team_play = TRUE) as goals
        FROM team_members tm
        JOIN players p ON tm.player_id = p.id
@@ -107,37 +107,37 @@ class Team {
     static addMember(teamId, playerId) {
         return __awaiter(this, void 0, void 0, function* () {
             // Get team's maximum size
-            const teamResult = yield db_1.pool.query("SELECT team_size FROM teams WHERE id = $1", [teamId]);
+            const teamResult = yield (0, db_1.executeQuery)("SELECT team_size FROM teams WHERE id = $1", [teamId]);
             if (teamResult.rows.length === 0) {
                 return false; // Team doesn't exist
             }
             const maxMembers = teamResult.rows[0].team_size;
             // Check if team has reached capacity
-            const countResult = yield db_1.pool.query(`SELECT COUNT(*) FROM team_members tm 
+            const countResult = yield (0, db_1.executeQuery)(`SELECT COUNT(*) FROM team_members tm 
        JOIN players p ON tm.player_id = p.id 
        WHERE tm.team_id = $1 AND p.deleted_at IS NULL`, [teamId]);
             if (parseInt(countResult.rows[0].count) >= maxMembers) {
                 return false;
             }
             // Check if player is already in a team - REMOVED: Allow multiple team memberships
-            // const playerTeamResult = await pool.query(
+            // const playerTeamResult = await executeQuery(
             //   "SELECT * FROM team_members WHERE player_id = $1",
             //   [playerId]
             // );
             // if (playerTeamResult.rows.length > 0) {
             //   return false;
             // }
-            yield db_1.pool.query("INSERT INTO team_members (team_id, player_id) VALUES ($1, $2)", [teamId, playerId]);
+            yield (0, db_1.executeQuery)("INSERT INTO team_members (team_id, player_id) VALUES ($1, $2)", [teamId, playerId]);
             return true;
         });
     }
     static getTeamStats(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
             // Get only global team stats (without competition_id)
-            const result = yield db_1.pool.query("SELECT * FROM team_stats WHERE team_id = $1 AND competition_id IS NULL", [teamId]);
+            const result = yield (0, db_1.executeQuery)("SELECT * FROM team_stats WHERE team_id = $1 AND competition_id IS NULL", [teamId]);
             // If no global stats exist, calculate from custom_competition_activity
             if (!result.rows.length) {
-                const activityResult = yield db_1.pool.query(`SELECT 
+                const activityResult = yield (0, db_1.executeQuery)(`SELECT 
           SUM(cca.goals) as total_goals, 
           SUM(cca.kicks_used) as total_attempts 
         FROM custom_competition_activity cca 
@@ -150,20 +150,20 @@ class Team {
     static updateTeamStats(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
             // Get all team members
-            const membersResult = yield db_1.pool.query("SELECT player_id FROM team_members WHERE team_id = $1", [teamId]);
+            const membersResult = yield (0, db_1.executeQuery)("SELECT player_id FROM team_members WHERE team_id = $1", [teamId]);
             if (membersResult.rows.length === 0) {
                 return;
             }
             const playerIds = membersResult.rows.map((row) => row.player_id);
             // Calculate team stats - only count team_play=true
-            const statsResult = yield db_1.pool.query(`SELECT 
+            const statsResult = yield (0, db_1.executeQuery)(`SELECT 
         SUM(gs.goals) as total_goals,
         COUNT(gs.id) * 5 as total_attempts
        FROM game_stats gs
        WHERE gs.player_id = ANY($1::int[]) AND gs.team_play = TRUE`, [playerIds]);
             const stats = statsResult.rows[0];
             // Update team stats
-            yield db_1.pool.query(`UPDATE team_stats
+            yield (0, db_1.executeQuery)(`UPDATE team_stats
        SET total_goals = $1, total_attempts = $2, last_updated = CURRENT_TIMESTAMP
        WHERE team_id = $3`, [stats.total_goals || 0, stats.total_attempts || 0, teamId]);
         });
@@ -181,7 +181,7 @@ class Team {
             // Update stats for both teams
             yield this.updateTeamStats(team1Id);
             yield this.updateTeamStats(team2Id);
-            const result = yield db_1.pool.query(`SELECT 
+            const result = yield (0, db_1.executeQuery)(`SELECT 
         t.id, t.name, ts.total_goals, ts.total_attempts,
         CASE WHEN ts.total_attempts = 0 THEN 0
              ELSE ts.total_goals::float / ts.total_attempts
@@ -194,7 +194,7 @@ class Team {
     }
     static getPlayerTeam(playerId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query(`SELECT t.* 
+            const result = yield (0, db_1.executeQuery)(`SELECT t.* 
        FROM teams t
        JOIN team_members tm ON t.id = tm.team_id
        WHERE tm.player_id = $1`, [playerId]);
@@ -203,7 +203,7 @@ class Team {
     }
     static getPlayerTeams(playerId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query(`SELECT t.* 
+            const result = yield (0, db_1.executeQuery)(`SELECT t.* 
        FROM teams t
        JOIN team_members tm ON t.id = tm.team_id
        WHERE tm.player_id = $1`, [playerId]);
@@ -305,7 +305,7 @@ class Team {
         return __awaiter(this, void 0, void 0, function* () {
             // First try to find by actual slug column if it exists
             try {
-                const result = yield db_1.pool.query("SELECT * FROM teams WHERE slug = $1", [
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM teams WHERE slug = $1", [
                     slug,
                 ]);
                 if (result.rows.length > 0) {
@@ -316,7 +316,7 @@ class Team {
                 // Column might not exist yet, continue with name-based lookup
             }
             // Fallback: find by matching generated slug from name
-            const allTeams = yield db_1.pool.query("SELECT * FROM teams");
+            const allTeams = yield (0, db_1.executeQuery)("SELECT * FROM teams");
             for (const team of allTeams.rows) {
                 if (this.generateSlug(team.name) === slug) {
                     return team;
@@ -333,7 +333,7 @@ class Team {
     // Check if player is captain of a team
     static isCaptain(playerId, teamId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query("SELECT is_captain FROM team_members WHERE player_id = $1 AND team_id = $2", [playerId, teamId]);
+            const result = yield (0, db_1.executeQuery)("SELECT is_captain FROM team_members WHERE player_id = $1 AND team_id = $2", [playerId, teamId]);
             return result.rows.length > 0 && result.rows[0].is_captain;
         });
     }
@@ -403,7 +403,7 @@ class Team {
                 const isCaptain = yield this.isCaptain(captainId, teamId);
                 if (!isCaptain)
                     return false;
-                const result = yield db_1.pool.query("UPDATE teams SET name = $1 WHERE id = $2", [newName, teamId]);
+                const result = yield (0, db_1.executeQuery)("UPDATE teams SET name = $1 WHERE id = $2", [newName, teamId]);
                 return result.rowCount > 0;
             }
             catch (error) {
@@ -480,7 +480,7 @@ class Team {
                 const validSizes = [3, 5, 10, 11, 18, 23];
                 if (!validSizes.includes(newSize))
                     return false;
-                const result = yield db_1.pool.query("UPDATE teams SET team_size = $1 WHERE id = $2", [newSize, teamId]);
+                const result = yield (0, db_1.executeQuery)("UPDATE teams SET team_size = $1 WHERE id = $2", [newSize, teamId]);
                 return result.rowCount > 0;
             }
             catch (error) {
@@ -498,10 +498,10 @@ class Team {
                 // const existingTeam = await this.getPlayerTeam(playerId);
                 // if (existingTeam) return false;
                 // Check if request already exists (any status)
-                const existingRequest = yield db_1.pool.query("SELECT * FROM team_join_requests WHERE player_id = $1 AND team_id = $2", [playerId, teamId]);
+                const existingRequest = yield (0, db_1.executeQuery)("SELECT * FROM team_join_requests WHERE player_id = $1 AND team_id = $2", [playerId, teamId]);
                 if (existingRequest.rows.length > 0)
                     return false;
-                yield db_1.pool.query("INSERT INTO team_join_requests (player_id, team_id, message) VALUES ($1, $2, $3)", [playerId, teamId, message || null]);
+                yield (0, db_1.executeQuery)("INSERT INTO team_join_requests (player_id, team_id, message) VALUES ($1, $2, $3)", [playerId, teamId, message || null]);
                 return true;
             }
             catch (error) {
@@ -517,7 +517,7 @@ class Team {
     // Get pending join requests for a team
     static getJoinRequests(teamId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield db_1.pool.query(`SELECT tjr.*, p.name, p.residence, p.gender, p.age_group,
+            const result = yield (0, db_1.executeQuery)(`SELECT tjr.*, p.name, p.residence, p.gender, p.age_group,
         (SELECT SUM(gs.goals) FROM game_stats gs WHERE gs.player_id = p.id) as total_goals,
         (SELECT COUNT(*) FROM game_stats gs WHERE gs.player_id = p.id) as total_games
        FROM team_join_requests tjr

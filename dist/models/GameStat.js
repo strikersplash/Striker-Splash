@@ -15,7 +15,7 @@ class GameStat {
     static query(text, params) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield db_1.pool.query(text, params);
+                return yield (0, db_1.executeQuery)(text, params);
             }
             catch (error) {
                 console.error("Database query error:", error);
@@ -28,10 +28,10 @@ class GameStat {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (criteria.player_id) {
-                    const result = yield db_1.pool.query("SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC", [criteria.player_id]);
+                    const result = yield (0, db_1.executeQuery)("SELECT * FROM game_stats WHERE player_id = $1 ORDER BY timestamp DESC", [criteria.player_id]);
                     return result.rows;
                 }
-                const result = yield db_1.pool.query("SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100");
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM game_stats ORDER BY timestamp DESC LIMIT 100");
                 return result.rows;
             }
             catch (error) {
@@ -48,7 +48,7 @@ class GameStat {
                 // Try to insert with consecutive_kicks column first, fallback if column doesn't exist
                 let result;
                 try {
-                    result = yield db_1.pool.query(`INSERT INTO game_stats 
+                    result = yield (0, db_1.executeQuery)(`INSERT INTO game_stats 
            (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket, consecutive_kicks) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
            RETURNING *`, [
@@ -70,7 +70,7 @@ class GameStat {
                     if (columnError.code === "42703") {
                         // column does not exist
                         console.log("consecutive_kicks column not found, inserting without it");
-                        result = yield db_1.pool.query(`INSERT INTO game_stats 
+                        result = yield (0, db_1.executeQuery)(`INSERT INTO game_stats 
              (player_id, goals, staff_id, location, competition_type, queue_ticket_id, requeued, first_five_kicks, player_gender, player_age_bracket) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
              RETURNING *`, [
@@ -154,7 +154,7 @@ class GameStat {
                     query += ` LIMIT $${paramIndex}`;
                     params.push(limit);
                 }
-                const result = yield db_1.pool.query(query, params);
+                const result = yield (0, db_1.executeQuery)(query, params);
                 return result.rows;
             }
             catch (error) {
@@ -187,7 +187,7 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query, [startOfDay, endOfDay]);
+                const result = yield (0, db_1.executeQuery)(query, [startOfDay, endOfDay]);
                 return result.rows;
             }
             catch (error) {
@@ -213,7 +213,7 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query);
+                const result = yield (0, db_1.executeQuery)(query);
                 return result.rows;
             }
             catch (error) {
@@ -241,7 +241,7 @@ class GameStat {
         ORDER BY 
           "totalSessions" DESC
       `;
-                const result = yield db_1.pool.query(query);
+                const result = yield (0, db_1.executeQuery)(query);
                 return result.rows;
             }
             catch (error) {

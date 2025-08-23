@@ -1,4 +1,4 @@
-import { pool } from "../config/db";
+import { pool, executeQuery } from "../config/db";
 import bcrypt = require("bcryptjs");
 
 export interface IPlayer {
@@ -24,26 +24,27 @@ export interface IPlayer {
 }
 
 class Player {
-  // Execute a query directly
+  // Execute a query with enhanced error handling
   static async query(text: string, params: any[]): Promise<any> {
     try {
-      return await pool.query(text, params);
+      return await executeQuery(text, params);
     } catch (error) {
-      console.error("Database query error:", error);
-      throw error;
+      console.error("❌ Player.query error:", error);
+      // Return safe fallback instead of throwing
+      return { rows: [], rowCount: 0 };
     }
   }
 
   // Find player by ID (excluding deleted players)
   static async findById(id: number): Promise<IPlayer | null> {
     try {
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL",
         [id]
       );
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error finding player by ID:", error);
+      console.error("❌ Error finding player by ID:", error);
       return null;
     }
   }
@@ -51,12 +52,12 @@ class Player {
   // Find player by ID including deleted players (for admin use)
   static async findByIdIncludeDeleted(id: number): Promise<IPlayer | null> {
     try {
-      const result = await pool.query("SELECT * FROM players WHERE id = $1", [
+      const result = await executeQuery("SELECT * FROM players WHERE id = $1", [
         id,
       ]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error finding player by ID (include deleted):", error);
+      console.error("❌ Error finding player by ID (include deleted):", error);
       return null;
     }
   }
@@ -64,13 +65,13 @@ class Player {
   // Find player by phone (excluding deleted players)
   static async findByPhone(phone: string): Promise<IPlayer | null> {
     try {
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL",
         [phone]
       );
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error finding player by phone:", error);
+      console.error("❌ Error finding player by phone:", error);
       return null;
     }
   }
@@ -78,13 +79,13 @@ class Player {
   // Find player by email (excluding deleted players)
   static async findByEmail(email: string): Promise<IPlayer | null> {
     try {
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM players WHERE email = $1 AND deleted_at IS NULL",
         [email]
       );
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error finding player by email:", error);
+      console.error("❌ Error finding player by email:", error);
       return null;
     }
   }
@@ -92,13 +93,13 @@ class Player {
   // Find player by QR hash (excluding deleted players)
   static async findByQRHash(qrHash: string): Promise<IPlayer | null> {
     try {
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM players WHERE qr_hash = $1 AND deleted_at IS NULL",
         [qrHash]
       );
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error finding player by QR hash:", error);
+      console.error("❌ Error finding player by QR hash:", error);
       return null;
     }
   }
@@ -138,7 +139,7 @@ class Player {
         hashedPassword = await bcrypt.hash(password_hash, salt);
       }
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "INSERT INTO players (name, phone, email, dob, residence, city_village, qr_hash, age_group, gender, photo_path, password_hash, name_locked, name_change_count, kicks_balance, is_child_account, parent_phone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, 0, 0, $12, $13) RETURNING *",
         [
           name,
@@ -159,7 +160,7 @@ class Player {
 
       return result.rows[0];
     } catch (error) {
-      console.error("Error creating player:", error);
+      console.error("❌ Error creating player:", error);
       return null;
     }
   }
@@ -190,7 +191,7 @@ class Player {
         hashedPassword = await bcrypt.hash(password_hash, salt);
       }
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "UPDATE players SET name = COALESCE($1, name), phone = COALESCE($2, phone), email = COALESCE($3, email), dob = COALESCE($4, dob), residence = COALESCE($5, residence), city_village = COALESCE($6, city_village), gender = COALESCE($7, gender), photo_path = COALESCE($8, photo_path), password_hash = COALESCE($9, password_hash), name_locked = COALESCE($10, name_locked), name_change_count = COALESCE($11, name_change_count), updated_at = NOW() WHERE id = $12 RETURNING *",
         [
           name,
@@ -228,12 +229,12 @@ class Player {
 
       // First check current balance
       const checkQuery = "SELECT kicks_balance FROM players WHERE id = $1";
-      const checkResult = await pool.query(checkQuery, [id]);
+      const checkResult = await executeQuery(checkQuery, [id]);
       const currentBalance = checkResult.rows[0]?.kicks_balance || 0;
 
       console.log("KICKS DEBUG - Current balance:", currentBalance);
 
-      const result = await pool.query(
+      const result = await executeQuery(
         "UPDATE players SET kicks_balance = kicks_balance + $1, updated_at = NOW() WHERE id = $2 RETURNING *",
         [amount, id]
       );
@@ -241,7 +242,7 @@ class Player {
       const newBalance = result.rows[0]?.kicks_balance || 0;
       return result.rows[0] || null;
     } catch (error) {
-      console.error("Error updating kicks balance:", error);
+      console.error("❌ Error updating kicks balance:", error);
       return null;
     }
   }
@@ -257,10 +258,10 @@ class Player {
   // Count all players
   static async countDocuments(): Promise<number> {
     try {
-      const result = await pool.query("SELECT COUNT(*) FROM players");
+      const result = await executeQuery("SELECT COUNT(*) FROM players");
       return parseInt(result.rows[0].count);
     } catch (error) {
-      console.error("Error counting players:", error);
+      console.error("❌ Error counting players:", error);
       return 0;
     }
   }
@@ -288,7 +289,7 @@ class Player {
         ORDER BY match_rank, name
         LIMIT 10`;
 
-      const result = await pool.query(searchQuery, [
+      const result = await executeQuery(searchQuery, [
         cleanQuery, // For exact match
         `${cleanQuery}%`, // For starts with
         `${cleanQuery}`, // For exact match ILIKE
@@ -299,7 +300,7 @@ class Player {
 
       return result.rows;
     } catch (error) {
-      console.error("Error searching players:", error);
+      console.error("❌ Error searching players:", error);
       return [];
     }
   }
@@ -318,11 +319,11 @@ class Player {
   static async findBySlug(slug: string): Promise<IPlayer | null> {
     try {
       // Check if we have multiple players with the same slug
-      const result = await pool.query("SELECT * FROM players");
+      const result = await executeQuery("SELECT * FROM players");
       const players = result.rows;
 
       const matchingPlayers = players.filter(
-        (player) => this.getSlug(player) === slug
+        (player: any) => this.getSlug(player) === slug
       );
 
       if (matchingPlayers.length === 0) {
@@ -333,7 +334,7 @@ class Player {
         // SECURITY WARNING: Multiple players with same slug detected
         console.warn(
           `SECURITY ALERT: Multiple players found with slug "${slug}":`,
-          matchingPlayers.map((p) => ({
+          matchingPlayers.map((p: any) => ({
             id: p.id,
             name: p.name,
             phone: p.phone,

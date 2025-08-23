@@ -1,4 +1,4 @@
-import { pool } from "../config/db";
+import { pool, executeQuery } from "../config/db";
 
 interface ITeamStat {
   id: number;
@@ -20,7 +20,7 @@ export default class TeamStat {
         `Updating team stats for team ${teamId}: +${goals} goals, +${attempts} attempts`
       );
 
-      const result = await pool.query(
+      const result = await executeQuery(
         `UPDATE team_stats 
          SET total_goals = total_goals + $1, 
              total_attempts = total_attempts + $2,
@@ -47,7 +47,7 @@ export default class TeamStat {
   // Get team statistics
   static async getByTeamId(teamId: number): Promise<ITeamStat | null> {
     try {
-      const result = await pool.query(
+      const result = await executeQuery(
         "SELECT * FROM team_stats WHERE team_id = $1",
         [teamId]
       );
@@ -68,7 +68,7 @@ export default class TeamStat {
       }
 
       // If not, create new stats
-      const result = await pool.query(
+      const result = await executeQuery(
         `INSERT INTO team_stats (team_id, total_goals, total_attempts) 
          VALUES ($1, 0, 0) 
          RETURNING *`,

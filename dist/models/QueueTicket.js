@@ -15,7 +15,7 @@ class QueueTicket {
     static getNextTicketNumber() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT value FROM global_counters WHERE id = $1", ["next_queue_number"]);
+                const result = yield (0, db_1.executeQuery)("SELECT value FROM global_counters WHERE id = $1", ["next_queue_number"]);
                 return result.rows[0].value;
             }
             catch (error) {
@@ -28,7 +28,7 @@ class QueueTicket {
     static incrementTicketNumber() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("UPDATE global_counters SET value = value + 1 WHERE id = $1 RETURNING value", ["next_queue_number"]);
+                const result = yield (0, db_1.executeQuery)("UPDATE global_counters SET value = value + 1 WHERE id = $1 RETURNING value", ["next_queue_number"]);
                 return result.rows[0].value;
             }
             catch (error) {
@@ -45,7 +45,7 @@ class QueueTicket {
                 // Increment and get next ticket number
                 const ticketNumber = yield QueueTicket.incrementTicketNumber();
                 // Create queue ticket
-                yield db_1.pool.query("INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6)", [
+                yield (0, db_1.executeQuery)("INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6)", [
                     ticketNumber,
                     playerId,
                     "in-queue",
@@ -68,7 +68,7 @@ class QueueTicket {
                 const { player_id, competition_type, official = true, team_play = false, } = data;
                 // Increment and get next ticket number
                 const ticketNumber = yield QueueTicket.incrementTicketNumber();
-                const result = yield db_1.pool.query("INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", [
+                const result = yield (0, db_1.executeQuery)("INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", [
                     ticketNumber,
                     player_id,
                     "in-queue",
@@ -88,7 +88,7 @@ class QueueTicket {
     static findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM queue_tickets WHERE id = $1", [id]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM queue_tickets WHERE id = $1", [id]);
                 return result.rows[0] || null;
             }
             catch (error) {
@@ -101,7 +101,7 @@ class QueueTicket {
     static findActiveByPlayerId(playerId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield db_1.pool.query("SELECT * FROM queue_tickets WHERE player_id = $1 AND status = $2 ORDER BY created_at ASC", [playerId, "in-queue"]);
+                const result = yield (0, db_1.executeQuery)("SELECT * FROM queue_tickets WHERE player_id = $1 AND status = $2 ORDER BY created_at ASC", [playerId, "in-queue"]);
                 return result.rows;
             }
             catch (error) {
@@ -127,7 +127,7 @@ class QueueTicket {
                     query =
                         "UPDATE queue_tickets SET status = $1 WHERE id = $2 RETURNING *";
                 }
-                const result = yield db_1.pool.query(query, [status, id]);
+                const result = yield (0, db_1.executeQuery)(query, [status, id]);
                 return result.rows[0] || null;
             }
             catch (error) {
@@ -141,7 +141,7 @@ class QueueTicket {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                const result = yield db_1.pool.query("SELECT MIN(ticket_number) as current_number FROM queue_tickets WHERE status = $1", ["in-queue"]);
+                const result = yield (0, db_1.executeQuery)("SELECT MIN(ticket_number) as current_number FROM queue_tickets WHERE status = $1", ["in-queue"]);
                 return ((_a = result.rows[0]) === null || _a === void 0 ? void 0 : _a.current_number) || 0;
             }
             catch (error) {
@@ -155,12 +155,12 @@ class QueueTicket {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Get all in-queue tickets
-                const tickets = yield db_1.pool.query("SELECT * FROM queue_tickets WHERE status = $1", ["in-queue"]);
+                const tickets = yield (0, db_1.executeQuery)("SELECT * FROM queue_tickets WHERE status = $1", ["in-queue"]);
                 // Update status to expired
-                const result = yield db_1.pool.query("UPDATE queue_tickets SET status = $1, expired_at = NOW() WHERE status = $2 RETURNING *", ["expired", "in-queue"]);
+                const result = yield (0, db_1.executeQuery)("UPDATE queue_tickets SET status = $1, expired_at = NOW() WHERE status = $2 RETURNING *", ["expired", "in-queue"]);
                 // Return kicks to players
                 for (const ticket of result.rows) {
-                    yield db_1.pool.query("UPDATE players SET kicks_balance = kicks_balance + 5 WHERE id = $1", [ticket.player_id]);
+                    yield (0, db_1.executeQuery)("UPDATE players SET kicks_balance = kicks_balance + 5 WHERE id = $1", [ticket.player_id]);
                 }
                 return result.rowCount;
             }

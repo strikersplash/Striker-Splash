@@ -15,7 +15,7 @@ class Shot {
     static query(text, params) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield db_1.pool.query(text, params);
+                return yield (0, db_1.executeQuery)(text, params);
             }
             catch (error) {
                 console.error('Database query error:', error);
@@ -28,10 +28,10 @@ class Shot {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (criteria.player_id) {
-                    const result = yield db_1.pool.query('SELECT * FROM shots WHERE player_id = $1 ORDER BY timestamp DESC', [criteria.player_id]);
+                    const result = yield (0, db_1.executeQuery)('SELECT * FROM shots WHERE player_id = $1 ORDER BY timestamp DESC', [criteria.player_id]);
                     return result.rows;
                 }
-                const result = yield db_1.pool.query('SELECT * FROM shots ORDER BY timestamp DESC LIMIT 100');
+                const result = yield (0, db_1.executeQuery)('SELECT * FROM shots ORDER BY timestamp DESC LIMIT 100');
                 return result.rows;
             }
             catch (error) {
@@ -45,7 +45,7 @@ class Shot {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { player_id, amount, shots_quantity, payment_status, payment_reference } = shotData;
-                const result = yield db_1.pool.query('INSERT INTO shots (player_id, amount, shots_quantity, payment_status, payment_reference) VALUES ($1, $2, $3, $4, $5) RETURNING *', [player_id, amount, shots_quantity, payment_status, payment_reference]);
+                const result = yield (0, db_1.executeQuery)('INSERT INTO shots (player_id, amount, shots_quantity, payment_status, payment_reference) VALUES ($1, $2, $3, $4, $5) RETURNING *', [player_id, amount, shots_quantity, payment_status, payment_reference]);
                 return result.rows[0];
             }
             catch (error) {
@@ -64,7 +64,7 @@ class Shot {
                 startOfDay.setHours(0, 0, 0, 0);
                 const endOfDay = new Date(targetDate);
                 endOfDay.setHours(23, 59, 59, 999);
-                const result = yield db_1.pool.query('SELECT SUM(amount) as total FROM shots WHERE payment_status = $1 AND timestamp >= $2 AND timestamp <= $3', ['completed', startOfDay, endOfDay]);
+                const result = yield (0, db_1.executeQuery)('SELECT SUM(amount) as total FROM shots WHERE payment_status = $1 AND timestamp >= $2 AND timestamp <= $3', ['completed', startOfDay, endOfDay]);
                 return parseFloat(((_a = result.rows[0]) === null || _a === void 0 ? void 0 : _a.total) || '0');
             }
             catch (error) {
@@ -90,7 +90,7 @@ class Shot {
         ORDER BY 
           date
       `;
-                const result = yield db_1.pool.query(query, ['completed', startDate, endDate]);
+                const result = yield (0, db_1.executeQuery)(query, ['completed', startDate, endDate]);
                 return result.rows;
             }
             catch (error) {
@@ -104,7 +104,7 @@ class Shot {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                const result = yield db_1.pool.query('SELECT SUM(shots_quantity) as total FROM shots WHERE player_id = $1 AND payment_status = $2', [playerId, 'completed']);
+                const result = yield (0, db_1.executeQuery)('SELECT SUM(shots_quantity) as total FROM shots WHERE player_id = $1 AND payment_status = $2', [playerId, 'completed']);
                 return parseInt(((_a = result.rows[0]) === null || _a === void 0 ? void 0 : _a.total) || '0');
             }
             catch (error) {

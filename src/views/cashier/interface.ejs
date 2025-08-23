@@ -507,14 +507,28 @@
       }, 0);
     }
 
-    // Helper function to safely get elements
+    // Helper function to safely get elements - MOVED TO TOP
     function safeGetElement(id) {
       const element = document.getElementById(id);
       if (!element) {
-        console.warn(`Element with id '${id}' not found`);
+        console.error(`❌ Element with id '${id}' not found in DOM`);
+        console.log("Available elements:", Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+        return null;
       }
       return element;
     }
+
+    // Verify HTML5QRCode library is loaded
+    if (typeof Html5Qrcode === 'undefined') {
+      console.error("❌ Html5Qrcode library not loaded! Scanner will not work.");
+      const startBtn = document.getElementById("start-scan");
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = "Scanner Library Not Loaded";
+      }
+      return;
+    }
+    console.log("✅ Html5Qrcode library loaded successfully");
 
     // User role and ID from server
     const userRole = "<%= user.role %>";
@@ -524,36 +538,52 @@
     let html5QrCode = null;
     let currentPlayerId = null;
 
-    // QR Scanner
+    // QR Scanner - INITIALIZE AFTER EVERYTHING IS READY
+    console.log("🔄 Initializing QR Scanner...");
     const startScanBtn = safeGetElement("start-scan");
     const stopScanBtn = safeGetElement("stop-scan");
 
+    if (!startScanBtn) {
+      console.error("❌ Start scan button not found! Scanner cannot be initialized.");
+      return;
+    }
+
+    console.log("✅ Scanner buttons found, attaching event listeners...");
+
     if (startScanBtn) {
       startScanBtn.addEventListener("click", function () {
+        console.log("🎯 Start scan button clicked!");
         try {
           const qrContainer = document.getElementById("qr-reader");
+          if (!qrContainer) {
+            console.error("❌ QR reader container not found!");
+            alert("QR reader container not found. Please refresh the page.");
+            return;
+          }
+          
+          console.log("📱 Initializing Html5Qrcode...");
           html5QrCode = new Html5Qrcode("qr-reader");
 
+          console.log("📹 Starting camera...");
           html5QrCode
             .start(
               { facingMode: "environment" },
               { fps: 10, qrbox: 250 },
               function onScanSuccess(decodedText) {
-                console.log("QR Code detected:", decodedText);
+                console.log("✅ QR Code detected:", decodedText);
                 if (html5QrCode) {
                   html5QrCode
                     .stop()
                     .then(function () {
-                      document
-                        .getElementById("start-scan")
-                        .classList.remove("d-none");
-                      document
-                        .getElementById("stop-scan")
-                        .classList.add("d-none");
+                      console.log("📱 Scanner stopped successfully");
+                      const startBtn = document.getElementById("start-scan");
+                      const stopBtn = document.getElementById("stop-scan");
+                      if (startBtn) startBtn.classList.remove("d-none");
+                      if (stopBtn) stopBtn.classList.add("d-none");
                       processQRCode(decodedText);
                     })
                     .catch(function (err) {
-                      console.error("Failed to stop scanner:", err);
+                      console.error("❌ Failed to stop scanner:", err);
                     });
                 }
               },
@@ -568,43 +598,49 @@
               }
             )
             .then(function () {
+              console.log("✅ Scanner started successfully");
               if (startScanBtn) startScanBtn.classList.add("d-none");
               if (stopScanBtn) stopScanBtn.classList.remove("d-none");
             })
             .catch(function (err) {
-              console.error("Failed to start scanner:", err);
+              console.error("❌ Failed to start scanner:", err);
               alert(
-                "Could not start scanner. Please check camera permissions."
+                "Could not start scanner. Please check camera permissions and ensure you're using HTTPS."
               );
             });
         } catch (err) {
-          console.error("Error initializing scanner:", err);
-          alert("Could not initialize scanner");
+          console.error("❌ Error initializing scanner:", err);
+          alert("Could not initialize scanner: " + err.message);
         }
       });
+    }
 
-      document
-        .getElementById("stop-scan")
-        .addEventListener("click", function () {
-          if (html5QrCode) {
-            html5QrCode
+    // Stop scanner button
+    if (stopScanBtn) {
+      stopScanBtn.addEventListener("click", function () {
+        console.log("🛑 Stop scan button clicked!");
+        if (html5QrCode) {
+          html5QrCode
               .stop()
               .then(function () {
+                console.log("✅ Scanner stopped successfully");
                 if (startScanBtn) startScanBtn.classList.remove("d-none");
                 if (stopScanBtn) stopScanBtn.classList.add("d-none");
               })
               .catch(function (err) {
-                console.error("Failed to stop scanner:", err);
+                console.error("❌ Failed to stop scanner:", err);
                 // Reset UI anyway
                 if (startScanBtn) startScanBtn.classList.remove("d-none");
                 if (stopScanBtn) stopScanBtn.classList.add("d-none");
               });
-          } else {
-            // Reset UI if scanner object doesn't exist
-            if (startScanBtn) startScanBtn.classList.remove("d-none");
-            if (stopScanBtn) stopScanBtn.classList.add("d-none");
-          }
-        });
+        } else {
+          console.log("⚠️ No scanner instance to stop");
+          // Reset UI if scanner object doesn't exist
+          if (startScanBtn) startScanBtn.classList.remove("d-none");
+          if (stopScanBtn) stopScanBtn.classList.add("d-none");
+        }
+      });
+    }
     } // Close the if (startScanBtn) block
 
     // Process QR code data
