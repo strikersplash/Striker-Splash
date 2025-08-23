@@ -150,13 +150,26 @@ app.use(flash());
 // Debug middleware for session issues (only in production)
 if (process.env.NODE_ENV === "production") {
   app.use((req, res, next) => {
-    if (req.path.includes("/admin/") || req.path.includes("/staff/") || req.path.includes("/cashier/") || req.path.includes("/referee/")) {
+    if (
+      req.path.includes("/admin/") ||
+      req.path.includes("/staff/") ||
+      req.path.includes("/cashier/") ||
+      req.path.includes("/referee/")
+    ) {
       console.log(`[DEBUG] Protected route access: ${req.path}`);
       console.log(`[DEBUG] Session exists: ${!!(req.session as any).user}`);
-      console.log(`[DEBUG] User role: ${(req.session as any).user?.role || 'none'}`);
-      console.log(`[DEBUG] User ID: ${(req.session as any).user?.id || 'none'}`);
+      console.log(
+        `[DEBUG] User role: ${(req.session as any).user?.role || "none"}`
+      );
+      console.log(
+        `[DEBUG] User ID: ${(req.session as any).user?.id || "none"}`
+      );
       console.log(`[DEBUG] Session ID: ${req.sessionID}`);
-      console.log(`[DEBUG] Server start time match: ${(req.session as any).serverStartTime === SERVER_START_TIME}`);
+      console.log(
+        `[DEBUG] Server start time match: ${
+          (req.session as any).serverStartTime === SERVER_START_TIME
+        }`
+      );
     }
     next();
   });

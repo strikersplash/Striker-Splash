@@ -14,14 +14,8 @@ export const createMatch = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to create matches
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const {
       name,
@@ -153,14 +147,8 @@ export const updateMatchStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to update match status
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { id } = req.params;
     const { status } = req.body;

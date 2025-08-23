@@ -37,15 +37,8 @@ export const getCompetitionSetup = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this page
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      req.flash("error_msg", "Unauthorized access");
-      return res.redirect("/auth/login");
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     res.render("staff/competition-setup", {
       title: "Competition Setup",
@@ -67,15 +60,8 @@ export const createCompetition = async (
     console.log("=== COMPETITION CREATION DEBUG ===");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-    // Only allow staff to create competitions
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const competitionData: CompetitionData = req.body;
 

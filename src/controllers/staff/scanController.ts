@@ -10,15 +10,8 @@ export const processQRScan = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { qrData } = req.body;
 
@@ -88,8 +81,8 @@ export const processQRScan = async (
         id: player.id,
         name: player.name,
         // phone: REMOVED for security
-// email: REMOVED for security
-residence: player.residence,
+        // email: REMOVED for security
+        residence: player.residence,
         city_village: player.city_village,
         gender: player.gender || "unknown",
         age_group: player.age_group,
@@ -99,7 +92,7 @@ residence: player.residence,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
         // parent_phone: REMOVED for security
-},
+      },
       activeTickets,
       todayKicks,
       hasFirstFiveToday,
@@ -119,15 +112,8 @@ export const searchPlayerByName = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { name } = req.query;
 
@@ -162,15 +148,8 @@ export const searchPlayerByName = async (
 // Log goals
 export const logGoals = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const {
       playerId,
@@ -368,15 +347,8 @@ export const skipCurrentQueue = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     // Get current queue position
     const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
@@ -440,15 +412,8 @@ export const updatePlayerName = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { playerId, name } = req.body;
 

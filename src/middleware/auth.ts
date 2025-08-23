@@ -35,7 +35,8 @@ export const isStaff = (
   if (
     (req.session as any).user &&
     ((req.session as any).user.role === "staff" ||
-      (req.session as any).user.role === "admin")
+      (req.session as any).user.role === "admin" ||
+      (req.session as any).user.role === "sales")
   ) {
     return next();
   }
@@ -119,7 +120,8 @@ export const isStaffAPI = (
   if (
     (req.session as any).user &&
     ((req.session as any).user.role === "staff" ||
-      (req.session as any).user.role === "admin")
+      (req.session as any).user.role === "admin" ||
+      (req.session as any).user.role === "sales")
   ) {
     return next();
   }
