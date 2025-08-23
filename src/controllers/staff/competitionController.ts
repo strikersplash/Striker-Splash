@@ -197,14 +197,8 @@ export const createSoloCompetition = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to create competitions
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { name, description, max_participants, scheduled_start, location } =
       req.body;
@@ -320,14 +314,8 @@ export const updateSoloCompetitionStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to update competition status
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { id } = req.params;
     const { status } = req.body;
@@ -376,14 +364,8 @@ export const addMatchParticipant = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to add participants
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { matchId, teamId, playerId } = req.body;
 
@@ -518,18 +500,8 @@ export const getCompetitionManagement = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to access competition management
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).render("system/error", {
-        title: "Unauthorized",
-        code: 401,
-        message: "Unauthorized access",
-      });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     // Get active competitions, matches, and recent activity
     const activeMatches = await Match.findByStatus("active");

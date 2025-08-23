@@ -10,14 +10,8 @@ export const logMatchKick = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to log kicks
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const {
       matchId,
@@ -187,14 +181,8 @@ export const logSoloKick = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff/admin to log kicks
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const {
       competitionId,
@@ -549,14 +537,8 @@ export const deleteKick = async (
   try {
     const { id } = req.params;
 
-    // Only allow staff/admin to delete kicks
-    if (
-      !(req.session as any).user ||
-      !["admin", "staff"].includes((req.session as any).user.role)
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const client = await pool.connect();
     try {
