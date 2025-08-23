@@ -16,7 +16,8 @@ const getPlayerManagement = (req, res) => __awaiter(void 0, void 0, void 0, func
     try {
         // Allow admin or staff to access this page
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -73,7 +74,8 @@ const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
     try {
         // Allow admin or staff to access this page
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -122,7 +124,8 @@ const updatePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         // Allow admin or staff to access this API
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             res.status(401).json({ success: false, message: "Unauthorized access" });
             return;
         }
@@ -170,7 +173,8 @@ const updateKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, funct
     try {
         // Allow admin or staff to access this API
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -248,7 +252,8 @@ const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         // Allow admin or staff to access this function
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }
@@ -304,7 +309,8 @@ const restorePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     try {
         // Allow admin or staff to access this function
         if (!req.session.user ||
-            (req.session.user.role !== "admin" && req.session.user.role !== "staff")) {
+            (req.session.user.role !== "admin" &&
+                req.session.user.role !== "staff")) {
             req.flash("error_msg", "Unauthorized access");
             return res.redirect("/auth/login");
         }

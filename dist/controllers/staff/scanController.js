@@ -21,13 +21,8 @@ const db_1 = require("../../config/db");
 const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { qrData } = req.body;
         if (!qrData) {
             res.status(400).json({ success: false, message: "QR data is required" });
@@ -113,13 +108,8 @@ exports.processQRScan = processQRScan;
 // Search player by name
 const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { name } = req.query;
         if (!name || typeof name !== "string") {
             res.status(400).json({ success: false, message: "Name is required" });
@@ -150,13 +140,8 @@ exports.searchPlayerByName = searchPlayerByName;
 // Log goals
 const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { playerId, ticketId, goals, location, competitionType, consecutiveKicks, } = req.body;
         // Validate input
         if (!playerId ||
@@ -311,13 +296,8 @@ exports.logGoals = logGoals;
 // Skip current queue position
 const skipCurrentQueue = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         // Get current queue position
         const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
         if (!currentQueuePosition) {
@@ -369,13 +349,8 @@ exports.skipCurrentQueue = skipCurrentQueue;
 // Update player name (referee only, up to 2 times per player)
 const updatePlayerName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { playerId, name } = req.body;
         // Validate input
         if (!playerId || !name) {

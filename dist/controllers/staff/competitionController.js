@@ -17,12 +17,8 @@ const db_1 = require("../../config/db");
 // ===== MATCH MANAGEMENT =====
 const createMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to create matches
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { name, match_type, team_a_id, team_b_id, scheduled_start, location, } = req.body;
         // Validate required fields
         if (!name || !match_type || !team_a_id || !team_b_id) {
@@ -130,12 +126,8 @@ const getMatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.getMatch = getMatch;
 const updateMatchStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to update match status
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { id } = req.params;
         const { status } = req.body;
         if (!["scheduled", "active", "completed", "cancelled"].includes(status)) {

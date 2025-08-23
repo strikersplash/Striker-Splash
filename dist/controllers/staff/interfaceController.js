@@ -20,13 +20,8 @@ const db_1 = require("../../config/db");
 const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        // Only allow staff to access this page
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            req.flash("error_msg", "Unauthorized access");
-            return res.redirect("/auth/login");
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         // Get competition types
         const competitionTypesResult = yield Player_1.default.query("SELECT * FROM competition_types WHERE active = TRUE", []);
         const competitionTypes = competitionTypesResult.rows;

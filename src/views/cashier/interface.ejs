@@ -548,14 +548,14 @@
     if (startScanBtn) {
       startScanBtn.addEventListener("click", function () {
         console.log("🎯 Start scan button clicked!");
-        
+
         // Check if library is loaded when button is clicked
         if (typeof Html5Qrcode === 'undefined') {
           console.error("❌ Html5Qrcode library not yet loaded!");
           alert("QR Scanner library is still loading. Please wait a moment and try again.");
           return;
         }
-        
+
         alert("Scanner button clicked! Check console for details."); // Diagnostic alert
         try {
           const qrContainer = document.getElementById("qr-reader");

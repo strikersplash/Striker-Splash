@@ -18,13 +18,8 @@ const db_1 = require("../../config/db");
 // Display name change interface
 const getNameChangeInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this page
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            req.flash("error_msg", "Unauthorized access");
-            return res.redirect("/auth/login");
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         // Get search query
         const { search } = req.query;
         // Get players if search query provided
@@ -48,13 +43,8 @@ exports.getNameChangeInterface = getNameChangeInterface;
 // Process full profile edit
 const postProfileEdit = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { playerId, name, phone, email, district, cityVillage, ageGroup, gender, } = req.body;
         // Validate input
         if (!playerId || !name || !phone || !district || !cityVillage) {
@@ -196,13 +186,8 @@ exports.postProfileEdit = postProfileEdit;
 // Process name change
 const postNameChange = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this API
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { playerId, name } = req.body;
         // Validate input
         if (!playerId || !name) {

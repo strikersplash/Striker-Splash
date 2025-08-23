@@ -14,13 +14,8 @@ const db_1 = require("../../config/db");
 // Display competition setup page
 const getCompetitionSetup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff to access this page
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            req.flash("error_msg", "Unauthorized access");
-            return res.redirect("/auth/login");
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         res.render("staff/competition-setup", {
             title: "Competition Setup",
             user: req.session.user,
@@ -38,13 +33,8 @@ const createCompetition = (req, res) => __awaiter(void 0, void 0, void 0, functi
     try {
         console.log("=== COMPETITION CREATION DEBUG ===");
         console.log("Request body:", JSON.stringify(req.body, null, 2));
-        // Only allow staff to create competitions
-        if (!req.session.user ||
-            (req.session.user.role !== "admin" &&
-                req.session.user.role !== "staff")) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const competitionData = req.body;
         // Validate required fields
         if (!competitionData.name ||
