@@ -521,12 +521,7 @@
     // Verify HTML5QRCode library is loaded
     if (typeof Html5Qrcode === 'undefined') {
       console.error("❌ Html5Qrcode library not loaded! Scanner will not work.");
-      const startBtn = document.getElementById("start-scan");
-      if (startBtn) {
-        startBtn.disabled = true;
-        startBtn.textContent = "Scanner Library Not Loaded";
-      }
-      return;
+      // Note: Scanner buttons will still work but check library when clicked
     }
     console.log("✅ Html5Qrcode library loaded successfully");
 
@@ -553,6 +548,14 @@
     if (startScanBtn) {
       startScanBtn.addEventListener("click", function () {
         console.log("🎯 Start scan button clicked!");
+        
+        // Check if library is loaded when button is clicked
+        if (typeof Html5Qrcode === 'undefined') {
+          console.error("❌ Html5Qrcode library not yet loaded!");
+          alert("QR Scanner library is still loading. Please wait a moment and try again.");
+          return;
+        }
+        
         alert("Scanner button clicked! Check console for details."); // Diagnostic alert
         try {
           const qrContainer = document.getElementById("qr-reader");
@@ -642,7 +645,6 @@
         }
       });
     }
-    } // Close the if (startScanBtn) block
 
     // Process QR code data
     function processQRCode(qrData) {
