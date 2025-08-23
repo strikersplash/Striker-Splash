@@ -553,6 +553,7 @@
     if (startScanBtn) {
       startScanBtn.addEventListener("click", function () {
         console.log("🎯 Start scan button clicked!");
+        alert("Scanner button clicked! Check console for details."); // Diagnostic alert
         try {
           const qrContainer = document.getElementById("qr-reader");
           if (!qrContainer) {

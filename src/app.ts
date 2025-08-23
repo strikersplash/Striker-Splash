@@ -132,7 +132,9 @@ app.use(
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       // For DigitalOcean App Platform with proper HTTPS handling
-      secure: process.env.NODE_ENV === "production" && process.env.TRUST_PROXY === "true",
+      secure:
+        process.env.NODE_ENV === "production" &&
+        process.env.TRUST_PROXY === "true",
       httpOnly: true, // Prevent client-side script access
       sameSite: "lax", // Help with cross-origin issues
     },
@@ -148,10 +150,12 @@ app.use(flash());
 // Debug middleware for session issues (only in production)
 if (process.env.NODE_ENV === "production") {
   app.use((req, res, next) => {
-    if (req.path.includes('/admin/')) {
+    if (req.path.includes("/admin/")) {
       console.log(`[DEBUG] Admin route access: ${req.path}`);
       console.log(`[DEBUG] Session exists: ${!!(req.session as any).user}`);
-      console.log(`[DEBUG] User role: ${(req.session as any).user?.role || 'none'}`);
+      console.log(
+        `[DEBUG] User role: ${(req.session as any).user?.role || "none"}`
+      );
       console.log(`[DEBUG] Session ID: ${req.sessionID}`);
     }
     next();
