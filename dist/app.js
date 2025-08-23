@@ -156,14 +156,9 @@ if (process.env.NODE_ENV === "production") {
 }
 // Session invalidation middleware - logout users when server restarts
 app.use((req, res, next) => {
-    if (req.session.user) {
-        // If session doesn't have serverStartTime, set it to current (for existing sessions)
-        if (!req.session.serverStartTime) {
-            console.log("Setting serverStartTime for existing session");
-            req.session.serverStartTime = exports.SERVER_START_TIME;
-        }
-        else if (req.session.serverStartTime !== exports.SERVER_START_TIME) {
-            // If session has a server start time that's different from current, invalidate session
+    if (req.session.user && req.session.serverStartTime) {
+        // If session has a server start time that's different from current, invalidate session
+        if (req.session.serverStartTime !== exports.SERVER_START_TIME) {
             console.log("Invalidating session due to server restart");
             req.session.destroy((err) => {
                 if (err) {
