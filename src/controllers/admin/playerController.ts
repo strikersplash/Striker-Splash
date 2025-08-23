@@ -7,10 +7,10 @@ export const getPlayerManagement = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this page
+    // Allow admin or staff to access this page
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -78,10 +78,10 @@ export const getPlayerDetails = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this page
+    // Allow admin or staff to access this page
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -144,10 +144,10 @@ export const updatePlayer = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this API
+    // Allow admin or staff to access this API
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
@@ -202,10 +202,10 @@ export const updateKicksBalance = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this API
+    // Allow admin or staff to access this API
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -302,10 +302,10 @@ export const deletePlayer = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this function
+    // Allow admin or staff to access this function
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
@@ -381,10 +381,10 @@ export const restorePlayer = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow admin to access this function
+    // Allow admin or staff to access this function
     if (
       !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
+      ((req.session as any).user.role !== "admin" && (req.session as any).user.role !== "staff")
     ) {
       req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
