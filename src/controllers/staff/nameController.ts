@@ -9,15 +9,8 @@ export const getNameChangeInterface = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this page
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      req.flash("error_msg", "Unauthorized access");
-      return res.redirect("/auth/login");
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     // Get search query
     const { search } = req.query;
@@ -49,15 +42,8 @@ export const postProfileEdit = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const {
       playerId,
@@ -231,15 +217,8 @@ export const postNameChange = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Only allow staff to access this API
-    if (
-      !(req.session as any).user ||
-      ((req.session as any).user.role !== "admin" &&
-        (req.session as any).user.role !== "staff")
-    ) {
-      res.status(401).json({ success: false, message: "Unauthorized access" });
-      return;
-    }
+    // Authentication is already handled by isStaff middleware
+    // No need for additional checks here
 
     const { playerId, name } = req.body;
 

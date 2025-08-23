@@ -169,15 +169,17 @@ app.use(
 app.use((0, express_flash_1.default)());
 // Debug middleware for session issues (only in production)
 if (process.env.NODE_ENV === "production") {
-  app.use((req, res, next) => {
-    if (req.path.includes("/admin/")) {
-      console.log(`[DEBUG] Admin route access: ${req.path}`);
-      console.log(`[DEBUG] Session exists: ${!!req.session.user}`);
-      console.log(`[DEBUG] User role: ${req.session.user?.role || "none"}`);
-      console.log(`[DEBUG] Session ID: ${req.sessionID}`);
-    }
-    next();
-  });
+    app.use((req, res, next) => {
+        if (req.path.includes("/admin/") || req.path.includes("/staff/") || req.path.includes("/cashier/") || req.path.includes("/referee/")) {
+            console.log(`[DEBUG] Protected route access: ${req.path}`);
+            console.log(`[DEBUG] Session exists: ${!!req.session.user}`);
+            console.log(`[DEBUG] User role: ${req.session.user?.role || 'none'}`);
+            console.log(`[DEBUG] User ID: ${req.session.user?.id || 'none'}`);
+            console.log(`[DEBUG] Session ID: ${req.sessionID}`);
+            console.log(`[DEBUG] Server start time match: ${req.session.serverStartTime === exports.SERVER_START_TIME}`);
+        }
+        next();
+    });
 }
 // Session invalidation middleware - logout users when server restarts
 app.use((req, res, next) => {
