@@ -32,12 +32,12 @@ router.post("/staff/edit/:id", auth_1.isAdmin, dashboardController_1.editStaff);
 router.post("/staff/delete/:id", auth_1.isAdmin, dashboardController_1.deleteStaff);
 // Staff duty routes have been removed
 // Player management routes
-router.get("/players", auth_1.isAdmin, playerController_1.getPlayerManagement);
-router.get("/players/:id", auth_1.isAdmin, playerController_1.getPlayerDetails);
-router.post("/players/update/:id", auth_1.isAdmin, playerController_1.updatePlayer);
-router.post("/players/update-kicks/:id", auth_1.isAdmin, playerController_1.updateKicksBalance);
-router.post("/players/delete/:id", auth_1.isAdmin, playerController_1.deletePlayer);
-router.post("/players/restore/:id", auth_1.isAdmin, playerController_1.restorePlayer);
+router.get("/players", auth_1.isStaff, playerController_1.getPlayerManagement);
+router.get("/players/:id", auth_1.isStaff, playerController_1.getPlayerDetails);
+router.post("/players/update/:id", auth_1.isStaff, playerController_1.updatePlayer);
+router.post("/players/update-kicks/:id", auth_1.isStaff, playerController_1.updateKicksBalance);
+router.post("/players/delete/:id", auth_1.isStaff, playerController_1.deletePlayer);
+router.post("/players/restore/:id", auth_1.isStaff, playerController_1.restorePlayer);
 // Ticket management routes
 router.get("/tickets", auth_1.isAdmin, ticketController_1.getTicketManagement);
 router.post("/tickets/update", auth_1.isAdmin, ticketController_1.updateNextTicket);

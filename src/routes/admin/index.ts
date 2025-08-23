@@ -1,5 +1,5 @@
 import express from "express";
-import { isAdmin } from "../../middleware/auth";
+import { isAdmin, isStaff } from "../../middleware/auth";
 import {
   getDashboard,
   getStaffManagement,
@@ -75,12 +75,12 @@ router.post("/staff/delete/:id", isAdmin, deleteStaff);
 // Staff duty routes have been removed
 
 // Player management routes
-router.get("/players", isAdmin, getPlayerManagement);
-router.get("/players/:id", isAdmin, getPlayerDetails);
-router.post("/players/update/:id", isAdmin, updatePlayer);
-router.post("/players/update-kicks/:id", isAdmin, updateKicksBalance);
-router.post("/players/delete/:id", isAdmin, deletePlayer);
-router.post("/players/restore/:id", isAdmin, restorePlayer);
+router.get("/players", isStaff, getPlayerManagement);
+router.get("/players/:id", isStaff, getPlayerDetails);
+router.post("/players/update/:id", isStaff, updatePlayer);
+router.post("/players/update-kicks/:id", isStaff, updateKicksBalance);
+router.post("/players/delete/:id", isStaff, deletePlayer);
+router.post("/players/restore/:id", isStaff, restorePlayer);
 
 // Ticket management routes
 router.get("/tickets", isAdmin, getTicketManagement);
