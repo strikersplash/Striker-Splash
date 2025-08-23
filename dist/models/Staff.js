@@ -16,7 +16,7 @@ class Staff {
     static query(text, params) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield (0, db_1.executeQuery)(text, params);
+                return yield db_1.pool.query(text, params);
             }
             catch (error) {
                 console.error("Database query error:", error);
@@ -28,7 +28,7 @@ class Staff {
     static findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield (0, db_1.executeQuery)("SELECT * FROM staff WHERE id = $1", [
+                const result = yield db_1.pool.query("SELECT * FROM staff WHERE id = $1", [
                     id,
                 ]);
                 return result.rows[0] || null;
@@ -44,7 +44,7 @@ class Staff {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (criteria.username) {
-                    const result = yield (0, db_1.executeQuery)("SELECT * FROM staff WHERE username = $1", [criteria.username]);
+                    const result = yield db_1.pool.query("SELECT * FROM staff WHERE username = $1", [criteria.username]);
                     return result.rows[0] || null;
                 }
                 return null;
@@ -63,7 +63,7 @@ class Staff {
                 // Hash password
                 const salt = yield bcrypt.genSalt(10);
                 const password_hash = yield bcrypt.hash(password, salt);
-                const result = yield (0, db_1.executeQuery)("INSERT INTO staff (username, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING *", [username, password_hash, name, role]);
+                const result = yield db_1.pool.query("INSERT INTO staff (username, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING *", [username, password_hash, name, role]);
                 return result.rows[0];
             }
             catch (error) {
@@ -82,7 +82,7 @@ class Staff {
     static find() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield (0, db_1.executeQuery)("SELECT id, username, name, role, created_at, updated_at FROM staff");
+                const result = yield db_1.pool.query("SELECT id, username, name, role, created_at, updated_at FROM staff");
                 return result.rows;
             }
             catch (error) {
@@ -95,7 +95,7 @@ class Staff {
     static countDocuments() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield (0, db_1.executeQuery)("SELECT COUNT(*) FROM staff");
+                const result = yield db_1.pool.query("SELECT COUNT(*) FROM staff");
                 return parseInt(result.rows[0].count);
             }
             catch (error) {

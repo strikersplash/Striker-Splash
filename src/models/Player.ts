@@ -1,4 +1,4 @@
-import { pool, executeQuery } from "../config/db";
+import { pool } from "../config/db";
 import bcrypt = require("bcryptjs");
 
 export interface IPlayer {
@@ -27,18 +27,17 @@ class Player {
   // Execute a query with enhanced error handling
   static async query(text: string, params: any[]): Promise<any> {
     try {
-      return await executeQuery(text, params);
+      return await pool.query(text, params);
     } catch (error) {
       console.error("❌ Player.query error:", error);
-      // Return safe fallback instead of throwing
-      return { rows: [], rowCount: 0 };
+      throw error;
     }
   }
 
   // Find player by ID (excluding deleted players)
   static async findById(id: number): Promise<IPlayer | null> {
     try {
-      const result = await executeQuery(
+      const result = await pool.query(
         "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL",
         [id]
       );
@@ -52,7 +51,7 @@ class Player {
   // Find player by ID including deleted players (for admin use)
   static async findByIdIncludeDeleted(id: number): Promise<IPlayer | null> {
     try {
-      const result = await executeQuery("SELECT * FROM players WHERE id = $1", [
+      const result = await pool.query("SELECT * FROM players WHERE id = $1", [
         id,
       ]);
       return result.rows[0] || null;
@@ -65,7 +64,7 @@ class Player {
   // Find player by phone (excluding deleted players)
   static async findByPhone(phone: string): Promise<IPlayer | null> {
     try {
-      const result = await executeQuery(
+      const result = await pool.query(
         "SELECT * FROM players WHERE phone = $1 AND deleted_at IS NULL",
         [phone]
       );
@@ -79,7 +78,7 @@ class Player {
   // Find player by email (excluding deleted players)
   static async findByEmail(email: string): Promise<IPlayer | null> {
     try {
-      const result = await executeQuery(
+      const result = await pool.query(
         "SELECT * FROM players WHERE email = $1 AND deleted_at IS NULL",
         [email]
       );
@@ -93,7 +92,7 @@ class Player {
   // Find player by QR hash (excluding deleted players)
   static async findByQRHash(qrHash: string): Promise<IPlayer | null> {
     try {
-      const result = await executeQuery(
+      const result = await pool.query(
         "SELECT * FROM players WHERE qr_hash = $1 AND deleted_at IS NULL",
         [qrHash]
       );
@@ -139,7 +138,7 @@ class Player {
         hashedPassword = await bcrypt.hash(password_hash, salt);
       }
 
-      const result = await executeQuery(
+      const result = await pool.query(
         "INSERT INTO players (name, phone, email, dob, residence, city_village, qr_hash, age_group, gender, photo_path, password_hash, name_locked, name_change_count, kicks_balance, is_child_account, parent_phone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, 0, 0, $12, $13) RETURNING *",
         [
           name,
@@ -191,7 +190,7 @@ class Player {
         hashedPassword = await bcrypt.hash(password_hash, salt);
       }
 
-      const result = await executeQuery(
+      const result = await pool.query(
         "UPDATE players SET name = COALESCE($1, name), phone = COALESCE($2, phone), email = COALESCE($3, email), dob = COALESCE($4, dob), residence = COALESCE($5, residence), city_village = COALESCE($6, city_village), gender = COALESCE($7, gender), photo_path = COALESCE($8, photo_path), password_hash = COALESCE($9, password_hash), name_locked = COALESCE($10, name_locked), name_change_count = COALESCE($11, name_change_count), updated_at = NOW() WHERE id = $12 RETURNING *",
         [
           name,
@@ -229,12 +228,12 @@ class Player {
 
       // First check current balance
       const checkQuery = "SELECT kicks_balance FROM players WHERE id = $1";
-      const checkResult = await executeQuery(checkQuery, [id]);
+      const checkResult = await pool.query(checkQuery, [id]);
       const currentBalance = checkResult.rows[0]?.kicks_balance || 0;
 
       console.log("KICKS DEBUG - Current balance:", currentBalance);
 
-      const result = await executeQuery(
+      const result = await pool.query(
         "UPDATE players SET kicks_balance = kicks_balance + $1, updated_at = NOW() WHERE id = $2 RETURNING *",
         [amount, id]
       );
@@ -258,7 +257,7 @@ class Player {
   // Count all players
   static async countDocuments(): Promise<number> {
     try {
-      const result = await executeQuery("SELECT COUNT(*) FROM players");
+      const result = await pool.query("SELECT COUNT(*) FROM players");
       return parseInt(result.rows[0].count);
     } catch (error) {
       console.error("❌ Error counting players:", error);
@@ -289,7 +288,7 @@ class Player {
         ORDER BY match_rank, name
         LIMIT 10`;
 
-      const result = await executeQuery(searchQuery, [
+      const result = await pool.query(searchQuery, [
         cleanQuery, // For exact match
         `${cleanQuery}%`, // For starts with
         `${cleanQuery}`, // For exact match ILIKE
@@ -319,7 +318,7 @@ class Player {
   static async findBySlug(slug: string): Promise<IPlayer | null> {
     try {
       // Check if we have multiple players with the same slug
-      const result = await executeQuery("SELECT * FROM players");
+      const result = await pool.query("SELECT * FROM players");
       const players = result.rows;
 
       const matchingPlayers = players.filter(
