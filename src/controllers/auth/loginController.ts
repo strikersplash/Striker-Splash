@@ -76,6 +76,14 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
         console.log("[LOGIN] Staff session saved", {
           sessionID: req.sessionID,
         });
+        if (process.env.AUTH_DEBUG === "true") {
+          console.log("[AUTH_DEBUG] Redirecting player after login", {
+            path: "/player/dashboard",
+            user: (req.session as any).user,
+            serverStartTime: (req.session as any).serverStartTime,
+            currentServerStartTime: SERVER_START_TIME,
+          });
+        }
         req.flash("success_msg", `Welcome back, ${staff.name}`);
 
         // Check if there's a return URL stored in the session

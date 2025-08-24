@@ -24,7 +24,17 @@ const router = express.Router();
 router.get("/api/queue-status", isAuthenticated, getQueueStatus);
 
 // Player routes
-router.get("/dashboard/:playerSlug?", isAuthenticated, getDashboard);
+router.get("/dashboard/:playerSlug?", (req, res, next) => {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.log("[AUTH_DEBUG] /player/dashboard route hit", {
+      sessionID: (req as any).sessionID,
+      hasUser: !!(req.session as any)?.user,
+      user: (req.session as any)?.user,
+      serverStartTime: (req.session as any)?.serverStartTime,
+    });
+  }
+  next();
+}, isAuthenticated, getDashboard);
 router.get("/edit-profile", isAuthenticated, getEditProfile);
 router.post("/update-profile", isAuthenticated, updateProfile);
 router.get("/download-qr", isAuthenticated, downloadQR);

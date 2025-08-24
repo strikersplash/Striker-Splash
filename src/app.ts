@@ -191,6 +191,23 @@ app.use((req, res, next) => {
       !(req.session as any).serverStartTime ||
       (req.session as any).serverStartTime !== SERVER_START_TIME
     ) {
+      if (process.env.AUTH_DEBUG === "true") {
+        console.log("[AUTH_DEBUG] Session invalidation check", {
+          path: req.path,
+          user: (req.session as any).user,
+          storedServerStartTime: (req.session as any).serverStartTime,
+          currentServerStartTime: SERVER_START_TIME,
+          reason: !(req.session as any).serverStartTime
+            ? "missing"
+            : "mismatch",
+          disableFlag: process.env.DISABLE_SESSION_RESTART_INVALIDATION ===
+            "true",
+        });
+      }
+      // Allow disabling invalidation via env for debugging
+      if (process.env.DISABLE_SESSION_RESTART_INVALIDATION === "true") {
+        return next();
+      }
       console.log(
         "Invalidating session due to server restart or missing serverStartTime"
       );
