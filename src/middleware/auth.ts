@@ -6,6 +6,15 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ): void => {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.log("[AUTH_DEBUG] isAuthenticated check", {
+      path: req.path,
+      hasSession: !!(req.session as any),
+      hasUser: !!(req.session as any)?.user,
+      user: (req.session as any)?.user,
+      sessionID: (req as any).sessionID,
+    });
+  }
   if ((req.session as any).user) {
     return next();
   }

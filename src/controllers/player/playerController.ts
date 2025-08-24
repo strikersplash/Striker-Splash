@@ -12,6 +12,14 @@ export const getDashboard = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (process.env.AUTH_DEBUG === "true") {
+      console.log("[AUTH_DEBUG] getDashboard invoked", {
+        sessionID: (req as any).sessionID,
+        user: (req.session as any)?.user,
+        cookie: (req.session as any)?.cookie,
+        path: req.path,
+      });
+    }
     // Only allow players to access this page
     if (
       !(req.session as any).user ||

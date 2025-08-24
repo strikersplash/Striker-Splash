@@ -138,7 +138,13 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
         }
         console.log("[LOGIN] Player session saved", {
           sessionID: req.sessionID,
+          user: (req.session as any).user,
+          cookie: (req.session as any).cookie,
         });
+        // Extra debug: ensure headers not already sent
+        if (process.env.AUTH_DEBUG === "true") {
+          console.log("[AUTH_DEBUG] Redirecting player to /player/dashboard");
+        }
         req.flash("success_msg", `Welcome back, ${player.name}`);
         res.redirect("/player/dashboard");
       });
