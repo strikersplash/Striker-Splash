@@ -59,7 +59,7 @@ export const getLeaderboard = async (
     
     const result = await pool.query(query, values);
     
-    return result.rows.map(row => ({
+  return result.rows.map((row: any) => ({
       playerId: row.playerId.toString(),
       playerName: row.playerName,
       ageGroup: row.ageGroup,
