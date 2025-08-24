@@ -186,57 +186,37 @@ app.use((req, res, next) => {
   }
 
   if ((req.session as any).user) {
-    // If session doesn't have serverStartTime or it doesn't match current, invalidate session
-    if (
-      !(req.session as any).serverStartTime ||
-      (req.session as any).serverStartTime !== SERVER_START_TIME
-    ) {
+    const stored = (req.session as any).serverStartTime;
+    const mismatch = stored && stored !== SERVER_START_TIME;
+    const missing = !stored;
+    if (missing || mismatch) {
       if (process.env.AUTH_DEBUG === "true") {
-        console.log("[AUTH_DEBUG] Session invalidation check", {
+        console.log("[AUTH_DEBUG] Session timestamp adjust", {
           path: req.path,
-          user: (req.session as any).user,
-          storedServerStartTime: (req.session as any).serverStartTime,
-          currentServerStartTime: SERVER_START_TIME,
-          reason: !(req.session as any).serverStartTime
-            ? "missing"
-            : "mismatch",
-          disableFlag: process.env.DISABLE_SESSION_RESTART_INVALIDATION ===
-            "true",
-          reuseFlag: process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true",
+            user: (req.session as any).user,
+            stored,
+            current: SERVER_START_TIME,
+            missing,
+            mismatch,
+            forceInvalidate:
+              process.env.FORCE_SESSION_RESTART_INVALIDATION === "true",
+          });
+      }
+      if (process.env.FORCE_SESSION_RESTART_INVALIDATION === "true") {
+        console.log("[AUTH] Forced invalidation due to restart (flag set)");
+        req.session.destroy((err) => {
+          if (err) console.error("Error destroying session:", err);
         });
+        return res.redirect("/auth/login");
       }
-      // Allow disabling invalidation via env for debugging
-      if (process.env.DISABLE_SESSION_RESTART_INVALIDATION === "true") {
-        return next();
-      }
-      // Allow seamless reuse of existing sessions across restarts when enabled
-      if (
-        (req.session as any).serverStartTime &&
-        (req.session as any).serverStartTime !== SERVER_START_TIME &&
-        process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true"
-      ) {
-        if (process.env.AUTH_DEBUG === "true") {
-          console.log(
-            "[AUTH_DEBUG] Rebinding session to new SERVER_START_TIME instead of invalidating"
-          );
-        }
-        (req.session as any).serverStartTime = SERVER_START_TIME;
-        return req.session.save((err) => {
-          if (err) {
-            console.error("[AUTH_DEBUG] Error saving rebound session", err);
-          }
-          return next();
-        });
-      }
-      console.log(
-        "Invalidating session due to server restart or missing serverStartTime"
-      );
-      req.session.destroy((err) => {
+      // Default: bind / rebind and continue
+      (req.session as any).serverStartTime = SERVER_START_TIME;
+      return req.session.save((err) => {
         if (err) {
-          console.error("Error destroying session:", err);
+          console.error("[AUTH_DEBUG] Error saving adjusted session", err);
         }
+        return next();
       });
-      return res.redirect("/auth/login");
     }
   }
   next();
