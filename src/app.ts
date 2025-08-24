@@ -202,11 +202,31 @@ app.use((req, res, next) => {
             : "mismatch",
           disableFlag: process.env.DISABLE_SESSION_RESTART_INVALIDATION ===
             "true",
+          reuseFlag: process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true",
         });
       }
       // Allow disabling invalidation via env for debugging
       if (process.env.DISABLE_SESSION_RESTART_INVALIDATION === "true") {
         return next();
+      }
+      // Allow seamless reuse of existing sessions across restarts when enabled
+      if (
+        (req.session as any).serverStartTime &&
+        (req.session as any).serverStartTime !== SERVER_START_TIME &&
+        process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true"
+      ) {
+        if (process.env.AUTH_DEBUG === "true") {
+          console.log(
+            "[AUTH_DEBUG] Rebinding session to new SERVER_START_TIME instead of invalidating"
+          );
+        }
+        (req.session as any).serverStartTime = SERVER_START_TIME;
+        return req.session.save((err) => {
+          if (err) {
+            console.error("[AUTH_DEBUG] Error saving rebound session", err);
+          }
+          return next();
+        });
       }
       console.log(
         "Invalidating session due to server restart or missing serverStartTime"
@@ -295,6 +315,28 @@ app.use("/teams", teamsRoutes);
 app.use("/api", apiRoutes);
 app.use("/debug", debugRoutes);
 app.use("/test", testRoutes);
+
+// Session diagnostics route (no auth; enable only when AUTH_DEBUG)
+app.get("/debug/session", (req, res) => {
+  if (process.env.AUTH_DEBUG !== "true") {
+    return res.status(404).send("Not found");
+  }
+  res.json({
+    sessionID: (req as any).sessionID,
+    hasUser: !!(req.session as any)?.user,
+    user: (req.session as any)?.user,
+    serverStartTime: (req.session as any)?.serverStartTime,
+    currentServerStartTime: SERVER_START_TIME,
+    cookie: (req.session as any)?.cookie,
+    env: {
+      DISABLE_SESSION_RESTART_INVALIDATION:
+        process.env.DISABLE_SESSION_RESTART_INVALIDATION,
+      ALLOW_SESSION_REUSE_AFTER_RESTART:
+        process.env.ALLOW_SESSION_REUSE_AFTER_RESTART,
+      COOKIE_SECURE: process.env.COOKIE_SECURE,
+    },
+  });
+});
 
 // Test route for search debugging
 app.get("/test-search", async (req, res) => {

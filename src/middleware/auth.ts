@@ -28,6 +28,14 @@ export const isAdmin = (
   res: Response,
   next: NextFunction
 ): void => {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.log("[AUTH_DEBUG] isAdmin check", {
+      path: req.path,
+      user: (req.session as any)?.user,
+      hasUser: !!(req.session as any)?.user,
+      role: (req.session as any)?.user?.role,
+    });
+  }
   if ((req.session as any).user && (req.session as any).user.role === "admin") {
     return next();
   }
@@ -41,6 +49,14 @@ export const isStaff = (
   res: Response,
   next: NextFunction
 ): void => {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.log("[AUTH_DEBUG] isStaff check", {
+      path: req.path,
+      user: (req.session as any)?.user,
+      hasUser: !!(req.session as any)?.user,
+      role: (req.session as any)?.user?.role,
+    });
+  }
   if (
     (req.session as any).user &&
     ((req.session as any).user.role === "staff" ||
@@ -59,6 +75,14 @@ export const isPlayer = (
   res: Response,
   next: NextFunction
 ): void => {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.log("[AUTH_DEBUG] isPlayer check", {
+      path: req.path,
+      user: (req.session as any)?.user,
+      hasUser: !!(req.session as any)?.user,
+      role: (req.session as any)?.user?.role,
+    });
+  }
   if (
     (req.session as any).user &&
     (req.session as any).user.role === "player"
