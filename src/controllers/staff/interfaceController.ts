@@ -23,15 +23,9 @@ export const getInterface = async (
     // Get current queue position
     const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
 
-    // Get next ticket number
-    const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
-
-    const nextTicketResult = await pool.query(nextTicketQuery);
-    const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+    // Unified ticket display numbers
+    const { currentServing, lastIssued, next } =
+      await QueueTicket.getDisplayNumbers();
 
     // Get ticket information for low ticket warning using same logic as ticket management
     let ticketInfo = {
@@ -55,7 +49,7 @@ export const getInterface = async (
         const endTicket = ticketRangeSettings.end_ticket;
 
         // Calculate available tickets the same way as ticket management page
-        ticketInfo.availableTickets = Math.max(0, endTicket - nextTicket + 1);
+        ticketInfo.availableTickets = Math.max(0, endTicket - next + 1);
         ticketInfo.ticketRange = `${startTicket}-${endTicket}`;
         ticketInfo.lowTicketWarning = ticketInfo.availableTickets < 50;
       } else {
@@ -74,7 +68,9 @@ export const getInterface = async (
       title: "Staff Interface",
       competitionTypes,
       currentQueuePosition,
-      nextTicket,
+      currentServing,
+      lastTicketIssued: lastIssued,
+      nextTicket: next,
       ticketInfo,
     });
   } catch (error) {

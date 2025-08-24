@@ -106,21 +106,22 @@ const processQRScan = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 members: membersWithKicks,
             };
         }
+        // Proper response
+        res.locals.skipSanitize = true;
         res.json({
             success: true,
             player: {
                 id: player.id,
                 name: player.name,
-                // phone: REMOVED for security
-                // email: REMOVED for security
-                // residence: REMOVED for security
-                // city_village: REMOVED for security
+                phone: player.phone,
+                residence: player.residence,
+                city_village: player.city_village,
                 age_group: player.age_group,
                 photo_path: player.photo_path,
                 kicks_balance: player.kicks_balance,
                 name_change_count: player.name_change_count || 0,
                 is_child_account: player.is_child_account || false,
-                // parent_phone: REMOVED for security
+                parent_phone: player.parent_phone,
             },
             activeTickets,
             todayKicks,
@@ -187,18 +188,21 @@ const searchPlayerByPhone = (req, res) => __awaiter(void 0, void 0, void 0, func
                 members: membersWithKicks,
             };
         }
+        res.locals.skipSanitize = true;
         res.json({
             success: true,
             player: {
                 id: player.id,
                 name: player.name,
-                // phone: REMOVED for security
-                // email: REMOVED for security
-                // residence: REMOVED for security
+                phone: player.phone,
+                residence: player.residence,
+                city_village: player.city_village,
                 age_group: player.age_group,
                 photo_path: player.photo_path,
                 kicks_balance: player.kicks_balance,
                 name_change_count: player.name_change_count || 0,
+                is_child_account: player.is_child_account || false,
+                parent_phone: player.parent_phone,
             },
             activeTickets,
             todayKicks,
@@ -232,16 +236,20 @@ const searchPlayerByName = (req, res) => __awaiter(void 0, void 0, void 0, funct
         // Search for players by name (case insensitive, partial match, excluding deleted players)
         const searchResult = yield Player_1.default.query("SELECT * FROM players WHERE LOWER(name) LIKE LOWER($1) AND deleted_at IS NULL ORDER BY name LIMIT 10", ["%" + name + "%"]);
         const players = searchResult.rows;
+        res.locals.skipSanitize = true;
         res.json({
             success: true,
             players: players.map((player) => ({
                 id: player.id,
                 name: player.name,
-                // phone: REMOVED for security
-                // email: REMOVED for security
-                // residence: REMOVED for security
+                phone: player.phone,
+                residence: player.residence,
+                city_village: player.city_village,
                 age_group: player.age_group,
                 kicks_balance: player.kicks_balance,
+                photo_path: player.photo_path,
+                parent_phone: player.parent_phone,
+                is_child_account: player.is_child_account,
             })),
         });
     }
@@ -309,7 +317,8 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             res.status(404).json({ success: false, message: "Player not found" });
             return;
         }
-        // Team mode validation
+        const usingRequeue = requeue === true; // only consume stored kicks on requeue
+        // Team mode validation (balance + daily kicks only matter for requeue usage)
         if (teamPlay) {
             // Verify the team exists and the selected member is in the team
             const teamMemberResult = yield Player_1.default.query("SELECT tm.*, t.name as team_name, tm.is_captain FROM team_members tm JOIN teams t ON tm.team_id = t.id WHERE tm.team_id = $1 AND tm.player_id = $2", [parseInt(teamId), actualPlayerId]);
@@ -320,26 +329,28 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 });
                 return;
             }
-            // Get all team members for balance validation
-            const teamMembers = yield Team_1.default.getMembers(parseInt(teamId));
-            // Check if all team members have enough balance
-            const insufficientBalanceMembers = teamMembers.filter((member) => member.kicks_balance < kicksUsedInt);
-            if (insufficientBalanceMembers.length > 0) {
-                const memberNames = insufficientBalanceMembers
-                    .map((m) => m.name)
-                    .join(", ");
-                res.status(400).json({
-                    success: false,
-                    message: "Team members with insufficient balance: " + memberNames,
-                });
-                return;
+            // Only enforce stored balance / daily limits when consuming stored kicks (requeue)
+            if (usingRequeue) {
+                // Get all team members for balance validation
+                const teamMembers = yield Team_1.default.getMembers(parseInt(teamId));
+                const insufficientBalanceMembers = teamMembers.filter((member) => member.kicks_balance < kicksUsedInt);
+                if (insufficientBalanceMembers.length > 0) {
+                    const memberNames = insufficientBalanceMembers
+                        .map((m) => m.name)
+                        .join(", ");
+                    res.status(400).json({
+                        success: false,
+                        message: "Team members with insufficient balance: " + memberNames,
+                    });
+                    return;
+                }
             }
-            // Check today's kicks for the specific team member (max 3 kicks per person in team mode)
+            // Daily kicks limit (team mode) only relevant when using stored kicks
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const memberKicksResult = yield Player_1.default.query("SELECT SUM(gs.kicks_used) as total_kicks FROM game_stats gs WHERE gs.player_id = $1 AND gs.timestamp >= $2 AND gs.team_play = TRUE", [actualPlayerId, today]);
             const memberTodayKicks = parseInt(((_a = memberKicksResult.rows[0]) === null || _a === void 0 ? void 0 : _a.total_kicks) || "0");
-            if (memberTodayKicks + kicksUsedInt > 3) {
+            if (usingRequeue && memberTodayKicks + kicksUsedInt > 3) {
                 res.status(400).json({
                     success: false,
                     message: player.name +
@@ -350,8 +361,8 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 return;
             }
         }
-        // Check if player has enough kicks
-        if (player.kicks_balance < kicksUsedInt) {
+        // Individual mode balance check only when requeue (initial ticket already paid)
+        if (!teamPlay && usingRequeue && player.kicks_balance < kicksUsedInt) {
             res.status(400).json({
                 success: false,
                 message: "Player only has " +
@@ -379,24 +390,25 @@ const logGoals = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const client = yield db_1.pool.connect();
         try {
             yield client.query("BEGIN");
-            if (teamPlay) {
-                // Team mode: deduct kicks from all team members
-                const teamResult = yield client.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [actualPlayerId]);
-                const team = teamResult.rows[0];
-                const teamMembers = yield Team_1.default.getMembers(team.id);
-                // Deduct kicks from all team members
-                for (const member of teamMembers) {
-                    const memberPlayer = yield Player_1.default.findById(member.player_id);
-                    if (memberPlayer) {
-                        const newMemberBalance = Math.max(0, memberPlayer.kicks_balance - kicksUsedInt);
-                        yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newMemberBalance, member.player_id]);
+            if (usingRequeue) {
+                if (teamPlay) {
+                    // Team mode requeue: deduct kicks from all team members
+                    const teamResult = yield client.query("SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1", [actualPlayerId]);
+                    const team = teamResult.rows[0];
+                    const teamMembers = yield Team_1.default.getMembers(team.id);
+                    for (const member of teamMembers) {
+                        const memberPlayer = yield Player_1.default.findById(member.player_id);
+                        if (memberPlayer) {
+                            const newMemberBalance = Math.max(0, memberPlayer.kicks_balance - kicksUsedInt);
+                            yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newMemberBalance, member.player_id]);
+                        }
                     }
                 }
-            }
-            else {
-                // Individual mode: deduct kicks from player only
-                const newBalance = Math.max(0, player.kicks_balance - kicksUsedInt);
-                yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newBalance, actualPlayerId]);
+                else {
+                    // Individual requeue: deduct kicks from player only
+                    const newBalance = Math.max(0, player.kicks_balance - kicksUsedInt);
+                    yield client.query("UPDATE players SET kicks_balance = $1 WHERE id = $2", [newBalance, actualPlayerId]);
+                }
             }
             // 2. Mark ticket as played
             // 2. Update queue ticket status to 'played' with timestamp in Belize timezone
@@ -730,21 +742,22 @@ const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 members: membersWithKicks,
             };
         }
+        // Allow contact/location fields for referee API just like cashier
+        res.locals.skipSanitize = true;
         res.json({
             success: true,
             player: {
                 id: player.id,
                 name: player.name,
-                // phone: REMOVED for security
-                // email: REMOVED for security
-                // residence: REMOVED for security
-                // city_village: REMOVED for security
+                phone: player.phone, // exposed for referee operational use
+                residence: player.residence,
+                city_village: player.city_village,
                 age_group: player.age_group,
                 photo_path: player.photo_path,
                 kicks_balance: player.kicks_balance,
                 name_change_count: player.name_change_count || 0,
                 is_child_account: player.is_child_account || false,
-                // parent_phone: REMOVED for security
+                parent_phone: player.parent_phone,
             },
             activeTickets,
             todayKicks,

@@ -29,6 +29,8 @@ router.get("/queue/current", auth_1.isStaff, activityController_1.getCurrentQueu
 router.get("/queue/list", auth_1.isStaff, activityController_1.getQueueList);
 // Activity endpoints
 router.get("/activity/today", activityController_1.getTodaysActivity);
+// Temporary diagnostic route to validate date filtering vs timezone
+router.get("/activity/today-adjusted", activityController_1.getTodaysActivityAdjusted);
 // Public events endpoint for About Us page
 router.get("/public/events", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Request received at:", new Date().toISOString());

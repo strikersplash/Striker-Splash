@@ -17,12 +17,8 @@ const db_1 = require("../../config/db");
 // Log kicks in match competition
 const logMatchKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to log kicks
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { matchId, playerId, teamId, goals, kicksUsed, location, consecutiveKicks, notes, } = req.body;
         // Validate required fields
         if (!matchId || !playerId || !teamId || goals === undefined || !kicksUsed) {
@@ -159,12 +155,8 @@ exports.logMatchKick = logMatchKick;
 // Log kicks in solo competition
 const logSoloKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to log kicks
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { competitionId, playerId, goals, kicksUsed, location, consecutiveKicks, notes, } = req.body;
         // Validate required fields
         if (!competitionId || !playerId || goals === undefined || !kicksUsed) {
@@ -449,12 +441,8 @@ exports.getSoloKicks = getSoloKicks;
 const deleteKick = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        // Only allow staff/admin to delete kicks
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const client = yield db_1.pool.connect();
         try {
             // Get kick details before deleting for score updates

@@ -327,7 +327,7 @@
           aria-label="Close"
         ></button>
       </div>
-      <form action="/admin/players/update/<%= player.id %>" method="POST">
+  <form action="/admin/players/update/<%= player.id %>" method="POST" enctype="multipart/form-data">
         <div class="modal-body">
           <div class="mb-3">
             <label for="name" class="form-label">Full Name</label>
@@ -361,16 +361,32 @@
               required
             />
           </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="district" class="form-label">District</label>
+                <select class="form-select" id="district" name="district" required>
+                  <option value="">Select District</option>
+                  <option value="Belize" <%= player.residence === 'Belize' ? 'selected' : '' %>>Belize</option>
+                  <option value="Cayo" <%= player.residence === 'Cayo' ? 'selected' : '' %>>Cayo</option>
+                  <option value="Corozal" <%= player.residence === 'Corozal' ? 'selected' : '' %>>Corozal</option>
+                  <option value="Orange Walk" <%= player.residence === 'Orange Walk' ? 'selected' : '' %>>Orange Walk</option>
+                  <option value="Stann Creek" <%= player.residence === 'Stann Creek' ? 'selected' : '' %>>Stann Creek</option>
+                  <option value="Toledo" <%= player.residence === 'Toledo' ? 'selected' : '' %>>Toledo</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="cityVillage" class="form-label">City/Village</label>
+                <input type="text" class="form-control" id="cityVillage" name="cityVillage" placeholder="Enter city or village" value="<%= player.city_village || '' %>">
+              </div>
+            </div>
+          </div>
           <div class="mb-3">
-            <label for="residence" class="form-label">Residence</label>
-            <input
-              type="text"
-              class="form-control"
-              id="residence"
-              name="residence"
-              value="<%= player.residence || '' %>"
-              required
-            />
+            <label for="photo" class="form-label">Profile Picture</label>
+            <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+            <small class="text-muted">Leave empty to keep existing.</small>
           </div>
           <div class="mb-3">
             <label for="gender" class="form-label">Gender</label>

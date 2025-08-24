@@ -20,6 +20,45 @@ const transactionController_1 = require("../../controllers/cashier/transactionCo
 const router = express_1.default.Router();
 // API routes
 router.get("/api/search", auth_1.isCashierAPI, transactionController_1.searchPlayer);
+// Lightweight player contact info endpoint (alternate approach)
+router.get("/api/player-contact/:id", auth_1.isCashierAPI, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ success: false, message: "Invalid id" });
+        }
+        const result = yield db_1.pool.query("SELECT id, name, phone, residence, city_village, parent_phone, email FROM players WHERE id=$1 AND deleted_at IS NULL", [id]);
+        if (result.rows.length === 0) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Player not found" });
+        }
+        res.locals.skipSanitize = true;
+        res.json({ success: true, player: result.rows[0] });
+    }
+    catch (e) {
+        console.error("Player contact endpoint error", e);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}));
+// Raw search debug endpoint (returns raw DB payload) - DO NOT enable in production without auth
+router.get("/api/search-raw", auth_1.isCashierAPI, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { query } = req.query;
+        if (!query || typeof query !== "string") {
+            return res
+                .status(400)
+                .json({ success: false, message: "Search query is required" });
+        }
+        const { rows } = yield db_1.pool.query("SELECT id, name, phone, residence, city_village, parent_phone, email FROM players WHERE (name ILIKE $1 OR phone LIKE $1 OR email ILIKE $1) AND deleted_at IS NULL LIMIT 5", [`%${query}%`]);
+        res.locals.skipSanitize = true;
+        res.json({ success: true, rows });
+    }
+    catch (e) {
+        console.error("search-raw error", e);
+        res.status(500).json({ success: false, message: "Error" });
+    }
+}));
 router.get("/api/search-teams", auth_1.isCashierAPI, transactionController_1.searchTeams);
 router.post("/api/scan", auth_1.isCashierAPI, transactionController_1.processQRScan);
 router.post("/api/purchase-kicks", auth_1.isCashierAPI, transactionController_1.processKicksPurchase);

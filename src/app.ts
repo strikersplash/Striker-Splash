@@ -50,7 +50,7 @@ app.disable("view cache");
 // Middleware
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Temporarily disable CSP to test if it's blocking CSS
+    contentSecurityPolicy: false, // Temporarily disable CSP while debugging asset loading
   })
 );
 
@@ -131,12 +131,10 @@ app.use(
     saveUninitialized: false, // Don't save empty sessions - pgSession handles this
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      // For DigitalOcean App Platform with proper HTTPS handling
-      secure:
-        process.env.NODE_ENV === "production" &&
-        process.env.TRUST_PROXY === "true",
-      httpOnly: true, // Prevent client-side script access
-      sameSite: "lax", // Help with cross-origin issues
+      // Use explicit env flag; avoids forcing secure cookies on local HTTP in production mode
+      secure: process.env.COOKIE_SECURE === "true", // set COOKIE_SECURE=true ONLY on real HTTPS
+      httpOnly: true,
+      sameSite: "lax",
     },
     // Add session store options for better persistence
     rolling: true, // Reset maxAge on every request
@@ -177,10 +175,25 @@ if (process.env.NODE_ENV === "production") {
 
 // Session invalidation middleware - logout users when server restarts
 app.use((req, res, next) => {
-  if ((req.session as any).user && (req.session as any).serverStartTime) {
-    // If session has a server start time that's different from current, invalidate session
-    if ((req.session as any).serverStartTime !== SERVER_START_TIME) {
-      console.log("Invalidating session due to server restart");
+  // Skip session invalidation for auth routes and public routes
+  if (
+    req.path.startsWith("/auth/") ||
+    req.path.startsWith("/api/") ||
+    req.path === "/" ||
+    req.path.startsWith("/public/")
+  ) {
+    return next();
+  }
+
+  if ((req.session as any).user) {
+    // If session doesn't have serverStartTime or it doesn't match current, invalidate session
+    if (
+      !(req.session as any).serverStartTime ||
+      (req.session as any).serverStartTime !== SERVER_START_TIME
+    ) {
+      console.log(
+        "Invalidating session due to server restart or missing serverStartTime"
+      );
       req.session.destroy((err) => {
         if (err) {
           console.error("Error destroying session:", err);

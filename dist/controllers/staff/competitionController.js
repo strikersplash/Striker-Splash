@@ -163,12 +163,8 @@ exports.updateMatchStatus = updateMatchStatus;
 // ===== SOLO COMPETITION MANAGEMENT =====
 const createSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to create competitions
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { name, description, max_participants, scheduled_start, location } = req.body;
         // Validate required fields
         if (!name) {
@@ -262,12 +258,8 @@ const getSoloCompetition = (req, res) => __awaiter(void 0, void 0, void 0, funct
 exports.getSoloCompetition = getSoloCompetition;
 const updateSoloCompetitionStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to update competition status
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { id } = req.params;
         const { status } = req.body;
         if (!["scheduled", "active", "completed", "cancelled"].includes(status)) {
@@ -303,12 +295,8 @@ exports.updateSoloCompetitionStatus = updateSoloCompetitionStatus;
 // ===== PARTICIPANT MANAGEMENT =====
 const addMatchParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to add participants
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).json({ success: false, message: "Unauthorized access" });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         const { matchId, teamId, playerId } = req.body;
         if (!matchId || !teamId || !playerId) {
             res.status(400).json({
@@ -412,16 +400,8 @@ exports.getRecentActivity = getRecentActivity;
 // ===== VIEW CONTROLLERS =====
 const getCompetitionManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Only allow staff/admin to access competition management
-        if (!req.session.user ||
-            !["admin", "staff"].includes(req.session.user.role)) {
-            res.status(401).render("system/error", {
-                title: "Unauthorized",
-                code: 401,
-                message: "Unauthorized access",
-            });
-            return;
-        }
+        // Authentication is already handled by isStaff middleware
+        // No need for additional checks here
         // Get active competitions, matches, and recent activity
         const activeMatches = yield Match_1.Match.findByStatus("active");
         const activeSoloCompetitions = yield SoloCompetition_1.SoloCompetition.findByStatus("active");

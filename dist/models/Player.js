@@ -208,7 +208,27 @@ class Player {
                 const cleanQuery = query.trim();
                 const searchQuery = `
         SELECT * FROM (
-          SELECT *, 
+          SELECT 
+            id,
+            name,
+            phone,
+            residence,
+            city_village,
+            parent_phone,
+            email,
+            dob,
+            qr_hash,
+            age_group,
+            gender,
+            photo_path,
+            kicks_balance,
+            name_locked,
+            name_change_count,
+            is_child_account,
+            created_at,
+            updated_at,
+            deleted_at,
+            deleted_by,
             CASE 
               WHEN LOWER(name) = LOWER($1) THEN 0  -- Exact match
               WHEN LOWER(name) LIKE LOWER($2) THEN 1  -- Starts with

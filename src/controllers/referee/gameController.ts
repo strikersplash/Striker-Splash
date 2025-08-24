@@ -142,21 +142,22 @@ export const processQRScan = async (
       };
     }
 
+    // Proper response
+    (res.locals as any).skipSanitize = true;
     res.json({
       success: true,
       player: {
         id: player.id,
         name: player.name,
-        // phone: REMOVED for security
-        // email: REMOVED for security
-        // residence: REMOVED for security
-        // city_village: REMOVED for security
+        phone: player.phone,
+        residence: player.residence,
+        city_village: player.city_village,
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
-        // parent_phone: REMOVED for security
+        parent_phone: player.parent_phone,
       },
       activeTickets,
       todayKicks,
@@ -255,18 +256,21 @@ export const searchPlayerByPhone = async (
       };
     }
 
+    (res.locals as any).skipSanitize = true;
     res.json({
       success: true,
       player: {
         id: player.id,
         name: player.name,
-        // phone: REMOVED for security
-        // email: REMOVED for security
-        // residence: REMOVED for security
+        phone: player.phone,
+        residence: player.residence,
+        city_village: player.city_village,
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
         name_change_count: player.name_change_count || 0,
+        is_child_account: player.is_child_account || false,
+        parent_phone: player.parent_phone,
       },
       activeTickets,
       todayKicks,
@@ -312,16 +316,20 @@ export const searchPlayerByName = async (
 
     const players = searchResult.rows;
 
+    (res.locals as any).skipSanitize = true;
     res.json({
       success: true,
       players: players.map((player: any) => ({
         id: player.id,
         name: player.name,
-        // phone: REMOVED for security
-        // email: REMOVED for security
-        // residence: REMOVED for security
+        phone: player.phone,
+        residence: player.residence,
+        city_village: player.city_village,
         age_group: player.age_group,
         kicks_balance: player.kicks_balance,
+        photo_path: player.photo_path,
+        parent_phone: player.parent_phone,
+        is_child_account: player.is_child_account,
       })),
     });
   } catch (error) {
@@ -412,7 +420,9 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Team mode validation
+    const usingRequeue = requeue === true; // only consume stored kicks on requeue
+
+    // Team mode validation (balance + daily kicks only matter for requeue usage)
     if (teamPlay) {
       // Verify the team exists and the selected member is in the team
       const teamMemberResult = await Player.query(
@@ -428,26 +438,28 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      // Get all team members for balance validation
-      const teamMembers = await Team.getMembers(parseInt(teamId));
+      // Only enforce stored balance / daily limits when consuming stored kicks (requeue)
+      if (usingRequeue) {
+        // Get all team members for balance validation
+        const teamMembers = await Team.getMembers(parseInt(teamId));
 
-      // Check if all team members have enough balance
-      const insufficientBalanceMembers = teamMembers.filter(
-        (member: any) => member.kicks_balance < kicksUsedInt
-      );
+        const insufficientBalanceMembers = teamMembers.filter(
+          (member: any) => member.kicks_balance < kicksUsedInt
+        );
 
-      if (insufficientBalanceMembers.length > 0) {
-        const memberNames = insufficientBalanceMembers
-          .map((m: any) => m.name)
-          .join(", ");
-        res.status(400).json({
-          success: false,
-          message: "Team members with insufficient balance: " + memberNames,
-        });
-        return;
+        if (insufficientBalanceMembers.length > 0) {
+          const memberNames = insufficientBalanceMembers
+            .map((m: any) => m.name)
+            .join(", ");
+          res.status(400).json({
+            success: false,
+            message: "Team members with insufficient balance: " + memberNames,
+          });
+          return;
+        }
       }
 
-      // Check today's kicks for the specific team member (max 3 kicks per person in team mode)
+      // Daily kicks limit (team mode) only relevant when using stored kicks
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -460,7 +472,7 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
         memberKicksResult.rows[0]?.total_kicks || "0"
       );
 
-      if (memberTodayKicks + kicksUsedInt > 3) {
+      if (usingRequeue && memberTodayKicks + kicksUsedInt > 3) {
         res.status(400).json({
           success: false,
           message:
@@ -473,8 +485,8 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // Check if player has enough kicks
-    if (player.kicks_balance < kicksUsedInt) {
+    // Individual mode balance check only when requeue (initial ticket already paid)
+    if (!teamPlay && usingRequeue && player.kicks_balance < kicksUsedInt) {
       res.status(400).json({
         success: false,
         message:
@@ -509,37 +521,36 @@ export const logGoals = async (req: Request, res: Response): Promise<void> => {
     try {
       await client.query("BEGIN");
 
-      if (teamPlay) {
-        // Team mode: deduct kicks from all team members
-        const teamResult = await client.query(
-          "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
-          [actualPlayerId]
-        );
-
-        const team = teamResult.rows[0];
-        const teamMembers = await Team.getMembers(team.id);
-
-        // Deduct kicks from all team members
-        for (const member of teamMembers) {
-          const memberPlayer = await Player.findById(member.player_id);
-          if (memberPlayer) {
-            const newMemberBalance = Math.max(
-              0,
-              memberPlayer.kicks_balance - kicksUsedInt
-            );
-            await client.query(
-              "UPDATE players SET kicks_balance = $1 WHERE id = $2",
-              [newMemberBalance, member.player_id]
-            );
+      if (usingRequeue) {
+        if (teamPlay) {
+          // Team mode requeue: deduct kicks from all team members
+          const teamResult = await client.query(
+            "SELECT t.*, tm.is_captain FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.player_id = $1",
+            [actualPlayerId]
+          );
+          const team = teamResult.rows[0];
+          const teamMembers = await Team.getMembers(team.id);
+          for (const member of teamMembers) {
+            const memberPlayer = await Player.findById(member.player_id);
+            if (memberPlayer) {
+              const newMemberBalance = Math.max(
+                0,
+                memberPlayer.kicks_balance - kicksUsedInt
+              );
+              await client.query(
+                "UPDATE players SET kicks_balance = $1 WHERE id = $2",
+                [newMemberBalance, member.player_id]
+              );
+            }
           }
+        } else {
+          // Individual requeue: deduct kicks from player only
+          const newBalance = Math.max(0, player.kicks_balance - kicksUsedInt);
+          await client.query(
+            "UPDATE players SET kicks_balance = $1 WHERE id = $2",
+            [newBalance, actualPlayerId]
+          );
         }
-      } else {
-        // Individual mode: deduct kicks from player only
-        const newBalance = Math.max(0, player.kicks_balance - kicksUsedInt);
-        await client.query(
-          "UPDATE players SET kicks_balance = $1 WHERE id = $2",
-          [newBalance, actualPlayerId]
-        );
       }
 
       // 2. Mark ticket as played
@@ -965,21 +976,22 @@ export const getPlayerDetails = async (
       };
     }
 
+    // Allow contact/location fields for referee API just like cashier
+    (res.locals as any).skipSanitize = true;
     res.json({
       success: true,
       player: {
         id: player.id,
         name: player.name,
-        // phone: REMOVED for security
-        // email: REMOVED for security
-        // residence: REMOVED for security
-        // city_village: REMOVED for security
+        phone: player.phone, // exposed for referee operational use
+        residence: player.residence,
+        city_village: player.city_village,
         age_group: player.age_group,
         photo_path: player.photo_path,
         kicks_balance: player.kicks_balance,
         name_change_count: player.name_change_count || 0,
         is_child_account: player.is_child_account || false,
-        // parent_phone: REMOVED for security
+        parent_phone: player.parent_phone,
       },
       activeTickets,
       todayKicks,

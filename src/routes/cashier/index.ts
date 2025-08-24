@@ -19,6 +19,50 @@ const router = express.Router();
 
 // API routes
 router.get("/api/search", isCashierAPI, searchPlayer);
+// Lightweight player contact info endpoint (alternate approach)
+router.get("/api/player-contact/:id", isCashierAPI, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "Invalid id" });
+    }
+    const result = await pool.query(
+      "SELECT id, name, phone, residence, city_village, parent_phone, email FROM players WHERE id=$1 AND deleted_at IS NULL",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Player not found" });
+    }
+    (res.locals as any).skipSanitize = true;
+    res.json({ success: true, player: result.rows[0] });
+  } catch (e) {
+    console.error("Player contact endpoint error", e);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Raw search debug endpoint (returns raw DB payload) - DO NOT enable in production without auth
+router.get("/api/search-raw", isCashierAPI, async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || typeof query !== "string") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Search query is required" });
+    }
+    const { rows } = await pool.query(
+      "SELECT id, name, phone, residence, city_village, parent_phone, email FROM players WHERE (name ILIKE $1 OR phone LIKE $1 OR email ILIKE $1) AND deleted_at IS NULL LIMIT 5",
+      [`%${query}%`]
+    );
+    (res.locals as any).skipSanitize = true;
+    res.json({ success: true, rows });
+  } catch (e) {
+    console.error("search-raw error", e);
+    res.status(500).json({ success: false, message: "Error" });
+  }
+});
 router.get("/api/search-teams", isCashierAPI, searchTeams);
 router.post("/api/scan", isCashierAPI, processQRScan);
 router.post("/api/purchase-kicks", isCashierAPI, processKicksPurchase);

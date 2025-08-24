@@ -1,4 +1,4 @@
-import { pool, executeQuery } from "../config/db";
+import { executeQuery } from "../config/db";
 
 export interface IQueueTicket {
   id: number;
@@ -6,208 +6,262 @@ export interface IQueueTicket {
   player_id: number;
   status: "in-queue" | "played" | "expired";
   competition_type: string;
-  official: boolean;
-  team_play: boolean;
-  created_at: Date;
-  played_at?: Date;
-  expired_at?: Date;
+  official?: boolean;
+  team_play?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 class QueueTicket {
-  // Get next ticket number without incrementing
-  static async getNextTicketNumber(): Promise<number> {
-    try {
-      const result = await executeQuery(
-        "SELECT value FROM global_counters WHERE id = $1",
-        ["next_queue_number"]
-      );
-      return result.rows[0].value;
-    } catch (error) {
-      console.error("Error getting next ticket number:", error);
-      throw error;
-    }
-  }
-
-  // Increment and get next ticket number
   static async incrementTicketNumber(): Promise<number> {
     try {
+      await this.ensureCounterIntegrity();
       const result = await executeQuery(
         "UPDATE global_counters SET value = value + 1 WHERE id = $1 RETURNING value",
         ["next_queue_number"]
       );
-      return result.rows[0].value;
+      const newCounterValue = parseInt(result.rows[0].value, 10);
+      const issuedTicket = newCounterValue - 1;
+      if (process.env.DEBUG_TICKETS === "true") {
+        console.log(
+          `[TICKETS] increment: counter(after)=${newCounterValue} issued=${issuedTicket}`
+        );
+      }
+      return issuedTicket;
     } catch (error) {
       console.error("Error incrementing ticket number:", error);
       throw error;
     }
   }
 
-  // Add player to queue
-  static async addToQueue(
-    playerId: number,
-    officialEntry: boolean = false,
-    teamPlay: boolean = false
-  ): Promise<number> {
+  static async getTicketWindow(): Promise<{
+    lastIssued: number;
+    nextToIssue: number;
+  }> {
     try {
-      const competitionType = teamPlay ? "team" : "individual";
-
-      // Increment and get next ticket number
-      const ticketNumber = await QueueTicket.incrementTicketNumber();
-
-      // Create queue ticket
-      await executeQuery(
-        "INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6)",
-        [
-          ticketNumber,
-          playerId,
-          "in-queue",
-          competitionType,
-          officialEntry,
-          teamPlay,
-        ]
+      const counterRes = await executeQuery(
+        "SELECT value FROM global_counters WHERE id = $1",
+        ["next_queue_number"]
       );
-
-      return ticketNumber;
+      let nextToIssue = counterRes.rows[0]?.value
+        ? parseInt(counterRes.rows[0].value, 10)
+        : 0;
+      const rangeRes = await executeQuery(
+        "SELECT start_ticket, end_ticket, created_at FROM ticket_ranges ORDER BY created_at DESC LIMIT 1"
+      );
+      const range = rangeRes.rows[0] || null;
+      let lastIssued: number;
+      if (range) {
+        const maxInRange = await executeQuery(
+          "SELECT COALESCE(MAX(ticket_number), $1 - 1) AS last FROM queue_tickets WHERE ticket_number BETWEEN $1 AND $2 AND created_at >= $3",
+          [range.start_ticket, range.end_ticket, range.created_at]
+        );
+        lastIssued = parseInt(maxInRange.rows[0].last, 10);
+        if (nextToIssue < range.start_ticket) nextToIssue = range.start_ticket;
+        if (nextToIssue <= lastIssued) nextToIssue = lastIssued + 1;
+        if (
+          nextToIssue > range.end_ticket + 1 &&
+          process.env.DEBUG_TICKETS === "true"
+        ) {
+          console.warn(
+            `[TICKETS] counter ${nextToIssue} beyond end of roll ${range.end_ticket}`
+          );
+        }
+      } else {
+        const maxResult = await executeQuery(
+          "SELECT COALESCE(MAX(ticket_number), $1 - 1) AS last FROM queue_tickets",
+          [nextToIssue]
+        );
+        lastIssued = parseInt(maxResult.rows[0].last, 10);
+        if (nextToIssue <= lastIssued) nextToIssue = lastIssued + 1;
+      }
+      if (process.env.DEBUG_TICKETS === "true") {
+        console.log(
+          `[TICKETS] window(rangeAware) lastIssued=${lastIssued} nextToIssue=${nextToIssue}`
+        );
+      }
+      return { lastIssued, nextToIssue };
     } catch (error) {
-      console.error("Error adding to queue:", error);
+      console.error("Error getting ticket window:", error);
       throw error;
     }
   }
 
-  // Create new queue ticket
+  static async getDisplayNumbers(): Promise<{
+    currentServing: number | null;
+    lastIssued: number;
+    next: number;
+  }> {
+    const { lastIssued, nextToIssue } = await this.getTicketWindow();
+    try {
+      const active = await executeQuery(
+        "SELECT MIN(ticket_number) AS min_active FROM queue_tickets WHERE status = 'in-queue'"
+      );
+      const minActiveRaw = active.rows[0]?.min_active;
+      const minActive = minActiveRaw ? parseInt(minActiveRaw, 10) : null;
+      return { currentServing: minActive, lastIssued, next: nextToIssue };
+    } catch (e) {
+      return { currentServing: null, lastIssued, next: nextToIssue };
+    }
+  }
+
+  private static async ensureCounterIntegrity(): Promise<void> {
+    try {
+      const counterRes = await executeQuery(
+        "SELECT value FROM global_counters WHERE id=$1",
+        ["next_queue_number"]
+      );
+      if (!counterRes.rows.length) return;
+      const currentCounter = parseInt(counterRes.rows[0].value, 10);
+      const rangeRes = await executeQuery(
+        "SELECT start_ticket, end_ticket, created_at FROM ticket_ranges ORDER BY created_at DESC LIMIT 1"
+      );
+      if (rangeRes.rows.length) {
+        const r = rangeRes.rows[0];
+        const maxInRange = await executeQuery(
+          "SELECT COALESCE(MAX(ticket_number), $1 - 1) AS last FROM queue_tickets WHERE ticket_number BETWEEN $1 AND $2 AND created_at >= $3",
+          [r.start_ticket, r.end_ticket, r.created_at]
+        );
+        const lastIssued = parseInt(maxInRange.rows[0].last, 10);
+        const desired = Math.max(r.start_ticket, lastIssued + 1);
+        if (desired !== currentCounter) {
+          await executeQuery(
+            "UPDATE global_counters SET value=$1 WHERE id=$2",
+            [desired, "next_queue_number"]
+          );
+          if (process.env.DEBUG_TICKETS === "true") {
+            console.warn(
+              `[TICKETS] ensureCounterIntegrity(rangeAware) ${currentCounter} -> ${desired}`
+            );
+          }
+        }
+      } else {
+        const maxResult = await executeQuery(
+          "SELECT COALESCE(MAX(ticket_number), $1 - 1) AS last FROM queue_tickets",
+          [currentCounter]
+        );
+        const last = parseInt(maxResult.rows[0].last, 10);
+        if (currentCounter <= last) {
+          const desired = last + 1;
+          await executeQuery(
+            "UPDATE global_counters SET value=$1 WHERE id=$2",
+            [desired, "next_queue_number"]
+          );
+          if (process.env.DEBUG_TICKETS === "true") {
+            console.warn(
+              `[TICKETS] ensureCounterIntegrity(legacy) ${currentCounter} -> ${desired}`
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[TICKETS] ensureCounterIntegrity failed", e);
+    }
+  }
+
+  static async addToQueue(
+    playerId: number,
+    officialEntry = false,
+    teamPlay = false
+  ): Promise<number> {
+    const competitionType = teamPlay ? "team" : "individual";
+    const ticketNumber = await this.incrementTicketNumber();
+    await executeQuery(
+      "INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1,$2,$3,$4,$5,$6)",
+      [
+        ticketNumber,
+        playerId,
+        "in-queue",
+        competitionType,
+        officialEntry,
+        teamPlay,
+      ]
+    );
+    return ticketNumber;
+  }
+
   static async create(data: {
     player_id: number;
     competition_type: string;
     official?: boolean;
     team_play?: boolean;
   }): Promise<IQueueTicket | null> {
-    try {
-      const {
+    const {
+      player_id,
+      competition_type,
+      official = true,
+      team_play = false,
+    } = data;
+    const ticketNumber = await this.incrementTicketNumber();
+    const result = await executeQuery(
+      "INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+      [
+        ticketNumber,
         player_id,
-        competition_type,
-        official = true,
-        team_play = false,
-      } = data;
-
-      // Increment and get next ticket number
-      const ticketNumber = await QueueTicket.incrementTicketNumber();
-
-      const result = await executeQuery(
-        "INSERT INTO queue_tickets (ticket_number, player_id, status, competition_type, official, team_play) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-        [
-          ticketNumber,
-          player_id,
-          "in-queue",
-          competition_type || "accuracy",
-          official,
-          team_play,
-        ]
-      );
-
-      return result.rows[0];
-    } catch (error) {
-      console.error("Error creating queue ticket:", error);
-      return null;
-    }
+        "in-queue",
+        competition_type || "accuracy",
+        official,
+        team_play,
+      ]
+    );
+    return result.rows[0] || null;
   }
 
-  // Find ticket by ID
   static async findById(id: number): Promise<IQueueTicket | null> {
-    try {
-      const result = await executeQuery(
-        "SELECT * FROM queue_tickets WHERE id = $1",
-        [id]
-      );
-      return result.rows[0] || null;
-    } catch (error) {
-      console.error("Error finding queue ticket by ID:", error);
-      return null;
-    }
+    const result = await executeQuery(
+      "SELECT * FROM queue_tickets WHERE id=$1",
+      [id]
+    );
+    return result.rows[0] || null;
   }
 
-  // Find active tickets for player
   static async findActiveByPlayerId(playerId: number): Promise<IQueueTicket[]> {
-    try {
-      const result = await executeQuery(
-        "SELECT * FROM queue_tickets WHERE player_id = $1 AND status = $2 ORDER BY created_at ASC",
-        [playerId, "in-queue"]
-      );
-      return result.rows;
-    } catch (error) {
-      console.error("Error finding active tickets for player:", error);
-      return [];
-    }
+    const result = await executeQuery(
+      "SELECT * FROM queue_tickets WHERE player_id=$1 AND status=$2 ORDER BY created_at ASC",
+      [playerId, "in-queue"]
+    );
+    return result.rows;
   }
 
-  // Update ticket status
   static async updateStatus(
     id: number,
     status: "in-queue" | "played" | "expired"
   ): Promise<IQueueTicket | null> {
-    try {
-      let query = "";
-
-      if (status === "played") {
-        query =
-          "UPDATE queue_tickets SET status = $1, played_at = NOW() WHERE id = $2 RETURNING *";
-      } else if (status === "expired") {
-        query =
-          "UPDATE queue_tickets SET status = $1, expired_at = NOW() WHERE id = $2 RETURNING *";
-      } else {
-        query =
-          "UPDATE queue_tickets SET status = $1 WHERE id = $2 RETURNING *";
-      }
-
-      const result = await executeQuery(query, [status, id]);
-      return result.rows[0] || null;
-    } catch (error) {
-      console.error("Error updating queue ticket status:", error);
-      return null;
-    }
+    const result = await executeQuery(
+      "UPDATE queue_tickets SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
+      [status, id]
+    );
+    return result.rows[0] || null;
   }
 
-  // Get current queue position
   static async getCurrentQueuePosition(): Promise<number> {
-    try {
-      const result = await executeQuery(
-        "SELECT MIN(ticket_number) as current_number FROM queue_tickets WHERE status = $1",
-        ["in-queue"]
-      );
-      return result.rows[0]?.current_number || 0;
-    } catch (error) {
-      console.error("Error getting current queue position:", error);
-      return 0;
-    }
+    const result = await executeQuery(
+      "SELECT MIN(ticket_number) AS current_number FROM queue_tickets WHERE status='in-queue'"
+    );
+    return result.rows[0]?.current_number || 0;
   }
 
-  // Expire all tickets at end of day
   static async expireEndOfDay(): Promise<number> {
     try {
-      // Get all in-queue tickets
-      const tickets = await executeQuery(
-        "SELECT * FROM queue_tickets WHERE status = $1",
-        ["in-queue"]
-      );
-
-      // Update status to expired
       const result = await executeQuery(
-        "UPDATE queue_tickets SET status = $1, expired_at = NOW() WHERE status = $2 RETURNING *",
-        ["expired", "in-queue"]
+        "UPDATE queue_tickets SET status='expired', expired_at=NOW() WHERE status='in-queue' RETURNING id, player_id"
       );
-
-      // Return kicks to players
-      for (const ticket of result.rows) {
+      for (const row of result.rows) {
         await executeQuery(
-          "UPDATE players SET kicks_balance = kicks_balance + 5 WHERE id = $1",
-          [ticket.player_id]
+          "UPDATE players SET kicks_balance = kicks_balance + 5 WHERE id=$1",
+          [row.player_id]
         );
       }
-
-      return result.rowCount;
-    } catch (error) {
-      console.error("Error expiring tickets:", error);
+      return result.rowCount || 0;
+    } catch (e) {
+      console.error("expireEndOfDay failed", e);
       return 0;
     }
+  }
+
+  static async getNextTicketNumber(): Promise<number> {
+    const { nextToIssue } = await this.getTicketWindow();
+    return nextToIssue;
   }
 }
 

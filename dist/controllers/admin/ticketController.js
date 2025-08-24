@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setTicketRange = exports.updateNextTicket = exports.getTicketManagement = void 0;
+exports.resyncTicketCounter = exports.setTicketRange = exports.updateNextTicket = exports.getTicketManagement = void 0;
 const db_1 = require("../../config/db");
+const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
 // Display ticket management page
 const getTicketManagement = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -145,12 +149,27 @@ const updateNextTicket = (req, res) => __awaiter(void 0, void 0, void 0, functio
         catch (e) {
             console.error("Error creating global_counters table:", e);
         }
-        // Update next ticket number
-        yield db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2", ["next_queue_number", parseInt(nextTicket)]);
+        // Update next ticket number directly
+        const newValue = parseInt(nextTicket);
+        yield db_1.pool.query("INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2", ["next_queue_number", newValue]);
+        // Optional: ensure counter is not below existing tickets (self-heal)
+        const driftCheck = yield db_1.pool.query("SELECT value, (SELECT COALESCE(MAX(ticket_number), value-1) FROM queue_tickets) AS max_ticket FROM global_counters WHERE id=$1", ["next_queue_number"]);
+        const row = driftCheck.rows[0];
+        if (row && row.value <= row.max_ticket) {
+            const fixed = row.max_ticket + 1;
+            yield db_1.pool.query("UPDATE global_counters SET value=$1 WHERE id=$2", [
+                fixed,
+                "next_queue_number",
+            ]);
+            console.warn(`[TICKETS] Admin set caused drift; adjusted counter to ${fixed}`);
+        }
+        // Return fresh window data
+        const windowResult = yield db_1.pool.query("SELECT value FROM global_counters WHERE id='next_queue_number'");
+        const refreshedNext = windowResult.rows[0].value;
         res.json({
             success: true,
             message: "Next ticket number updated successfully",
-            nextTicket: parseInt(nextTicket),
+            nextTicket: refreshedNext,
         });
     }
     catch (error) {
@@ -267,3 +286,24 @@ const setTicketRange = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.setTicketRange = setTicketRange;
+// Manual resync endpoint (ensure counter >= max(ticket)+1 and return window)
+const resyncTicketCounter = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        if (!req.session.user ||
+            req.session.user.role !== "admin") {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+        // Use model integrity method indirectly by calling window (which self-heals)
+        const windowBefore = yield db_1.pool.query("SELECT value FROM global_counters WHERE id='next_queue_number'");
+        const beforeVal = ((_a = windowBefore.rows[0]) === null || _a === void 0 ? void 0 : _a.value) || null;
+        const { lastIssued, nextToIssue } = yield QueueTicket_1.default.getTicketWindow();
+        res.json({ success: true, beforeVal, lastIssued, nextToIssue });
+    }
+    catch (e) {
+        console.error("Resync ticket counter failed", e);
+        res.status(500).json({ success: false, message: "Resync failed" });
+    }
+});
+exports.resyncTicketCounter = resyncTicketCounter;

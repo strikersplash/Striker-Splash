@@ -155,12 +155,15 @@
     fetch("/api/queue/current")
       .then((response) => response.json())
       .then((data) => {
+        const currentEl = document.getElementById("current-queue-number");
+        const nextEl = document.getElementById("next-ticket-number");
         if (data.currentQueuePosition) {
-          document.getElementById("current-queue-number").textContent =
-            data.currentQueuePosition;
+          currentEl.textContent = data.currentQueuePosition;
         } else {
-          document.getElementById("current-queue-number").textContent =
-            "No active tickets";
+          currentEl.textContent = "No active tickets";
+        }
+        if (typeof data.nextTicket === "number" && !isNaN(data.nextTicket)) {
+          nextEl.textContent = data.nextTicket;
         }
       })
       .catch((error) => console.error("Error updating queue position:", error));

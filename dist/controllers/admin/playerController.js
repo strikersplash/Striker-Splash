@@ -47,12 +47,17 @@ const getPlayerManagement = (req, res) => __awaiter(void 0, void 0, void 0, func
         }
         query += " ORDER BY name LIMIT 100";
         // Get players
-        const playersResult = yield db_1.pool.query(query, params);
+        const playersResult = yield (0, db_1.executeQuery)(query, params);
         const players = playersResult.rows.map((p) => ({
             id: p.id,
             name: p.name,
+            email: p.email || null,
+            phone: p.phone || null,
+            kicks_balance: p.kicks_balance || 0,
+            deleted_at: p.deleted_at || null,
+            created_at: p.created_at || null,
             photo_path: p.photo_path,
-            profile_picture: p.photo_path, // Map photo_path to profile_picture
+            profile_picture: p.photo_path, // legacy field used by avatar script
         }));
         res.render("admin/player-management", {
             title: "Player Management",
@@ -82,7 +87,7 @@ const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
         const { id } = req.params;
         // Get player (including soft-deleted ones for admin review)
         const playerQuery = "SELECT * FROM players WHERE id = $1";
-        const playerResult = yield db_1.pool.query(playerQuery, [id]);
+        const playerResult = yield (0, db_1.executeQuery)(playerQuery, [id]);
         const player = playerResult.rows[0];
         if (!player) {
             req.flash("error_msg", "Player not found");
@@ -91,19 +96,57 @@ const getPlayerDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
         // Debug player profile picture
         // Query to check what tables exist in the database
         const tablesQuery = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
-        const tablesResult = yield db_1.pool.query(tablesQuery);
+        const tablesResult = yield (0, db_1.executeQuery)(tablesQuery);
         const tables = tablesResult.rows.map((r) => r.table_name);
         // Using correct table name (game_stats) as shown in the debug output
-        const statsQuery = "SELECT gs.*, s.name as staff_name FROM game_stats gs LEFT JOIN staff s ON gs.staff_id = s.id WHERE gs.player_id = $1 ORDER BY gs.timestamp DESC";
-        const statsResult = yield db_1.pool.query(statsQuery, [id]);
-        const stats = statsResult.rows;
+        // Improved stats query with ticket number resolution (handles legacy missing linkage)
+        const statsQuery = `WITH gs_base AS (
+        SELECT gs.*, s.name AS staff_name
+        FROM game_stats gs
+        LEFT JOIN staff s ON gs.staff_id = s.id
+        WHERE gs.player_id = $1
+      ),
+      with_direct AS (
+        SELECT g.*, qt.ticket_number::int AS direct_ticket
+        FROM gs_base g
+        LEFT JOIN queue_tickets qt ON qt.id = g.queue_ticket_id
+      ),
+      unresolved AS (
+        SELECT * FROM with_direct WHERE direct_ticket IS NULL
+      ),
+      ranked AS (
+        SELECT u.*, ROW_NUMBER() OVER (ORDER BY u.timestamp, u.id) AS local_rank
+        FROM unresolved u
+      ),
+      tickets_day AS (
+        SELECT qt.id, qt.ticket_number::int AS ticket_number,
+               ROW_NUMBER() OVER (ORDER BY qt.created_at, qt.ticket_number) AS day_rank
+        FROM queue_tickets qt
+        WHERE qt.player_id = $1
+      ),
+      matched AS (
+        SELECT r.*, td.ticket_number AS approx_ticket
+        FROM ranked r
+        LEFT JOIN tickets_day td ON td.day_rank = r.local_rank
+      )
+  SELECT w.id, w.timestamp, w.goals, w.staff_id, w.staff_name, w.competition_type, w.location,
+     COALESCE(w.direct_ticket, m.approx_ticket) AS resolved_ticket,
+     CASE WHEN w.direct_ticket IS NOT NULL THEN 'direct'
+      WHEN m.approx_ticket IS NOT NULL THEN 'approx'
+      ELSE NULL END AS ticket_source,
+             w.queue_ticket_id
+      FROM with_direct w
+      LEFT JOIN matched m ON m.id = w.id
+      ORDER BY w.timestamp DESC`;
+        const statsResult = yield (0, db_1.executeQuery)(statsQuery, [id]);
+        const stats = statsResult.rows.map((r) => (Object.assign(Object.assign({}, r), { queue_ticket_id: r.resolved_ticket || r.queue_ticket_id })));
         // Get player tickets
         const ticketsQuery = "SELECT * FROM queue_tickets WHERE player_id = $1 ORDER BY created_at DESC";
-        const ticketsResult = yield db_1.pool.query(ticketsQuery, [id]);
+        const ticketsResult = yield (0, db_1.executeQuery)(ticketsQuery, [id]);
         const tickets = ticketsResult.rows;
         // Get table structure for game_stats
         const tableStructureQuery = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'game_stats'";
-        const tableStructureResult = yield db_1.pool.query(tableStructureQuery);
+        const tableStructureResult = yield (0, db_1.executeQuery)(tableStructureQuery);
         res.render("admin/player-details", {
             title: `Player: ${player.name}`,
             player,
@@ -130,29 +173,34 @@ const updatePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             return;
         }
         const { id } = req.params;
-        const { name, phone, email, residence, gender, age_group } = req.body;
+        const { name, phone, email, district, cityVillage, gender, age_group } = req.body;
         // Validate input
-        if (!name || !phone || !residence || !age_group) {
-            res.status(400).json({
-                success: false,
-                message: "Name, phone, residence, and age group are required",
-            });
-            return;
+        if (!name || !phone || !district || !age_group) {
+            req.flash("error_msg", "Name, phone, district, and age group are required");
+            return res.redirect(`/admin/players/${id}`);
         }
         // Update player (excluding kicks_balance)
+        // Handle optional photo upload (multer middleware attached globally as single('photo'))
+        let photoPath = null;
+        const file = req.file;
+        if (file) {
+            photoPath = `/uploads/${file.filename}`;
+        }
         const updateQuery = `
       UPDATE players
-      SET name = $1, phone = $2, email = $3, residence = $4, gender = $5, age_group = $6
-      WHERE id = $7
+      SET name = $1, phone = $2, email = $3, residence = $4, city_village = $5, gender = $6, age_group = $7, photo_path = COALESCE($8, photo_path)
+      WHERE id = $9
       RETURNING *
     `;
-        const updateResult = yield db_1.pool.query(updateQuery, [
+        const updateResult = yield (0, db_1.executeQuery)(updateQuery, [
             name,
             phone,
             email || null,
-            residence,
+            district,
+            cityVillage || null,
             gender || null,
             age_group,
+            photoPath,
             id,
         ]);
         const updatedPlayer = updateResult.rows[0];
@@ -187,7 +235,7 @@ const updateKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, funct
         }
         // Get current kicks balance
         const playerQuery = "SELECT * FROM players WHERE id = $1";
-        const playerResult = yield db_1.pool.query(playerQuery, [id]);
+        const playerResult = yield (0, db_1.executeQuery)(playerQuery, [id]);
         const player = playerResult.rows[0];
         if (!player) {
             req.flash("error_msg", "Player not found");
@@ -216,7 +264,7 @@ const updateKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, funct
       WHERE id = $2
       RETURNING *
     `;
-        yield db_1.pool.query(updateQuery, [newBalance, id]);
+        yield (0, db_1.executeQuery)(updateQuery, [newBalance, id]);
         // Log the kicks balance update to transactions table
         const logQuery = `
       INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at)
@@ -227,7 +275,7 @@ const updateKicksBalance = (req, res) => __awaiter(void 0, void 0, void 0, funct
             : operation === "subtract"
                 ? -parseInt(amount)
                 : newBalance - currentBalance;
-        yield db_1.pool.query(logQuery, [
+        yield (0, db_1.executeQuery)(logQuery, [
             id,
             changeAmount,
             0, // amount field (for kicks transactions, amount is usually 0)
@@ -261,14 +309,14 @@ const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const staffId = req.session.user.id;
         // First check if player exists and is not already deleted
         const playerQuery = "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL";
-        const playerResult = yield db_1.pool.query(playerQuery, [id]);
+        const playerResult = yield (0, db_1.executeQuery)(playerQuery, [id]);
         const player = playerResult.rows[0];
         if (!player) {
             req.flash("error_msg", "Player not found or already deleted");
             return res.redirect("/admin/players");
         }
         // Begin transaction to ensure all operations are atomic
-        yield db_1.pool.query("BEGIN");
+        yield (0, db_1.executeQuery)("BEGIN");
         try {
             // Soft delete: Mark player as deleted but preserve all data
             // This maintains transaction history for sales reports and financial auditing
@@ -278,14 +326,14 @@ const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             deleted_by = $2
         WHERE id = $1
       `;
-            yield db_1.pool.query(softDeleteQuery, [id, staffId]);
+            yield (0, db_1.executeQuery)(softDeleteQuery, [id, staffId]);
             // Cancel any active queue tickets (but keep the records for history)
-            yield db_1.pool.query("UPDATE queue_tickets SET status = 'cancelled' WHERE player_id = $1 AND status = 'waiting'", [id]);
+            yield (0, db_1.executeQuery)("UPDATE queue_tickets SET status = 'cancelled' WHERE player_id = $1 AND status = 'waiting'", [id]);
             // Add a transaction record for the deletion (for audit trail)
             const auditTransactionQuery = "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))";
-            yield db_1.pool.query(auditTransactionQuery, [id, staffId]);
+            yield (0, db_1.executeQuery)(auditTransactionQuery, [id, staffId]);
             // Commit the transaction
-            yield db_1.pool.query("COMMIT");
+            yield (0, db_1.executeQuery)("COMMIT");
             req.flash("success_msg", 'Player "' +
                 player.name +
                 '" has been deleted. Transaction history preserved for sales reports.');
@@ -293,7 +341,7 @@ const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         catch (deleteError) {
             // Rollback transaction on error
-            yield db_1.pool.query("ROLLBACK");
+            yield (0, db_1.executeQuery)("ROLLBACK");
             throw deleteError;
         }
     }
@@ -318,14 +366,14 @@ const restorePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const staffId = req.session.user.id;
         // First check if player exists and is deleted
         const playerQuery = "SELECT * FROM players WHERE id = $1 AND deleted_at IS NOT NULL";
-        const playerResult = yield db_1.pool.query(playerQuery, [id]);
+        const playerResult = yield (0, db_1.executeQuery)(playerQuery, [id]);
         const player = playerResult.rows[0];
         if (!player) {
             req.flash("error_msg", "Player not found or not deleted");
             return res.redirect("/admin/players");
         }
         // Begin transaction to ensure all operations are atomic
-        yield db_1.pool.query("BEGIN");
+        yield (0, db_1.executeQuery)("BEGIN");
         try {
             // Check team capacity before reactivation
             const teamCapacityQuery = `
@@ -339,7 +387,7 @@ const restorePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         WHERE tm.player_id = $1
         GROUP BY t.id, t.name, t.team_size, tm.is_captain
       `;
-            const teamCapacityResult = yield db_1.pool.query(teamCapacityQuery, [id]);
+            const teamCapacityResult = yield (0, db_1.executeQuery)(teamCapacityQuery, [id]);
             let teamsToRemoveFrom = [];
             let teamWarnings = [];
             let availableTeams = [];
@@ -377,7 +425,7 @@ const restorePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             deleted_by = NULL
         WHERE id = $1
       `;
-            yield db_1.pool.query(restoreQuery, [id]);
+            yield (0, db_1.executeQuery)(restoreQuery, [id]);
             // Remove player from teams that are at capacity
             for (const team of teamsToRemoveFrom) {
                 yield db_1.pool.query("DELETE FROM team_members WHERE team_id = $1 AND player_id = $2", [team.id, id]);

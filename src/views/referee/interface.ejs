@@ -494,11 +494,28 @@
 <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
 <script src="/js/avatar.js"></script>
 
+<script
+  id="ref-meta"
+  data-user-id="<%= user ? user.id : '' %>"
+  data-user-role="<%= user ? (user.role||'') : '' %>"
+  data-user-name="<%= user ? (user.name || user.username || '') : '' %>"
+></script>
 <script>
-  // User information for activity persistence
-  const userId = <%= user ? user.id : 'null' %>;
-  const userRole = '<%= user ? user.role : '' %>';
-  const userName = '<%= user ? (user.name || user.username || '') : '' %>';
+  // User information for activity persistence (read from data attributes to avoid EJS-in-JS syntax issues)
+  (function () {
+    const meta = document.getElementById("ref-meta");
+    const userIdAttr = meta?.getAttribute("data-user-id");
+    const userRoleAttr = meta?.getAttribute("data-user-role") || "";
+    const userNameAttr = meta?.getAttribute("data-user-name") || "";
+    window.__REF_USER = {
+      id: userIdAttr ? parseInt(userIdAttr, 10) : null,
+      role: userRoleAttr,
+      name: userNameAttr,
+    };
+    window.userId = window.__REF_USER.id;
+    window.userRole = window.__REF_USER.role;
+    window.userName = window.__REF_USER.name;
+  })();
 
   // Activity storage key
   const ACTIVITY_STORAGE_KEY = `refereeActivity_${userRole}_${userId}`;
@@ -567,32 +584,32 @@
     }, 60000); // 60 seconds
 
     // Start polling for queue updates
-    setInterval(updateQueuePosition, 5000);    // Start polling for queue list updates
+    setInterval(updateQueuePosition, 5000); // Start polling for queue list updates
     updateQueueList(); // Initial load
     setInterval(updateQueueList, 10000); // Update every 10 seconds    // Global function for dropdown toggle (called by onclick)    // Global function for queue module toggle
-    window.toggleQueueModule = function() {
-      console.log('Queue module toggle called');
+    window.toggleQueueModule = function () {
+      console.log("Queue module toggle called");
 
-      const content = document.getElementById('queue-list-content');
-      const button = document.getElementById('queue-toggle-btn');
-      const icon = document.getElementById('queue-toggle-icon');
+      const content = document.getElementById("queue-list-content");
+      const button = document.getElementById("queue-toggle-btn");
+      const icon = document.getElementById("queue-toggle-icon");
 
       if (content && button && icon) {
-        const isHidden = content.style.display === 'none';
+        const isHidden = content.style.display === "none";
 
         if (isHidden) {
-          content.style.display = 'block';
-          button.setAttribute('aria-expanded', 'true');
-          icon.classList.add('rotated');
+          content.style.display = "block";
+          button.setAttribute("aria-expanded", "true");
+          icon.classList.add("rotated");
         } else {
-          content.style.display = 'none';
-          button.setAttribute('aria-expanded', 'false');
-          icon.classList.remove('rotated');
+          content.style.display = "none";
+          button.setAttribute("aria-expanded", "false");
+          icon.classList.remove("rotated");
         }
 
-        console.log('Queue module toggled. Expanded:', isHidden);
+        console.log("Queue module toggled. Expanded:", isHidden);
       }
-    };    // QR Code Scanner
+    }; // QR Code Scanner
     let html5QrCode = null;
     const qrContainer = document.getElementById("qr-reader-container");
     let currentPlayerId = null;
@@ -785,11 +802,13 @@
 
                 // Create text content
                 const textDiv = document.createElement("div");
-                textDiv.innerHTML = `<strong>${player.name}</strong><br>${
-                  player.phone || "No phone"
-                } | ${player.city_village ? player.city_village + ", " : ""}${
-                  player.residence || "No residence"
-                }`;
+                // Use placeholders if contact/location missing (older responses)
+                const phoneDisplay =
+                  player.phone || player.parent_phone || "No phone";
+                const locationDisplay =
+                  (player.city_village ? player.city_village + ", " : "") +
+                  (player.residence || "No residence");
+                textDiv.innerHTML = `<strong>${player.name}</strong><br>${phoneDisplay} | ${locationDisplay}`;
 
                 // Add elements to item
                 item.appendChild(avatar);
@@ -824,6 +843,24 @@
                           playerData.activeTickets,
                           playerData.todayKicks
                         );
+                        // Update search list entry with newly fetched contact/location if it was missing
+                        if (
+                          (!player.phone && playerData.player.phone) ||
+                          (!player.residence && playerData.player.residence)
+                        ) {
+                          textDiv.innerHTML = `<strong>${
+                            playerData.player.name
+                          }</strong><br>${
+                            playerData.player.phone ||
+                            playerData.player.parent_phone ||
+                            "No phone"
+                          } | ${
+                            (playerData.player.city_village
+                              ? playerData.player.city_village + ", "
+                              : "") +
+                            (playerData.player.residence || "No residence")
+                          }`;
+                        }
                       } else {
                         const playerInfoEl =
                           document.getElementById("player-info");
@@ -925,12 +962,43 @@
       const detailsEl = document.createElement("p");
       detailsEl.className = "text-muted";
       const phoneDisplay =
-        player.is_child_account && player.parent_phone
-          ? `Parent: ${player.parent_phone} | Child ID: ${player.phone}`
-          : player.phone;
-      detailsEl.textContent = `${phoneDisplay} | ${
-        player.city_village ? player.city_village + ", " : ""
-      }${player.residence}`;
+        player.is_child_account && (player.parent_phone || player.phone)
+          ? `Parent: ${player.parent_phone || "N/A"} | Child ID: ${
+              player.phone || "N/A"
+            }`
+          : player.phone || player.parent_phone || "No phone";
+      const locationDisplay =
+        (player.city_village ? player.city_village + ", " : "") +
+        (player.residence || "No residence");
+      detailsEl.textContent = `${phoneDisplay} | ${locationDisplay}`;
+
+      // If critical fields missing, attempt background enrichment via scan endpoint
+      if ((!player.phone && !player.parent_phone) || !player.residence) {
+        fetch("/referee/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            qrData: JSON.stringify({ playerId: player.id }),
+          }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data && data.success && data.player) {
+              const p = data.player;
+              const phoneDisp =
+                p.is_child_account && (p.parent_phone || p.phone)
+                  ? `Parent: ${p.parent_phone || "N/A"} | Child ID: ${
+                      p.phone || "N/A"
+                    }`
+                  : p.phone || p.parent_phone || "No phone";
+              const locDisp =
+                (p.city_village ? p.city_village + ", " : "") +
+                (p.residence || "No residence");
+              detailsEl.textContent = `${phoneDisp} | ${locDisp}`;
+            }
+          })
+          .catch(() => {});
+      }
 
       // Add elements to container
       profileContainer.appendChild(avatar);
@@ -1390,10 +1458,17 @@
 
         // Validate consecutive kicks if enabled
         if (trackConsecutive) {
-          console.log("Validating consecutive kicks feature. Goals scored:", goals);
+          console.log(
+            "Validating consecutive kicks feature. Goals scored:",
+            goals
+          );
           if (goals < 2) {
-            console.log("Validation failed: goals < 2, cannot track consecutive kicks");
-            alert("You must score at least 2 goals to track consecutive kicks.");
+            console.log(
+              "Validation failed: goals < 2, cannot track consecutive kicks"
+            );
+            alert(
+              "You must score at least 2 goals to track consecutive kicks."
+            );
             return;
           }
           if (consecutiveKicks > 0 && consecutiveKicks < 2) {
@@ -1538,7 +1613,7 @@
             this.innerHTML = "Log Goals";
           });
       });
-    }    // Helper function to handle goal submission response
+    } // Helper function to handle goal submission response
     function handleGoalSubmissionResponse(data, goals, button) {
       if (data.success) {
         // Close goal modal
@@ -1583,8 +1658,14 @@
 
         // For debugging - look at what's coming back from the server
         // Create a complete activity object with all needed properties
+        const now = new Date();
+        const nowIso = now.toISOString();
         const newActivity = {
-          id: data.activityId || `client-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          id:
+            data.activityId ||
+            `client-${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 9)}`,
           playerName: document.getElementById("player-name").value,
           goals: goals,
           location: document.getElementById("location").value || "Unknown",
@@ -1592,33 +1673,46 @@
           player_id: parseInt(document.getElementById("player-id").value),
           staff_id: "<%= user.id %>",
           competition_type: isPracticeTicket ? "practice" : "for-competition",
-          timestamp: new Date(),
-          clientGenerated: !data.activityId // Mark as client-generated if no server ID
+          // Store as ISO string so it survives JSON serialization & parsing cleanly
+          timestamp: nowIso,
+          clientGenerated: !data.activityId, // Mark as client-generated if no server ID
+          provisional: !data.activityId,
         };
-
-        // Clear the table first to prevent duplicates
-        const table = document.getElementById("activity-table");
-        while (table && table.rows.length > 0) {
-          table.deleteRow(0);
-        }
-
-        // Add to the UI table
-        updateActivityTable(newActivity);
-
-        // Update in-memory cache
+        // Dedupe against recent cached activities (same player, goals, second)
         if (!window.cachedActivity) window.cachedActivity = [];
-
-        // Remove any existing activity with the same ID
-        window.cachedActivity = window.cachedActivity.filter(a => a.id !== newActivity.id);
-
-        // Add to beginning of array
-        window.cachedActivity.unshift(newActivity);
+        const secondBucket = nowIso.substring(0, 19); // YYYY-MM-DDTHH:MM:SS
+        const isDup = window.cachedActivity.some((a) => {
+          try {
+            if (a.player_id !== newActivity.player_id) return false;
+            if (parseInt(a.goals) !== parseInt(newActivity.goals)) return false;
+            const ts =
+              a.timestamp instanceof Date
+                ? a.timestamp.toISOString()
+                : String(a.timestamp);
+            return ts.substring(0, 19) === secondBucket;
+          } catch {
+            return false;
+          }
+        });
+        if (!isDup) {
+          // Prepend visually (no full table wipe) then rebuild list from cache for consistency
+          window.cachedActivity.unshift(newActivity);
+          updateActivityTableWithData(window.cachedActivity);
+        } else {
+          console.log("Skipped adding duplicate client activity entry");
+        }
 
         // Update localStorage and sessionStorage
         try {
-          localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
-          sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(window.cachedActivity));
-          } catch (e) {
+          localStorage.setItem(
+            ACTIVITY_STORAGE_KEY,
+            JSON.stringify(window.cachedActivity)
+          );
+          sessionStorage.setItem(
+            ACTIVITY_STORAGE_KEY,
+            JSON.stringify(window.cachedActivity)
+          );
+        } catch (e) {
           console.error("Failed to save activity to storage:", e);
         }
 
@@ -1669,8 +1763,13 @@
 
       // Extract client-generated activities and existing cache before any operation
       if (window.cachedActivity && window.cachedActivity.length > 0) {
-        clientGeneratedActivities = window.cachedActivity.filter(a => a.clientGenerated);
-        console.log("Preserved client-generated activities:", clientGeneratedActivities.length);
+        clientGeneratedActivities = window.cachedActivity.filter(
+          (a) => a.clientGenerated
+        );
+        console.log(
+          "Preserved client-generated activities:",
+          clientGeneratedActivities.length
+        );
         existingCacheData = [...window.cachedActivity];
       }
 
@@ -1684,7 +1783,9 @@
               existingCacheData = parsedData;
 
               // Find client-generated activities in localStorage data
-              clientGeneratedActivities = parsedData.filter(a => a.clientGenerated);
+              clientGeneratedActivities = parsedData.filter(
+                (a) => a.clientGenerated
+              );
             }
           }
         } catch (e) {
@@ -1696,23 +1797,29 @@
       if (!forceRefresh && existingCacheData && existingCacheData.length > 0) {
         // Filter cached data to only show today's activities
         const today = new Date();
-        const todayDateString = today.getFullYear() + '-' +
-          String(today.getMonth() + 1).padStart(2, '0') + '-' +
-          String(today.getDate()).padStart(2, '0');
+        const todayDateString =
+          today.getFullYear() +
+          "-" +
+          String(today.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(today.getDate()).padStart(2, "0");
 
-        const todaysActivities = existingCacheData.filter(activity => {
+        const todaysActivities = existingCacheData.filter((activity) => {
           if (!activity.timestamp) return false;
 
           // Parse the timestamp and extract date part
           const activityDate = new Date(activity.timestamp);
-          const activityDateString = activityDate.getFullYear() + '-' +
-            String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
-            String(activityDate.getDate()).padStart(2, '0');
+          const activityDateString =
+            activityDate.getFullYear() +
+            "-" +
+            String(activityDate.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(activityDate.getDate()).padStart(2, "0");
 
           return activityDateString === todayDateString;
         });
 
-        ");
+        // Cache hit: display today's activities
 
         window.cachedActivity = todaysActivities;
         updateActivityTableWithData(todaysActivities);
@@ -1721,11 +1828,16 @@
         // Only proceed with server fetch if it's been more than 5 minutes since last load
         const now = Date.now();
         const fiveMinutes = 5 * 60 * 1000;
-        if (window.lastActivityLoad && now - window.lastActivityLoad < fiveMinutes) {
+        if (
+          window.lastActivityLoad &&
+          now - window.lastActivityLoad < fiveMinutes
+        ) {
           return;
         }
 
-        console.log("Cache is older than 5 minutes, will try to refresh from server");
+        console.log(
+          "Cache is older than 5 minutes, will try to refresh from server"
+        );
       }
 
       // Fetch fresh data from server
@@ -1742,24 +1854,28 @@
       })
         .then((response) => {
           if (!response.ok) {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            throw new Error(
+              `Server returned ${response.status}: ${response.statusText}`
+            );
           }
           return response.json();
         })
         .then((data) => {
           // Process server data
           const processedData = data.map((activity) => {
+            let ts = activity.timestamp;
+            if (ts instanceof Date) ts = ts.toISOString();
             return {
               ...activity,
               goals: parseInt(activity.goals || 0, 10),
-              timestamp: activity.timestamp,
+              timestamp: ts,
               serverFetched: true,
             };
           });
 
           // Create a map of server activity IDs for efficient lookup
           const serverActivityMap = {};
-          processedData.forEach(activity => {
+          processedData.forEach((activity) => {
             if (activity.id) {
               serverActivityMap[activity.id] = activity;
             }
@@ -1767,10 +1883,13 @@
 
           // Filter out client-generated activities that now exist on the server
           const uniqueClientActivities = clientGeneratedActivities.filter(
-            activity => !activity.id || !serverActivityMap[activity.id]
+            (activity) => !activity.id || !serverActivityMap[activity.id]
           );
 
-          console.log("Client activities not found on server:", uniqueClientActivities.length);
+          console.log(
+            "Client activities not found on server:",
+            uniqueClientActivities.length
+          );
 
           // Combine all data sources
           const combinedData = [...processedData, ...uniqueClientActivities];
@@ -1779,14 +1898,14 @@
           const uniqueMap = new Map();
 
           // Add server data first (priority)
-          processedData.forEach(activity => {
+          processedData.forEach((activity) => {
             if (activity.id) {
               uniqueMap.set(activity.id, activity);
             }
           });
 
           // Then add client data if not already in map
-          uniqueClientActivities.forEach(activity => {
+          uniqueClientActivities.forEach((activity) => {
             if (activity.id && !uniqueMap.has(activity.id)) {
               uniqueMap.set(activity.id, activity);
             }
@@ -1797,18 +1916,32 @@
 
           // Sort by timestamp, most recent first
           uniqueActivity.sort((a, b) => {
-            const dateA = typeof a.timestamp === 'string' ? new Date(a.timestamp) : a.timestamp;
-            const dateB = typeof b.timestamp === 'string' ? new Date(b.timestamp) : b.timestamp;
+            const dateA = new Date(
+              a.timestamp instanceof Date
+                ? a.timestamp.toISOString()
+                : a.timestamp
+            ).getTime();
+            const dateB = new Date(
+              b.timestamp instanceof Date
+                ? b.timestamp.toISOString()
+                : b.timestamp
+            ).getTime();
             return dateB - dateA;
           });
 
           // Cache the data
           try {
-            localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
-            sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(uniqueActivity));
+            localStorage.setItem(
+              ACTIVITY_STORAGE_KEY,
+              JSON.stringify(uniqueActivity)
+            );
+            sessionStorage.setItem(
+              ACTIVITY_STORAGE_KEY,
+              JSON.stringify(uniqueActivity)
+            );
             window.cachedActivity = uniqueActivity;
             window.lastActivityLoad = Date.now();
-            } catch (e) {
+          } catch (e) {
             console.error("Failed to cache activity:", e);
           }
 
@@ -1830,52 +1963,65 @@
             if (existingCacheData && existingCacheData.length > 0) {
               // Filter cached data to only show today's activities
               const today = new Date();
-              const todayDateString = today.getFullYear() + '-' +
-                String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                String(today.getDate()).padStart(2, '0');
+              const todayDateString =
+                today.getFullYear() +
+                "-" +
+                String(today.getMonth() + 1).padStart(2, "0") +
+                "-" +
+                String(today.getDate()).padStart(2, "0");
 
-              const todaysActivities = existingCacheData.filter(activity => {
+              const todaysActivities = existingCacheData.filter((activity) => {
                 if (!activity.timestamp) return false;
 
                 // Parse the timestamp and extract date part
                 const activityDate = new Date(activity.timestamp);
-                const activityDateString = activityDate.getFullYear() + '-' +
-                  String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
-                  String(activityDate.getDate()).padStart(2, '0');
+                const activityDateString =
+                  activityDate.getFullYear() +
+                  "-" +
+                  String(activityDate.getMonth() + 1).padStart(2, "0") +
+                  "-" +
+                  String(activityDate.getDate()).padStart(2, "0");
 
                 return activityDateString === todayDateString;
               });
 
-              ");
+              // Cache fallback: display today's filtered activities
 
               updateActivityTableWithData(todaysActivities);
               window.cachedActivity = todaysActivities;
               return;
             }
 
-            const fallbackData = sessionStorage.getItem(ACTIVITY_STORAGE_KEY) ||
-                                localStorage.getItem(ACTIVITY_STORAGE_KEY);
+            const fallbackData =
+              sessionStorage.getItem(ACTIVITY_STORAGE_KEY) ||
+              localStorage.getItem(ACTIVITY_STORAGE_KEY);
             if (fallbackData) {
               const parsedData = JSON.parse(fallbackData);
               // Filter storage fallback data to only show today's activities
               const today = new Date();
-              const todayDateString = today.getFullYear() + '-' +
-                String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                String(today.getDate()).padStart(2, '0');
+              const todayDateString =
+                today.getFullYear() +
+                "-" +
+                String(today.getMonth() + 1).padStart(2, "0") +
+                "-" +
+                String(today.getDate()).padStart(2, "0");
 
-              const todaysActivities = parsedData.filter(activity => {
+              const todaysActivities = parsedData.filter((activity) => {
                 if (!activity.timestamp) return false;
 
                 // Parse the timestamp and extract date part
                 const activityDate = new Date(activity.timestamp);
-                const activityDateString = activityDate.getFullYear() + '-' +
-                  String(activityDate.getMonth() + 1).padStart(2, '0') + '-' +
-                  String(activityDate.getDate()).padStart(2, '0');
+                const activityDateString =
+                  activityDate.getFullYear() +
+                  "-" +
+                  String(activityDate.getMonth() + 1).padStart(2, "0") +
+                  "-" +
+                  String(activityDate.getDate()).padStart(2, "0");
 
                 return activityDateString === todayDateString;
               });
 
-              ");
+              // Local/session storage fallback: display today's filtered activities
 
               updateActivityTableWithData(todaysActivities);
               window.cachedActivity = todaysActivities;
@@ -1886,24 +2032,26 @@
           }
 
           // Show error message
-          });
+        });
     }
 
     // Update queue position
     function updateQueuePosition() {
       fetch("/api/queue/current", {
         // Add cache-busting and credentials
-        cache: 'no-cache',
-        credentials: 'same-origin',
+        cache: "no-cache",
+        credentials: "same-origin",
         headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache'
-        }
+          Pragma: "no-cache",
+          "Cache-Control": "no-cache",
+        },
       })
         .then((response) => {
           // Validate response
           if (!response.ok) {
-            throw new Error(`Queue API returned ${response.status}: ${response.statusText}`);
+            throw new Error(
+              `Queue API returned ${response.status}: ${response.statusText}`
+            );
           }
           return response.json();
         })
@@ -1913,7 +2061,8 @@
             if (data && data.currentQueuePosition !== undefined) {
               // Convert to number if needed and handle 0 correctly
               const queueValue = data.currentQueuePosition;
-              queueElement.textContent = queueValue === 0 ? "No active tickets" : queueValue;
+              queueElement.textContent =
+                queueValue === 0 ? "No active tickets" : queueValue;
             } else {
               queueElement.textContent = "No active tickets";
             }
@@ -1928,23 +2077,27 @@
     // Update queue list module
     function updateQueueList() {
       fetch("/api/queue/list", {
-        cache: 'no-cache',
-        credentials: 'same-origin',
+        cache: "no-cache",
+        credentials: "same-origin",
         headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache'
-        }
+          Pragma: "no-cache",
+          "Cache-Control": "no-cache",
+        },
       })
         .then((response) => {
           if (!response.ok) {
-            throw new Error(`Queue list API returned ${response.status}: ${response.statusText}`);
+            throw new Error(
+              `Queue list API returned ${response.status}: ${response.statusText}`
+            );
           }
           return response.json();
         })
         .then((data) => {
           const statusText = document.getElementById("queue-status-text");
           const queueCountBadge = document.getElementById("queue-count-badge");
-          const queueContainer = document.getElementById("queue-items-container");
+          const queueContainer = document.getElementById(
+            "queue-items-container"
+          );
 
           if (data.success && data.queue) {
             const queueList = data.queue;
@@ -1960,13 +2113,15 @@
               if (count === 0) {
                 statusText.textContent = "No players in queue";
               } else {
-                statusText.textContent = `${count} player${count > 1 ? 's' : ''} in queue`;
+                statusText.textContent = `${count} player${
+                  count > 1 ? "s" : ""
+                } in queue`;
               }
             }
 
             // Update queue items container
             if (queueContainer) {
-              queueContainer.innerHTML = '';
+              queueContainer.innerHTML = "";
 
               if (count === 0) {
                 queueContainer.innerHTML = `
@@ -1978,35 +2133,49 @@
               } else {
                 queueList.forEach((ticket, index) => {
                   // Determine if this is a competition kick or not based on competition_type
-                  const isCompetitionKick = ticket.competition_type &&
-                    ticket.competition_type !== 'practice' &&
-                    ticket.competition_type !== 'no-competition' &&
-                    ticket.competition_type !== 'casual';
+                  const isCompetitionKick =
+                    ticket.competition_type &&
+                    ticket.competition_type !== "practice" &&
+                    ticket.competition_type !== "no-competition" &&
+                    ticket.competition_type !== "casual";
 
-                  const kickType = isCompetitionKick ? 'Competition' : 'No Competition';
-                  const ageGroup = ticket.age_group || 'Unknown';
-                  const phoneNumber = ticket.phone || 'N/A';
+                  const kickType = isCompetitionKick
+                    ? "Competition"
+                    : "No Competition";
+                  const ageGroup = ticket.age_group || "Unknown";
+                  const phoneNumber =
+                    ticket.phone || ticket.parent_phone || "No phone";
+                  const locationDisplay =
+                    (ticket.city_village ? ticket.city_village + ", " : "") +
+                    (ticket.residence || "No residence");
 
                   // Determine if this is the currently serving ticket
                   const isCurrentlyServing = index === 0;
-                  const servingClass = isCurrentlyServing ? 'now-serving' : '';
-                  const statusBadge = isCurrentlyServing ?
-                    '<span class="badge bg-success ms-2">Now Serving</span>' : '';
+                  const servingClass = isCurrentlyServing ? "now-serving" : "";
+                  const statusBadge = isCurrentlyServing
+                    ? '<span class="badge bg-success ms-2">Now Serving</span>'
+                    : "";
 
                   const queueItem = `
                     <div class="queue-item ${servingClass}">
                       <div class="d-flex justify-content-between align-items-start">
                         <div>
                           <h6 class="mb-1">
-                            <strong>Ticket #${ticket.ticket_number}</strong>${statusBadge}
+                            <strong>Ticket #${
+                              ticket.ticket_number
+                            }</strong>${statusBadge}
                           </h6>
-                          <p class="mb-1 text-primary fw-bold">${ticket.player_name}</p>
+                          <p class="mb-1 text-primary fw-bold">${
+                            ticket.player_name
+                          }</p>
                           <small class="text-muted">
-                            <i class="bi bi-telephone me-1"></i>Phone: ${phoneNumber}
+                            <i class="bi bi-telephone me-1"></i>${phoneNumber}
                             <span class="mx-2">|</span>
-                            <i class="bi bi-person-badge me-1"></i>Age: ${ageGroup}
+                            <i class="bi bi-geo-alt me-1"></i>${locationDisplay}
                             <span class="mx-2">|</span>
-                            <i class="bi bi-trophy me-1"></i>Type: ${kickType}
+                            <i class="bi bi-person-badge me-1"></i>${ageGroup}
+                            <span class="mx-2">|</span>
+                            <i class="bi bi-trophy me-1"></i>${kickType}
                           </small>
                         </div>
                         <div class="text-end">
@@ -2045,7 +2214,7 @@
 
       // Add data attribute to identify this row
       if (activity.id) {
-        newRow.setAttribute('data-activity-id', activity.id);
+        newRow.setAttribute("data-activity-id", activity.id);
       }
 
       const timeCell = newRow.insertCell(0);
@@ -2054,27 +2223,24 @@
       const locationCell = newRow.insertCell(3);
       const staffCell = newRow.insertCell(4);
 
-      // Handle timestamp display consistently
-      let displayTime;
-      if (activity.timestamp instanceof Date) {
-        // Preloaded data - already correct
-        displayTime = activity.timestamp.toLocaleTimeString('en-US', {
-          hour12: true,
-          hour: 'numeric',
-          minute: '2-digit'
-        });
-      } else {
-        // String timestamp - likely UTC, adjust for Belize
-        const utcTime = new Date(activity.timestamp);
-        const belizeTime = new Date(utcTime.getTime() - (6 * 60 * 60 * 1000));
-        displayTime = belizeTime.toLocaleTimeString('en-US', {
-          hour12: true,
-          hour: 'numeric',
-          minute: '2-digit'
-        });
-      }
-
-      timeCell.textContent = displayTime;
+      // Unified Belize timezone formatting (stored timestamps already in Belize or ISO)
+      const formatBelize = (ts) => {
+        try {
+          return new Date(ts).toLocaleTimeString("en-US", {
+            hour12: true,
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: "America/Belize",
+          });
+        } catch {
+          return String(ts);
+        }
+      };
+      timeCell.textContent = formatBelize(
+        activity.timestamp instanceof Date
+          ? activity.timestamp.toISOString()
+          : activity.timestamp
+      );
 
       playerCell.textContent = activity.playerName;
       goalsCell.textContent = activity.goals;
@@ -2085,7 +2251,7 @@
       staffCell.textContent = activity.staffName || "<%= user.name %>"; // Use current user's name if not provided
 
       // No longer adding to cache here - that's handled in the goal submission handler
-    }    // Update activity table with data from API
+    } // Update activity table with data from API
     function updateActivityTableWithData(activities) {
       const table = document.getElementById("activity-table");
       const noActivityRow = document.getElementById("no-activity-row");
@@ -2093,35 +2259,205 @@
       // Make a deep copy of activities to avoid modifying the original
       let activitiesToDisplay = [];
 
-      // First deduplicate the array by ID
+      // First deduplicate the array by ID and collapse clientGenerated duplicates replaced by server versions
       if (activities && activities.length) {
-        // Create a map to deduplicate by ID
         const uniqueActivitiesMap = new Map();
+        const minuteKey = (ts) => {
+          try {
+            const d = new Date(
+              ts instanceof Date ? ts.toISOString() : String(ts)
+            );
+            return (
+              d.getFullYear() +
+              "-" +
+              String(d.getMonth() + 1).padStart(2, "0") +
+              "-" +
+              String(d.getDate()).padStart(2, "0") +
+              "T" +
+              String(d.getHours()).padStart(2, "0") +
+              ":" +
+              String(d.getMinutes()).padStart(2, "0")
+            );
+          } catch {
+            return String(ts).substring(0, 16);
+          }
+        };
+        // Track server-backed signatures to drop matching clientGenerated ones
+        const serverSignatureSet = new Set();
 
-        // Add each activity to the map, with ID as key
-        activities.forEach(activity => {
-          if (activity.id) {
-            uniqueActivitiesMap.set(activity.id, activity);
-          } else {
-            // For activities without ID, generate a temporary one
-            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            activity.id = tempId;
-            uniqueActivitiesMap.set(tempId, activity);
+        // One pass to record server activities
+        activities.forEach((a) => {
+          if (a && a.id && !a.clientGenerated) {
+            const sig = `${
+              a.player_id || a.playerId || a.playerName
+            }|${parseInt(a.goals || 0, 10)}|${minuteKey(a.timestamp)}`;
+            serverSignatureSet.add(sig);
           }
         });
 
-        // Convert map back to array
-        activitiesToDisplay = Array.from(uniqueActivitiesMap.values());
-
-        // Sort by timestamp, newest first
-        activitiesToDisplay.sort((a, b) => {
-          // Convert to Date objects if they're strings
-          const dateA = typeof a.timestamp === 'string' ? new Date(a.timestamp) : a.timestamp;
-          const dateB = typeof b.timestamp === 'string' ? new Date(b.timestamp) : b.timestamp;
-          return dateB - dateA;
+        activities.forEach((activity) => {
+          // Skip clientGenerated if server signature exists for same player+goals+minute
+          const sig = `${
+            activity.player_id || activity.playerId || activity.playerName
+          }|${parseInt(activity.goals || 0, 10)}|${minuteKey(
+            activity.timestamp
+          )}`;
+          if (activity.clientGenerated && serverSignatureSet.has(sig)) {
+            return; // drop duplicate now that server copy present
+          }
+          if (!activity.id) {
+            activity.id = `temp-${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 9)}`;
+          }
+          uniqueActivitiesMap.set(activity.id, activity);
         });
 
-        console.log("Deduplicated activities:", activitiesToDisplay.length);
+        activitiesToDisplay = Array.from(uniqueActivitiesMap.values()).filter(
+          (a) => {
+            try {
+              const raw =
+                a.timestamp instanceof Date
+                  ? a.timestamp.toISOString()
+                  : String(a.timestamp);
+              const d = new Date(raw);
+              return !isNaN(d.getTime());
+            } catch {
+              return false;
+            }
+          }
+        );
+        activitiesToDisplay.sort((a, b) => {
+          const dateA = new Date(
+            a.timestamp instanceof Date
+              ? a.timestamp.toISOString()
+              : a.timestamp
+          ).getTime();
+          const dateB = new Date(
+            b.timestamp instanceof Date
+              ? b.timestamp.toISOString()
+              : b.timestamp
+          ).getTime();
+          return dateB - dateA;
+        });
+        // SECOND PASS: aggressive signature-based dedupe (player|goals|minute|location|staff)
+        const seenSig = new Map();
+        const minuteKey2 = (ts) =>
+          (function () {
+            try {
+              const d = new Date(
+                ts instanceof Date ? ts.toISOString() : String(ts)
+              );
+              return (
+                d.getFullYear() +
+                "-" +
+                String(d.getMonth() + 1).padStart(2, "0") +
+                "-" +
+                String(d.getDate()).padStart(2, "0") +
+                "T" +
+                String(d.getHours()).padStart(2, "0") +
+                ":" +
+                String(d.getMinutes()).padStart(2, "0")
+              );
+            } catch {
+              return String(ts).substring(0, 16);
+            }
+          })();
+        const filtered = [];
+        for (const act of activitiesToDisplay) {
+          const sig = `${
+            act.player_id || act.playerId || act.playerName
+          }|${parseInt(act.goals || 0, 10)}|${minuteKey2(act.timestamp)}|${(
+            act.location || ""
+          ).toLowerCase()}|${(
+            act.staffName ||
+            act.staff_name ||
+            ""
+          ).toLowerCase()}`;
+          if (!seenSig.has(sig)) {
+            seenSig.set(sig, act);
+            filtered.push(act);
+          } else {
+            const existing = seenSig.get(sig);
+            // Prefer serverFetched over clientGenerated if replacement scenario
+            if (existing.clientGenerated && act.serverFetched) {
+              seenSig.set(sig, act);
+              const idx = filtered.indexOf(existing);
+              if (idx >= 0) filtered[idx] = act;
+            }
+          }
+        }
+        activitiesToDisplay = filtered;
+        console.log(
+          "Deduplicated activities (post server collapse):",
+          activitiesToDisplay.length
+        );
+
+        // THIRD PASS: collapse near-duplicates within 10 seconds (same player/goals/location/staff)
+        const collapseWindowMs = 10 * 1000; // 10 seconds
+        const bySignature = [];
+        const taken = new Set();
+        for (let i = 0; i < activitiesToDisplay.length; i++) {
+          if (taken.has(i)) continue;
+          const a = activitiesToDisplay[i];
+          const aTs = new Date(
+            a.timestamp instanceof Date
+              ? a.timestamp.toISOString()
+              : a.timestamp
+          ).getTime();
+          const group = [a];
+          for (let j = i + 1; j < activitiesToDisplay.length; j++) {
+            if (taken.has(j)) continue;
+            const b = activitiesToDisplay[j];
+            if (
+              (b.player_id || b.playerId || b.playerName) ===
+                (a.player_id || a.playerId || a.playerName) &&
+              parseInt(b.goals || 0, 10) === parseInt(a.goals || 0, 10) &&
+              (b.location || "").toLowerCase() ===
+                (a.location || "").toLowerCase() &&
+              (b.staffName || b.staff_name || "").toLowerCase() ===
+                (a.staffName || a.staff_name || "").toLowerCase()
+            ) {
+              const bTs = new Date(
+                b.timestamp instanceof Date
+                  ? b.timestamp.toISOString()
+                  : b.timestamp
+              ).getTime();
+              if (Math.abs(bTs - aTs) <= collapseWindowMs) {
+                group.push(b);
+                taken.add(j);
+              }
+            }
+          }
+          if (group.length > 1) {
+            // Choose best representative: prefer serverFetched, else earliest timestamp
+            group.sort((g1, g2) => {
+              if (g1.serverFetched && !g2.serverFetched) return -1;
+              if (g2.serverFetched && !g1.serverFetched) return 1;
+              const t1 = new Date(
+                g1.timestamp instanceof Date
+                  ? g1.timestamp.toISOString()
+                  : g1.timestamp
+              ).getTime();
+              const t2 = new Date(
+                g2.timestamp instanceof Date
+                  ? g2.timestamp.toISOString()
+                  : g2.timestamp
+              ).getTime();
+              return t1 - t2;
+            });
+            bySignature.push(group[0]);
+          } else {
+            bySignature.push(a);
+          }
+        }
+        if (bySignature.length !== activitiesToDisplay.length) {
+          console.log(
+            "[ActivityDedupe] Collapsed near-duplicates:",
+            activitiesToDisplay.length - bySignature.length
+          );
+        }
+        activitiesToDisplay = bySignature;
       }
 
       // Clear existing table data first to prevent duplicates
@@ -2146,18 +2482,14 @@
 
       // Add each activity to the table
       activitiesToDisplay.forEach((activity) => {
-
         const newRow = table.insertRow(-1);
 
         // Add a data attribute to help with deduplication
         if (activity.id) {
-          newRow.setAttribute('data-activity-id', activity.id);
+          newRow.setAttribute("data-activity-id", activity.id);
         }
 
-        // Add a class to highlight client-generated activities
-        if (activity.clientGenerated) {
-          newRow.className = "table-success";
-        }
+        // Highlighting removed: no row color modifications for client-generated entries
 
         const timeCell = newRow.insertCell(0);
         const playerCell = newRow.insertCell(1);
@@ -2165,35 +2497,37 @@
         const locationCell = newRow.insertCell(3);
         const staffCell = newRow.insertCell(4);
 
-        // Handle timestamp formatting - fix timezone conversion
+        // Handle timestamp formatting - always render in Belize timezone
         try {
-          let timestamp = new Date(activity.timestamp);
-
-          // If the timestamp appears to be UTC (from API), adjust for Belize timezone
-          if (typeof activity.timestamp === 'string' && activity.timestamp.includes('Z')) {
-            // This is a UTC timestamp from the database
-            // Subtract 6 hours to get the actual Belize time
-            timestamp = new Date(timestamp.getTime() - (6 * 60 * 60 * 1000));
-          }
-
-          timeCell.textContent = timestamp.toLocaleTimeString('en-US', {
-            hour12: true,
-            hour: 'numeric',
-            minute: '2-digit'
-          });
+          const rawTs =
+            activity.timestamp instanceof Date
+              ? activity.timestamp.toISOString()
+              : activity.timestamp;
+          const formatted =
+            new Date(rawTs).toLocaleTimeString("en-US", {
+              hour12: true,
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: "America/Belize",
+            }) || "";
+          timeCell.textContent = formatted === "Invalid Date" ? "" : formatted;
         } catch (e) {
           console.error("Error formatting timestamp:", e);
           timeCell.textContent = String(activity.timestamp);
         }
 
-        playerCell.textContent = activity.playerName || activity.player_name || "Unknown Player";
+        playerCell.textContent =
+          activity.playerName || activity.player_name || "Unknown Player";
         goalsCell.textContent = activity.goals || 0;
 
         // Add location
         locationCell.textContent = activity.location || "Unknown";
 
         staffCell.textContent =
-          activity.staffName || activity.staff_name || "<%= user.name %>" || "Unknown"; // Handle different possible field names
+          activity.staffName ||
+          activity.staff_name ||
+          "<%= user.name %>" ||
+          "Unknown"; // Handle different possible field names
       });
     }
 
@@ -2381,7 +2715,6 @@
     console.log(
       "Skip queue button:",
       !!document.getElementById("skip-queue-btn")
-    );
     );
 
     // --- Fix: Always enable Log Goals buttons when a ticket is selected ---

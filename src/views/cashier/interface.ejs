@@ -512,15 +512,20 @@
       const element = document.getElementById(id);
       if (!element) {
         console.error(`❌ Element with id '${id}' not found in DOM`);
-        console.log("Available elements:", Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+        console.log(
+          "Available elements:",
+          Array.from(document.querySelectorAll("[id]")).map((el) => el.id)
+        );
         return null;
       }
       return element;
     }
 
     // Verify HTML5QRCode library is loaded
-    if (typeof Html5Qrcode === 'undefined') {
-      console.error("❌ Html5Qrcode library not loaded! Scanner will not work.");
+    if (typeof Html5Qrcode === "undefined") {
+      console.error(
+        "❌ Html5Qrcode library not loaded! Scanner will not work."
+      );
       // Note: Scanner buttons will still work but check library when clicked
     }
     console.log("✅ Html5Qrcode library loaded successfully");
@@ -533,167 +538,60 @@
     let html5QrCode = null;
     let currentPlayerId = null;
 
-    // QR Scanner - INITIALIZE AFTER EVERYTHING IS READY
-    console.log("🔄 Initializing QR Scanner...");
-    const startScanBtn = safeGetElement("start-scan");
-    const stopScanBtn = safeGetElement("stop-scan");
+    // QR scanner handled by external cashier-scanner.js; removed duplicate inline implementation.
 
-    if (!startScanBtn) {
-      console.error("❌ Start scan button not found! Scanner cannot be initialized.");
-      return;
-    }
-
-    console.log("✅ Scanner buttons found, attaching event listeners...");
-
-    if (startScanBtn) {
-      startScanBtn.addEventListener("click", function () {
-        console.log("🎯 Start scan button clicked!");
-
-        // Check if library is loaded when button is clicked
-        if (typeof Html5Qrcode === 'undefined') {
-          console.error("❌ Html5Qrcode library not yet loaded!");
-          alert("QR Scanner library is still loading. Please wait a moment and try again.");
-          return;
-        }
-
-        alert("Scanner button clicked! Check console for details."); // Diagnostic alert
-        try {
-          const qrContainer = document.getElementById("qr-reader");
-          if (!qrContainer) {
-            console.error("❌ QR reader container not found!");
-            alert("QR reader container not found. Please refresh the page.");
-            return;
-          }
-
-          console.log("📱 Initializing Html5Qrcode...");
-          html5QrCode = new Html5Qrcode("qr-reader");
-
-          console.log("📹 Starting camera...");
-          html5QrCode
-            .start(
-              { facingMode: "environment" },
-              { fps: 10, qrbox: 250 },
-              function onScanSuccess(decodedText) {
-                console.log("✅ QR Code detected:", decodedText);
-                if (html5QrCode) {
-                  html5QrCode
-                    .stop()
-                    .then(function () {
-                      console.log("📱 Scanner stopped successfully");
-                      const startBtn = document.getElementById("start-scan");
-                      const stopBtn = document.getElementById("stop-scan");
-                      if (startBtn) startBtn.classList.remove("d-none");
-                      if (stopBtn) stopBtn.classList.add("d-none");
-                      processQRCode(decodedText);
-                    })
-                    .catch(function (err) {
-                      console.error("❌ Failed to stop scanner:", err);
-                    });
-                }
-              },
-              function onScanError(error) {
-                // Ignore non-fatal errors
-                if (
-                  error !==
-                  "QR code parse error, error = NotFoundException: No MultiFormat Readers were able to detect the code."
-                ) {
-                  console.warn("QR scan error:", error);
-                }
-              }
-            )
-            .then(function () {
-              console.log("✅ Scanner started successfully");
-              if (startScanBtn) startScanBtn.classList.add("d-none");
-              if (stopScanBtn) stopScanBtn.classList.remove("d-none");
-            })
-            .catch(function (err) {
-              console.error("❌ Failed to start scanner:", err);
-              alert(
-                "Could not start scanner. Please check camera permissions and ensure you're using HTTPS."
-              );
-            });
-        } catch (err) {
-          console.error("❌ Error initializing scanner:", err);
-          alert("Could not initialize scanner: " + err.message);
-        }
-      });
-    }
-
-    // Stop scanner button
-    if (stopScanBtn) {
-      stopScanBtn.addEventListener("click", function () {
-        console.log("🛑 Stop scan button clicked!");
-        if (html5QrCode) {
-          html5QrCode
-              .stop()
-              .then(function () {
-                console.log("✅ Scanner stopped successfully");
-                if (startScanBtn) startScanBtn.classList.remove("d-none");
-                if (stopScanBtn) stopScanBtn.classList.add("d-none");
-              })
-              .catch(function (err) {
-                console.error("❌ Failed to stop scanner:", err);
-                // Reset UI anyway
-                if (startScanBtn) startScanBtn.classList.remove("d-none");
-                if (stopScanBtn) stopScanBtn.classList.add("d-none");
-              });
-        } else {
-          console.log("⚠️ No scanner instance to stop");
-          // Reset UI if scanner object doesn't exist
-          if (startScanBtn) startScanBtn.classList.remove("d-none");
-          if (stopScanBtn) stopScanBtn.classList.add("d-none");
-        }
-      });
-    }
+    // (Stop scanner now handled inside cashier-scanner.js)
 
     // Process QR code data
-    function processQRCode(qrData) {
-      // Show loading indicator in player info area
-      document.getElementById("player-info").innerHTML = `
-      <div class="text-center">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-2">Processing QR code...</p>
-      </div>
-    `;
+    window.processQRCode = function processQRCode(qrData) {
+      const infoEl = document.getElementById("player-info");
+      if (!infoEl) return;
 
-      // Send QR data to server
+      infoEl.innerHTML = `
+        <div class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Processing QR code...</p>
+        </div>`;
+
+      // If already parsed object with playerId -> send minimal payload
+      let payload;
+      if (qrData && typeof qrData === "object") {
+        // Accept either {playerId} or {id}
+        payload = { qrData: JSON.stringify(qrData) };
+      } else {
+        payload = { qrData };
+      }
+
       fetch("/cashier/api/scan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ qrData }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       })
-        .then((response) => response.json())
+        .then((r) => r.json())
         .then((data) => {
-          if (data.success) {
+          if (data && data.success && data.player) {
             displayPlayerInfo(data.player);
           } else {
-            document.getElementById("player-info").innerHTML = `
-          <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            ${data.message}
-          </div>
-        `;
+            infoEl.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${
+              data && data.message
+                ? data.message
+                : "Player not found for this code."
+            }</div>`;
           }
         })
-        .catch((error) => {
-          console.error("Error processing QR code:", error);
-          document.getElementById("player-info").innerHTML = `
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          Error processing QR code. Please try again.
-        </div>
-      `;
+        .catch((err) => {
+          console.error("Error processing QR code:", err);
+          infoEl.innerHTML =
+            '<div class="alert alert-danger">Error processing QR code. Please try again.</div>';
         });
-    } // Player Search
+    }; // Player Search
     const searchBtn = safeGetElement("search-button");
     if (searchBtn) {
       searchBtn.addEventListener("click", function () {
         const nameInput = safeGetElement("name-search");
-        const name = nameInput?.value?.trim();
+        const name = nameInput && nameInput.value ? nameInput.value.trim() : "";
         if (!name) {
           alert("Please enter a name to search");
           return;
@@ -708,9 +606,36 @@
           '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
         // Send search query to server
-        fetch(`/cashier/api/search?query=${encodeURIComponent(name)}`)
+        const cacheBust = Date.now();
+        fetch(
+          `/cashier/api/search?query=${encodeURIComponent(name)}&t=${cacheBust}`
+        )
           .then((response) => response.json())
           .then((data) => {
+            try {
+              if (data && data.players) {
+                console.log(
+                  "[SEARCH DEBUG] Players length:",
+                  data.players.length
+                );
+                if (data.players[0]) {
+                  const p = data.players[0];
+                  console.log(
+                    "[SEARCH DEBUG] First player keys:",
+                    Object.keys(p)
+                  );
+                  console.log("[SEARCH DEBUG] First player contact:", {
+                    phone: p.phone,
+                    residence: p.residence,
+                    city_village: p.city_village,
+                    parent_phone: p.parent_phone,
+                    email: p.email,
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn("Search debug log error", e);
+            }
             if (data.success && data.players.length > 0) {
               // Clear previous results
               results.innerHTML = "";
@@ -727,11 +652,17 @@
 
                 // Create text content
                 const textDiv = document.createElement("div");
-                textDiv.innerHTML = `<strong>${player.name}</strong><br>${
-                  player.phone || "No phone"
-                } | ${player.city_village ? player.city_village + ", " : ""}${
-                  player.residence || "No residence"
-                }`;
+                textDiv.innerHTML = `<strong>${
+                  player.name
+                }</strong><br><span class="player-contact" data-player-id="${
+                  player.id
+                }">${
+                  player.phone && player.residence
+                    ? `${player.phone} | ${
+                        player.city_village ? player.city_village + ", " : ""
+                      }${player.residence}`
+                    : "Loading..."
+                }</span>`;
 
                 // Add elements to item
                 item.appendChild(avatar);
@@ -740,13 +671,42 @@
                   displayPlayerInfo(player);
                 };
                 results.appendChild(item);
+
+                // Enrich contact info asynchronously if missing
+                if (!player.phone || !player.residence) {
+                  fetch(
+                    `/cashier/api/player-contact/${player.id}?t=${Date.now()}`
+                  )
+                    .then((r) => r.json())
+                    .then((d) => {
+                      const span = textDiv.querySelector(".player-contact");
+                      if (d.success && d.player) {
+                        Object.assign(player, d.player, {
+                          _contactLoaded: true,
+                        });
+                        if (span) {
+                          span.textContent = `${player.phone || "No phone"} | ${
+                            player.city_village
+                              ? player.city_village + ", "
+                              : ""
+                          }${player.residence || "No residence"}`;
+                        }
+                      } else if (span) {
+                        span.textContent = "No phone | No residence";
+                      }
+                    })
+                    .catch(() => {
+                      const span = textDiv.querySelector(".player-contact");
+                      if (span) span.textContent = "No phone | No residence";
+                    });
+                }
               });
             } else {
               results.innerHTML =
                 '<div class="alert alert-warning">No players found matching your search</div>';
               // Reset search flag when no players found
               window.currentSearchOperation = false;
-              }
+            }
           })
           .catch((error) => {
             console.error("Error searching for players:", error);
@@ -762,6 +722,26 @@
     } // Close the if (searchBtn) block
 
     function displayPlayerInfo(player) {
+      if (
+        !player._contactLoaded &&
+        (player.phone === undefined || player.residence === undefined)
+      ) {
+        fetch(`/cashier/api/player-contact/${player.id}?t=${Date.now()}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.success && d.player) {
+              Object.assign(player, d.player, { _contactLoaded: true });
+            } else {
+              player._contactLoaded = true;
+            }
+            displayPlayerInfo(player);
+          })
+          .catch(() => {
+            player._contactLoaded = true;
+            displayPlayerInfo(player);
+          });
+        return;
+      }
       const infoDiv = document.getElementById("player-info");
 
       // Clear previous content
@@ -1367,94 +1347,30 @@
       }
 
       if (userRole === "sales") {
-        // If this is not an explicit force refresh and we just loaded the page and have preloaded data
-        const pageJustLoaded = Date.now() - window.pageLoadTime < 2000;
-        if (
-          !forceRefresh &&
-          pageJustLoaded &&
-          window.preloadedFromServer === true
-        ) {
-          console.log(
-            "Page just loaded with preloaded transactions - using server-rendered transactions"
-          );
-          // Use the preloaded transactions from the server render
-          if (
-            window.cachedTransactions &&
-            window.cachedTransactions.length > 0
-          ) {
-            console.log(
-              `Using ${window.cachedTransactions.length} preloaded transactions from server`
-            );
-            updateTransactionsTableWithData(window.cachedTransactions);
-            return;
+        const ts = Date.now();
+        fetch(
+          `/cashier/api/transactions/today?t=${ts}&nocache=${Math.random()}`,
+          {
+            headers: { "Cache-Control": "no-cache" },
+            credentials: "same-origin",
           }
-        }
-
-        // For sales users: ALWAYS fetch fresh data from server in all other cases
-        const timestamp = Date.now();
-        const url = `/cashier/api/transactions/today?t=${timestamp}&nocache=${Math.random()}`;
-
-        fetch(url, {
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-          credentials: "same-origin", // Include cookies
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Server returned ${response.status}: ${response.statusText}`
-              );
-            }
-            return response.json();
-          })
+        )
+          .then((r) =>
+            r.ok
+              ? r.json()
+              : Promise.reject(new Error(r.status + " " + r.statusText))
+          )
           .then((data) => {
-            // Now we should always get a structured response object, but handle both formats for backward compatibility
-            const transactions = Array.isArray(data)
-              ? data
-              : data.transactions || [];
-
-            // Always ensure we have transactions, even if they're empty
-            if (!transactions) {
-              console.warn("No transactions array in response:", data);
-              return;
-            }
-
-            // If it's the new format, log additional info
-            if (data.timestamp) {
-              .toLocaleTimeString("en-US", {
-                  timeZone: "America/Belize",
-                  hour12: true,
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
-              );
-            } else {
-              }
-
-            // Update global state
-            window.cachedTransactions = transactions;
-            window.lastTransactionLoad = Date.now();
-
-            // Store in both localStorage and sessionStorage for persistence
+            const list = Array.isArray(data) ? data : data.transactions || [];
+            window.cachedTransactions = list;
             try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-            } catch (e) {
-              console.error("Failed to cache transactions:", e);
-            }
-
-            // Render the transactions
-            updateTransactionsTableWithData(transactions);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            } catch (e) {}
+            updateTransactionsTableWithData(list);
           })
-          .catch((err) => {
-            console.error(`[${timestamp}] Error refreshing transactions:`, err);
-            // If there's an error, try again in 5 seconds
-            setTimeout(() => loadTodaysTransactions(true), 5000);
-          });
-        return;
+          .catch((err) => console.error("[Sales] Refresh error", err));
+        return; // sales path ends
       }
 
       // Normal flow for staff/admin users
@@ -1490,21 +1406,11 @@
             ? data
             : data.transactions || data;
 
-          if (data.timestamp) {
-            .toLocaleTimeString("en-US", {
-                timeZone: "America/Belize",
-                hour12: true,
-                hour: "numeric",
-                minute: "2-digit",
-              })
-            );
-          } else {
-            console.log(
-              "Loaded",
-              rawTransactions.length,
-              "transactions from server"
-            );
-          }
+          console.log(
+            "Loaded",
+            rawTransactions.length,
+            "transactions from server"
+          );
 
           window.lastTransactionLoad = Date.now();
 

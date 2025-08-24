@@ -18,7 +18,6 @@ const QueueTicket_1 = __importDefault(require("../../models/QueueTicket"));
 const db_1 = require("../../config/db");
 // Display staff interface
 const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         // Authentication is already handled by isStaff middleware
         // No need for additional checks here
@@ -27,14 +26,8 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const competitionTypes = competitionTypesResult.rows;
         // Get current queue position
         const currentQueuePosition = yield QueueTicket_1.default.getCurrentQueuePosition();
-        // Get next ticket number
-        const nextTicketQuery = `
-      SELECT value as next_ticket
-      FROM global_counters
-      WHERE id = 'next_queue_number'
-    `;
-        const nextTicketResult = yield db_1.pool.query(nextTicketQuery);
-        const nextTicket = ((_a = nextTicketResult.rows[0]) === null || _a === void 0 ? void 0 : _a.next_ticket) || 1000;
+        // Unified ticket display numbers
+        const { currentServing, lastIssued, next } = yield QueueTicket_1.default.getDisplayNumbers();
         // Get ticket information for low ticket warning using same logic as ticket management
         let ticketInfo = {
             availableTickets: 0,
@@ -53,7 +46,7 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 const startTicket = ticketRangeSettings.start_ticket;
                 const endTicket = ticketRangeSettings.end_ticket;
                 // Calculate available tickets the same way as ticket management page
-                ticketInfo.availableTickets = Math.max(0, endTicket - nextTicket + 1);
+                ticketInfo.availableTickets = Math.max(0, endTicket - next + 1);
                 ticketInfo.ticketRange = `${startTicket}-${endTicket}`;
                 ticketInfo.lowTicketWarning = ticketInfo.availableTickets < 50;
             }
@@ -73,7 +66,9 @@ const getInterface = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             title: "Staff Interface",
             competitionTypes,
             currentQueuePosition,
-            nextTicket,
+            currentServing,
+            lastTicketIssued: lastIssued,
+            nextTicket: next,
             ticketInfo,
         });
     }

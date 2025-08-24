@@ -26,6 +26,9 @@ exports.getLogin = getLogin;
 // Process login form
 const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log("[LOGIN] Incoming login attempt", {
+            body: Object.assign(Object.assign({}, req.body), { password: undefined }),
+        });
         const { username, password, userType } = req.body;
         // Validate input
         if (!username || !password) {
@@ -63,25 +66,39 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 role: staff.role,
                 type: "staff",
             };
+            console.log("[LOGIN] Staff auth success, session object set (pre-save)", {
+                sessionID: req.sessionID,
+                user: req.session.user,
+            });
             // Mark session with current server start time
             req.session.serverStartTime = app_1.SERVER_START_TIME;
-            req.flash("success_msg", `Welcome back, ${staff.name}`);
-            // Check if there's a return URL stored in the session
-            if (req.session.returnTo) {
-                const returnTo = req.session.returnTo;
-                delete req.session.returnTo;
-                return res.redirect(returnTo);
-            }
-            // Redirect based on role
-            if (staff.role === "admin") {
-                res.redirect("/admin/dashboard");
-            }
-            else if (staff.role === "sales") {
-                res.redirect("/cashier/interface");
-            }
-            else {
-                res.redirect("/staff/interface");
-            }
+            req.session.save((err) => {
+                if (err) {
+                    console.error("[LOGIN] Error saving staff session", err);
+                    req.flash("error_msg", "Session save failed");
+                    return res.redirect("/auth/login");
+                }
+                console.log("[LOGIN] Staff session saved", {
+                    sessionID: req.sessionID,
+                });
+                req.flash("success_msg", `Welcome back, ${staff.name}`);
+                // Check if there's a return URL stored in the session
+                if (req.session.returnTo) {
+                    const returnTo = req.session.returnTo;
+                    delete req.session.returnTo;
+                    return res.redirect(returnTo);
+                }
+                // Redirect based on role
+                if (staff.role === "admin") {
+                    res.redirect("/admin/dashboard");
+                }
+                else if (staff.role === "sales") {
+                    res.redirect("/cashier/interface");
+                }
+                else {
+                    res.redirect("/staff/interface");
+                }
+            });
         }
         // Player login
         else {
@@ -106,14 +123,24 @@ const postLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 role: "player",
                 type: "player",
             };
-            // Mark session with current server start time
+            console.log("[LOGIN] Player auth success, session object set (pre-save)", { sessionID: req.sessionID, user: req.session.user });
             req.session.serverStartTime = app_1.SERVER_START_TIME;
-            req.flash("success_msg", `Welcome back, ${player.name}`);
-            res.redirect("/player/dashboard");
+            req.session.save((err) => {
+                if (err) {
+                    console.error("[LOGIN] Error saving player session", err);
+                    req.flash("error_msg", "Session save failed");
+                    return res.redirect("/auth/login");
+                }
+                console.log("[LOGIN] Player session saved", {
+                    sessionID: req.sessionID,
+                });
+                req.flash("success_msg", `Welcome back, ${player.name}`);
+                res.redirect("/player/dashboard");
+            });
         }
     }
     catch (error) {
-        console.error("Login error:", error);
+        console.error("[LOGIN] Unexpected error", error);
         req.flash("error_msg", "An error occurred during login");
         res.redirect("/auth/login");
     }
@@ -150,13 +177,13 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             parentPhone = fullPhoneNumber;
             // Generate a unique phone identifier for the child
             // Check how many children this parent already has
-            const existingChildren = yield db_1.pool.query("SELECT COUNT(*) as count FROM players WHERE parent_phone = $1", [parentPhone]);
+            const existingChildren = yield (0, db_1.executeQuery)("SELECT COUNT(*) as count FROM players WHERE parent_phone = $1", [parentPhone]);
             const childNumber = parseInt(existingChildren.rows[0].count) + 1;
             actualPhone = `${parentPhone}-C${childNumber}`;
         }
         // Check if player already exists (including deleted players to prevent conflicts)
         const existingPlayerQuery = "SELECT * FROM players WHERE phone = $1";
-        const existingPlayerResult = yield db_1.pool.query(existingPlayerQuery, [
+        const existingPlayerResult = yield (0, db_1.executeQuery)(existingPlayerQuery, [
             actualPhone,
         ]);
         const existingPlayer = existingPlayerResult.rows[0];
@@ -203,7 +230,7 @@ const postRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         // Insert upload record if photo was uploaded
         if (req.file) {
             try {
-                yield db_1.pool.query("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
+                yield (0, db_1.executeQuery)("INSERT INTO uploads (player_id, filename, filepath, mimetype, size) VALUES ($1, $2, $3, $4, $5)", [
                     player.id,
                     req.file.filename,
                     playerData.photo_path,

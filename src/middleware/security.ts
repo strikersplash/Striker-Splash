@@ -11,8 +11,69 @@ export function sanitizeResponse(
 
   res.json = function (obj: any) {
     if (obj && typeof obj === "object") {
-      // Recursively remove sensitive fields
-      obj = removeSensitiveData(obj);
+      // Skip removal for specific cashier endpoints where staff need contact info
+      const path = req.path || "";
+      // Allow disabling sanitization for targeted debug using query debug_raw=1
+      if ((req.query as any).debug_raw === "1") {
+        if (process.env.DEBUG_SANITIZE === "true") {
+          console.log(
+            "[SANITIZE DEBUG] Bypassing sanitization via debug_raw for path",
+            path
+          );
+        }
+        return originalJson.call(this, obj);
+      }
+      // Skip if controller purposely disabled sanitization
+      if ((res.locals as any).skipSanitize) {
+        if (process.env.DEBUG_SANITIZE === "true") {
+          console.log("[SANITIZE DEBUG] skipSanitize flag active for", path);
+        }
+        return originalJson.call(this, obj);
+      }
+      // Allow cashier API endpoints to include player contact/location fields for operational use
+      const allowContactFields =
+        path.startsWith("/cashier/api/") || path.startsWith("/referee/api/");
+      if (allowContactFields && process.env.DEBUG_SANITIZE === "true") {
+        try {
+          const sample = Array.isArray((obj as any).players)
+            ? (obj as any).players[0]
+            : null;
+          if (sample) {
+            console.log(
+              `[SANITIZE DEBUG] Before sanitize path=${path} keys=${Object.keys(
+                sample
+              )
+                .filter((k) =>
+                  [
+                    "phone",
+                    "residence",
+                    "city_village",
+                    "parent_phone",
+                    "email",
+                  ].includes(k)
+                )
+                .join(",")}`
+            );
+          }
+        } catch (e) {}
+      }
+      obj = removeSensitiveData(obj, allowContactFields);
+      if (allowContactFields && process.env.DEBUG_SANITIZE === "true") {
+        try {
+          const sample = Array.isArray((obj as any).players)
+            ? (obj as any).players[0]
+            : null;
+          if (sample) {
+            console.log(
+              `[SANITIZE DEBUG] After sanitize path=${path} hasPhone=${
+                "phone" in sample
+              } hasResidence=${"residence" in sample} hasCity=${
+                "city_village" in sample
+              }`
+            );
+          }
+        } catch (e) {}
+      }
     }
     return originalJson.call(this, obj);
   };
@@ -20,25 +81,27 @@ export function sanitizeResponse(
   next();
 }
 
-function removeSensitiveData(obj: any): any {
+function removeSensitiveData(obj: any, allowContactFields = false): any {
   if (Array.isArray(obj)) {
-    return obj.map((item) => removeSensitiveData(item));
+    return obj.map((item) => removeSensitiveData(item, allowContactFields));
   }
 
   if (obj && typeof obj === "object") {
     const cleaned = { ...obj };
 
     // Remove sensitive fields
-    const sensitiveFields = [
-      "phone",
-      "email",
-      "parent_phone",
-      "residence",
-      "city_village",
-      "password",
-      "password_hash",
-      "token",
-    ];
+    const sensitiveFields = allowContactFields
+      ? ["password", "password_hash", "token"] // preserve phone/residence/city for cashier
+      : [
+          "phone",
+          "email",
+          "parent_phone",
+          "residence",
+          "city_village",
+          "password",
+          "password_hash",
+          "token",
+        ];
 
     sensitiveFields.forEach((field) => {
       if (field in cleaned) {
@@ -48,7 +111,7 @@ function removeSensitiveData(obj: any): any {
 
     // Recursively clean nested objects
     Object.keys(cleaned).forEach((key) => {
-      cleaned[key] = removeSensitiveData(cleaned[key]);
+      cleaned[key] = removeSensitiveData(cleaned[key], allowContactFields);
     });
 
     return cleaned;
@@ -97,11 +160,10 @@ export function securityHeaders(
   // Referrer Policy
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  // Permissions Policy
-  res.setHeader(
-    "Permissions-Policy",
-    "geolocation=(), microphone=(), camera=()"
-  );
+  // Permissions Policy - allow camera for this origin so QR scanner works
+  // (Remove experimental / unsupported directives that caused console warnings.)
+  // If further tightening needed later, adjust to: camera=(self)
+  res.setHeader("Permissions-Policy", "camera=(self)");
 
   next();
 }

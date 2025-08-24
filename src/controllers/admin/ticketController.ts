@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "../../config/db";
+import QueueTicket from "../../models/QueueTicket";
 
 // Display ticket management page
 export const getTicketManagement = async (
@@ -153,16 +154,39 @@ export const updateNextTicket = async (
       console.error("Error creating global_counters table:", e);
     }
 
-    // Update next ticket number
+    // Update next ticket number directly
+    const newValue = parseInt(nextTicket);
     await pool.query(
       "INSERT INTO global_counters (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value = $2",
-      ["next_queue_number", parseInt(nextTicket)]
+      ["next_queue_number", newValue]
     );
 
+    // Optional: ensure counter is not below existing tickets (self-heal)
+    const driftCheck = await pool.query(
+      "SELECT value, (SELECT COALESCE(MAX(ticket_number), value-1) FROM queue_tickets) AS max_ticket FROM global_counters WHERE id=$1",
+      ["next_queue_number"]
+    );
+    const row = driftCheck.rows[0];
+    if (row && row.value <= row.max_ticket) {
+      const fixed = row.max_ticket + 1;
+      await pool.query("UPDATE global_counters SET value=$1 WHERE id=$2", [
+        fixed,
+        "next_queue_number",
+      ]);
+      console.warn(
+        `[TICKETS] Admin set caused drift; adjusted counter to ${fixed}`
+      );
+    }
+
+    // Return fresh window data
+    const windowResult = await pool.query(
+      "SELECT value FROM global_counters WHERE id='next_queue_number'"
+    );
+    const refreshedNext = windowResult.rows[0].value;
     res.json({
       success: true,
       message: "Next ticket number updated successfully",
-      nextTicket: parseInt(nextTicket),
+      nextTicket: refreshedNext,
     });
   } catch (error) {
     console.error("Update next ticket error:", error);
@@ -301,5 +325,31 @@ export const setTicketRange = async (
       success: false,
       message: "An error occurred while setting ticket range",
     });
+  }
+};
+
+// Manual resync endpoint (ensure counter >= max(ticket)+1 and return window)
+export const resyncTicketCounter = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (
+      !(req.session as any).user ||
+      (req.session as any).user.role !== "admin"
+    ) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    // Use model integrity method indirectly by calling window (which self-heals)
+    const windowBefore = await pool.query(
+      "SELECT value FROM global_counters WHERE id='next_queue_number'"
+    );
+    const beforeVal = windowBefore.rows[0]?.value || null;
+    const { lastIssued, nextToIssue } = await QueueTicket.getTicketWindow();
+    res.json({ success: true, beforeVal, lastIssued, nextToIssue });
+  } catch (e) {
+    console.error("Resync ticket counter failed", e);
+    res.status(500).json({ success: false, message: "Resync failed" });
   }
 };

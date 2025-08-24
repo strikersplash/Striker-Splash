@@ -27,6 +27,7 @@ import {
   getTicketManagement,
   updateNextTicket,
   setTicketRange,
+  resyncTicketCounter,
 } from "../../controllers/admin/ticketController";
 
 import {
@@ -66,7 +67,26 @@ router.post("/staff/delete/:id", isAdmin, deleteStaff);
 // Player management routes
 router.get("/players", isStaff, getPlayerManagement);
 router.get("/players/:id", isStaff, getPlayerDetails);
-router.post("/players/update/:id", isStaff, updatePlayer);
+router.post(
+  "/players/update/:id",
+  isStaff,
+  (req, res, next) => {
+    // invoke the single file upload middleware attached earlier in app
+    if ((req as any).fileUpload) {
+      (req as any).fileUpload(req, res, (err: any) => {
+        if (err) {
+          console.error("Upload error:", err);
+          req.flash("error_msg", "Image upload failed");
+          return res.redirect(`/admin/players/${req.params.id}`);
+        }
+        next();
+      });
+    } else {
+      next();
+    }
+  },
+  updatePlayer
+);
 router.post("/players/update-kicks/:id", isStaff, updateKicksBalance);
 router.post("/players/delete/:id", isStaff, deletePlayer);
 router.post("/players/restore/:id", isStaff, restorePlayer);
@@ -75,6 +95,7 @@ router.post("/players/restore/:id", isStaff, restorePlayer);
 router.get("/tickets", isAdmin, getTicketManagement);
 router.post("/tickets/update", isAdmin, updateNextTicket);
 router.post("/tickets/range", isAdmin, setTicketRange);
+router.post("/tickets/resync", isAdmin, resyncTicketCounter);
 
 // Age bracket routes
 router.get("/age-brackets", isAdmin, getAgeBrackets);

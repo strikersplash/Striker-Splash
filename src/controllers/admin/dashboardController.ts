@@ -32,10 +32,10 @@ export const getDashboard = async (
       // Get total players
       const playersQuery = "SELECT COUNT(*) as count FROM players";
       const playersResult = await pool.query(playersQuery);
-      stats.totalPlayers = parseInt(playersResult.rows[0].count) || 50; // Fallback to 50 if query fails
+      stats.totalPlayers = parseInt(playersResult.rows[0].count) || 0; // real count or 0
     } catch (e) {
       console.error("Error getting player count:", e);
-      stats.totalPlayers = 50; // Hardcode player count to match what we've seen in the DB
+      stats.totalPlayers = 0; // show 0 if query fails
     }
 
     try {

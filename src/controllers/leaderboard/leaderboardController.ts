@@ -109,7 +109,12 @@ async function getIndividualLeaderboard(filters: any): Promise<any[]> {
       LEFT JOIN
         queue_tickets qt ON gs.queue_ticket_id = qt.id
       WHERE 
-        ((qt.status = 'played' AND qt.official = TRUE) OR gs.competition_type = 'custom_competition')
+        -- Only count official competition (exclude practice/free). If queue ticket present, require played & official and competition_type='standard'.
+        (
+          (qt.id IS NOT NULL AND qt.status = 'played' AND qt.official = TRUE AND qt.competition_type = 'standard')
+          OR
+          (qt.id IS NULL AND gs.competition_type = 'custom_competition')
+        )
         AND p.deleted_at IS NULL
     `;
 

@@ -7,6 +7,7 @@ import {
   getCurrentQueuePosition,
   getTodaysActivity,
   getQueueList,
+  getTodaysActivityAdjusted,
 } from "../controllers/api/activityController";
 import { isStaff } from "../middleware/auth";
 
@@ -27,6 +28,8 @@ router.get("/queue/list", isStaff, getQueueList);
 
 // Activity endpoints
 router.get("/activity/today", getTodaysActivity);
+// Temporary diagnostic route to validate date filtering vs timezone
+router.get("/activity/today-adjusted", getTodaysActivityAdjusted);
 
 // Public events endpoint for About Us page
 router.get("/public/events", async (req, res) => {

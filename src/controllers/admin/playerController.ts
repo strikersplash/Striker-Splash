@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../../config/db";
+import { pool, executeQuery } from "../../config/db";
 
 // Display player management page
 export const getPlayerManagement = async (
@@ -51,12 +51,17 @@ export const getPlayerManagement = async (
     query += " ORDER BY name LIMIT 100";
 
     // Get players
-    const playersResult = await pool.query(query, params);
-    const players = playersResult.rows.map((p) => ({
+    const playersResult = await executeQuery(query, params);
+    const players = playersResult.rows.map((p: any) => ({
       id: p.id,
       name: p.name,
+      email: p.email || null,
+      phone: p.phone || null,
+      kicks_balance: p.kicks_balance || 0,
+      deleted_at: p.deleted_at || null,
+      created_at: p.created_at || null,
       photo_path: p.photo_path,
-      profile_picture: p.photo_path, // Map photo_path to profile_picture
+      profile_picture: p.photo_path, // legacy field used by avatar script
     }));
 
     res.render("admin/player-management", {
@@ -93,7 +98,7 @@ export const getPlayerDetails = async (
 
     // Get player (including soft-deleted ones for admin review)
     const playerQuery = "SELECT * FROM players WHERE id = $1";
-    const playerResult = await pool.query(playerQuery, [id]);
+    const playerResult = await executeQuery(playerQuery, [id]);
     const player = playerResult.rows[0];
 
     if (!player) {
@@ -105,27 +110,67 @@ export const getPlayerDetails = async (
     // Query to check what tables exist in the database
     const tablesQuery =
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
-    const tablesResult = await pool.query(tablesQuery);
-    const tables = tablesResult.rows.map((r) => r.table_name);
+    const tablesResult = await executeQuery(tablesQuery);
+    const tables = tablesResult.rows.map((r: any) => r.table_name);
 
     // Using correct table name (game_stats) as shown in the debug output
-    const statsQuery =
-      "SELECT gs.*, s.name as staff_name FROM game_stats gs LEFT JOIN staff s ON gs.staff_id = s.id WHERE gs.player_id = $1 ORDER BY gs.timestamp DESC";
+    // Improved stats query with ticket number resolution (handles legacy missing linkage)
+    const statsQuery = `WITH gs_base AS (
+        SELECT gs.*, s.name AS staff_name
+        FROM game_stats gs
+        LEFT JOIN staff s ON gs.staff_id = s.id
+        WHERE gs.player_id = $1
+      ),
+      with_direct AS (
+        SELECT g.*, qt.ticket_number::int AS direct_ticket
+        FROM gs_base g
+        LEFT JOIN queue_tickets qt ON qt.id = g.queue_ticket_id
+      ),
+      unresolved AS (
+        SELECT * FROM with_direct WHERE direct_ticket IS NULL
+      ),
+      ranked AS (
+        SELECT u.*, ROW_NUMBER() OVER (ORDER BY u.timestamp, u.id) AS local_rank
+        FROM unresolved u
+      ),
+      tickets_day AS (
+        SELECT qt.id, qt.ticket_number::int AS ticket_number,
+               ROW_NUMBER() OVER (ORDER BY qt.created_at, qt.ticket_number) AS day_rank
+        FROM queue_tickets qt
+        WHERE qt.player_id = $1
+      ),
+      matched AS (
+        SELECT r.*, td.ticket_number AS approx_ticket
+        FROM ranked r
+        LEFT JOIN tickets_day td ON td.day_rank = r.local_rank
+      )
+  SELECT w.id, w.timestamp, w.goals, w.staff_id, w.staff_name, w.competition_type, w.location,
+     COALESCE(w.direct_ticket, m.approx_ticket) AS resolved_ticket,
+     CASE WHEN w.direct_ticket IS NOT NULL THEN 'direct'
+      WHEN m.approx_ticket IS NOT NULL THEN 'approx'
+      ELSE NULL END AS ticket_source,
+             w.queue_ticket_id
+      FROM with_direct w
+      LEFT JOIN matched m ON m.id = w.id
+      ORDER BY w.timestamp DESC`;
 
-    const statsResult = await pool.query(statsQuery, [id]);
-    const stats = statsResult.rows;
+    const statsResult = await executeQuery(statsQuery, [id]);
+    const stats = statsResult.rows.map((r: any) => ({
+      ...r,
+      queue_ticket_id: r.resolved_ticket || r.queue_ticket_id,
+    }));
 
     // Get player tickets
     const ticketsQuery =
       "SELECT * FROM queue_tickets WHERE player_id = $1 ORDER BY created_at DESC";
 
-    const ticketsResult = await pool.query(ticketsQuery, [id]);
+    const ticketsResult = await executeQuery(ticketsQuery, [id]);
     const tickets = ticketsResult.rows;
 
     // Get table structure for game_stats
     const tableStructureQuery =
       "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'game_stats'";
-    const tableStructureResult = await pool.query(tableStructureQuery);
+    const tableStructureResult = await executeQuery(tableStructureQuery);
     res.render("admin/player-details", {
       title: `Player: ${player.name}`,
       player,
@@ -157,32 +202,42 @@ export const updatePlayer = async (
     }
 
     const { id } = req.params;
-    const { name, phone, email, residence, gender, age_group } = req.body;
+    const { name, phone, email, district, cityVillage, gender, age_group } =
+      req.body as any;
 
     // Validate input
-    if (!name || !phone || !residence || !age_group) {
-      res.status(400).json({
-        success: false,
-        message: "Name, phone, residence, and age group are required",
-      });
-      return;
+    if (!name || !phone || !district || !age_group) {
+      req.flash(
+        "error_msg",
+        "Name, phone, district, and age group are required"
+      );
+      return res.redirect(`/admin/players/${id}`);
     }
 
     // Update player (excluding kicks_balance)
+    // Handle optional photo upload (multer middleware attached globally as single('photo'))
+    let photoPath: string | null = null;
+    const file: any = (req as any).file;
+    if (file) {
+      photoPath = `/uploads/${file.filename}`;
+    }
+
     const updateQuery = `
       UPDATE players
-      SET name = $1, phone = $2, email = $3, residence = $4, gender = $5, age_group = $6
-      WHERE id = $7
+      SET name = $1, phone = $2, email = $3, residence = $4, city_village = $5, gender = $6, age_group = $7, photo_path = COALESCE($8, photo_path)
+      WHERE id = $9
       RETURNING *
     `;
 
-    const updateResult = await pool.query(updateQuery, [
+    const updateResult = await executeQuery(updateQuery, [
       name,
       phone,
       email || null,
-      residence,
+      district,
+      cityVillage || null,
       gender || null,
       age_group,
+      photoPath,
       id,
     ]);
 
@@ -226,7 +281,7 @@ export const updateKicksBalance = async (
 
     // Get current kicks balance
     const playerQuery = "SELECT * FROM players WHERE id = $1";
-    const playerResult = await pool.query(playerQuery, [id]);
+    const playerResult = await executeQuery(playerQuery, [id]);
     const player = playerResult.rows[0];
 
     if (!player) {
@@ -260,7 +315,7 @@ export const updateKicksBalance = async (
       RETURNING *
     `;
 
-    await pool.query(updateQuery, [newBalance, id]);
+    await executeQuery(updateQuery, [newBalance, id]);
 
     // Log the kicks balance update to transactions table
     const logQuery = `
@@ -275,7 +330,7 @@ export const updateKicksBalance = async (
         ? -parseInt(amount)
         : newBalance - currentBalance;
 
-    await pool.query(logQuery, [
+    await executeQuery(logQuery, [
       id,
       changeAmount,
       0, // amount field (for kicks transactions, amount is usually 0)
@@ -322,7 +377,7 @@ export const deletePlayer = async (
     // First check if player exists and is not already deleted
     const playerQuery =
       "SELECT * FROM players WHERE id = $1 AND deleted_at IS NULL";
-    const playerResult = await pool.query(playerQuery, [id]);
+    const playerResult = await executeQuery(playerQuery, [id]);
     const player = playerResult.rows[0];
 
     if (!player) {
@@ -331,7 +386,7 @@ export const deletePlayer = async (
     }
 
     // Begin transaction to ensure all operations are atomic
-    await pool.query("BEGIN");
+    await executeQuery("BEGIN");
 
     try {
       // Soft delete: Mark player as deleted but preserve all data
@@ -342,10 +397,10 @@ export const deletePlayer = async (
             deleted_by = $2
         WHERE id = $1
       `;
-      await pool.query(softDeleteQuery, [id, staffId]);
+      await executeQuery(softDeleteQuery, [id, staffId]);
 
       // Cancel any active queue tickets (but keep the records for history)
-      await pool.query(
+      await executeQuery(
         "UPDATE queue_tickets SET status = 'cancelled' WHERE player_id = $1 AND status = 'waiting'",
         [id]
       );
@@ -353,10 +408,10 @@ export const deletePlayer = async (
       // Add a transaction record for the deletion (for audit trail)
       const auditTransactionQuery =
         "INSERT INTO transactions (player_id, kicks, amount, staff_id, team_play, created_at) VALUES ($1, 0, 0, $2, false, timezone('UTC', NOW() AT TIME ZONE 'America/Belize'))";
-      await pool.query(auditTransactionQuery, [id, staffId]);
+      await executeQuery(auditTransactionQuery, [id, staffId]);
 
       // Commit the transaction
-      await pool.query("COMMIT");
+      await executeQuery("COMMIT");
 
       req.flash(
         "success_msg",
@@ -367,7 +422,7 @@ export const deletePlayer = async (
       res.redirect("/admin/players");
     } catch (deleteError) {
       // Rollback transaction on error
-      await pool.query("ROLLBACK");
+      await executeQuery("ROLLBACK");
       throw deleteError;
     }
   } catch (error) {
@@ -402,7 +457,7 @@ export const restorePlayer = async (
     // First check if player exists and is deleted
     const playerQuery =
       "SELECT * FROM players WHERE id = $1 AND deleted_at IS NOT NULL";
-    const playerResult = await pool.query(playerQuery, [id]);
+    const playerResult = await executeQuery(playerQuery, [id]);
     const player = playerResult.rows[0];
 
     if (!player) {
@@ -411,7 +466,7 @@ export const restorePlayer = async (
     }
 
     // Begin transaction to ensure all operations are atomic
-    await pool.query("BEGIN");
+    await executeQuery("BEGIN");
 
     try {
       // Check team capacity before reactivation
@@ -426,7 +481,7 @@ export const restorePlayer = async (
         WHERE tm.player_id = $1
         GROUP BY t.id, t.name, t.team_size, tm.is_captain
       `;
-      const teamCapacityResult = await pool.query(teamCapacityQuery, [id]);
+      const teamCapacityResult = await executeQuery(teamCapacityQuery, [id]);
 
       let teamsToRemoveFrom = [];
       let teamWarnings = [];
@@ -472,7 +527,7 @@ export const restorePlayer = async (
             deleted_by = NULL
         WHERE id = $1
       `;
-      await pool.query(restoreQuery, [id]);
+      await executeQuery(restoreQuery, [id]);
 
       // Remove player from teams that are at capacity
       for (const team of teamsToRemoveFrom) {

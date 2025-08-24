@@ -5,6 +5,27 @@ import Shot from "../../models/Shot";
 import QueueTicket from "../../models/QueueTicket";
 import { pool } from "../../config/db";
 
+// Runtime schema detection cache for optional new columns
+let hasQueueTicketIdColumn: boolean | null = null;
+async function ensureTransactionSchema() {
+  if (hasQueueTicketIdColumn !== null) return hasQueueTicketIdColumn;
+  try {
+    const check = await pool.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'queue_ticket_id'"
+    );
+    hasQueueTicketIdColumn = check.rows.length > 0;
+    if (!hasQueueTicketIdColumn) {
+      console.warn(
+        "[SCHEMA WARNING] 'queue_ticket_id' column missing on transactions table. Falling back to legacy insert. Run migration add-queue-ticket-id-to-transactions.sql to enable accurate ticket linkage."
+      );
+    }
+  } catch (e) {
+    console.error("Failed to verify transactions schema:", e);
+    hasQueueTicketIdColumn = false; // fail safe
+  }
+  return hasQueueTicketIdColumn;
+}
+
 // Display cashier interface
 export const getCashierInterface = async (
   req: Request,
@@ -30,12 +51,9 @@ export const getCashierInterface = async (
 
     const competitionTypes = competitionTypesResult.rows;
 
-    // Get next ticket number
-    const nextTicketQuery =
-      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-
-    const nextTicketResult = await pool.query(nextTicketQuery);
-    const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+    // Get display numbers (nowServing + next)
+    const { currentServing, lastIssued, next } =
+      await QueueTicket.getDisplayNumbers();
 
     // For sales users, pre-load their transactions directly
     let preloadedTransactions = [];
@@ -71,9 +89,11 @@ export const getCashierInterface = async (
     res.render("cashier/interface", {
       title: "Cashier Interface",
       competitionTypes,
-      nextTicket,
-      preloadedTransactions: preloadedTransactions, // Pass transactions to the template
-      timestamp: new Date().getTime(), // Add timestamp for cache-busting on client side
+      nextTicket: next,
+      lastTicketIssued: lastIssued,
+      currentServing: currentServing, // null if none waiting
+      preloadedTransactions: preloadedTransactions,
+      timestamp: new Date().getTime(),
     });
   } catch (error) {
     console.error("Cashier interface error:", error);
@@ -112,7 +132,17 @@ export const searchPlayer = async (
     }
 
     const players = await Player.search(query);
-
+    if (process.env.DEBUG_SANITIZE === "true") {
+      const first = players[0];
+      if (first) {
+        console.log(
+          `[SEARCH DEBUG] Raw player fields: phone=${first.phone} residence=${first.residence} city_village=${first.city_village} parent_phone=${first.parent_phone} email=${first.email}`
+        );
+      } else {
+        console.log(`[SEARCH DEBUG] No players found for query="${query}"`);
+      }
+    }
+    (res.locals as any).skipSanitize = true;
     res.json({ success: true, players });
   } catch (error) {
     console.error("Player search error:", error);
@@ -381,15 +411,32 @@ export const processKicksPurchase = async (
       );
     }
 
-    const insertTransactionQuery =
-      "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5)";
-    await pool.query(insertTransactionQuery, [
-      player.id,
-      kicksQuantity,
-      amount,
-      staffId,
-      isOfficialEntry,
-    ]);
+    // If tickets were created, capture the FIRST ticket's id to associate with this transaction
+    const primaryTicketId = tickets.length > 0 ? tickets[0].id : null;
+    const hasQueueTicket = await ensureTransactionSchema();
+    if (hasQueueTicket) {
+      const insertTransactionQuery =
+        "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry, queue_ticket_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5, $6)";
+      await pool.query(insertTransactionQuery, [
+        player.id,
+        kicksQuantity,
+        amount,
+        staffId,
+        isOfficialEntry,
+        primaryTicketId,
+      ]);
+    } else {
+      // Legacy schema insert without queue_ticket_id column
+      const legacyInsert =
+        "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, $5)";
+      await pool.query(legacyInsert, [
+        player.id,
+        kicksQuantity,
+        amount,
+        staffId,
+        isOfficialEntry,
+      ]);
+    }
 
     console.log(
       "processKicksPurchase - Transaction INSERT completed for staff_id:",
@@ -400,13 +447,9 @@ export const processKicksPurchase = async (
     const verifyQuery =
       "SELECT id, staff_id, player_id, kicks, amount FROM transactions WHERE staff_id = $1 AND player_id = $2 ORDER BY created_at DESC LIMIT 1";
     const verifyResult = await pool.query(verifyQuery, [staffId, player.id]);
-    // Get next ticket number
-    const nextTicketQuery =
-      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-
-    const nextTicketResult = await pool.query(nextTicketQuery);
-    const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
-
+    // Get updated display numbers post-purchase
+    const { currentServing, lastIssued, next } =
+      await QueueTicket.getDisplayNumbers();
     res.json({
       success: true,
       player: {
@@ -415,7 +458,9 @@ export const processKicksPurchase = async (
       },
       transaction: shot,
       tickets,
-      nextTicket,
+      lastTicketIssued: lastIssued,
+      currentServing,
+      nextTicket: next,
     });
   } catch (error) {
     console.error("Kicks purchase error:", error);
@@ -644,12 +689,16 @@ export const processReQueue = async (
     // Log the requeue as a transaction for persistence using proper Belize timezone (UTC-6)
     const staffId = parseInt((req.session as any).user.id);
     try {
-      const insertQuery =
-        "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4)";
-      await pool.query(
-        insertQuery,
-        [player.id, -5, 0, staffId] // -5 kicks, $0 amount for requeue
-      );
+      const hasQueueTicket = await ensureTransactionSchema();
+      if (hasQueueTicket) {
+        const insertQuery =
+          "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry, queue_ticket_id) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, true, $5)";
+        await pool.query(insertQuery, [player.id, -5, 0, staffId, ticket.id]);
+      } else {
+        const legacyInsert =
+          "INSERT INTO transactions (player_id, kicks, amount, created_at, team_play, staff_id, official_entry) VALUES ($1, $2, $3, (NOW() - interval '6 hours')::timestamp AT TIME ZONE 'UTC', false, $4, true)";
+        await pool.query(legacyInsert, [player.id, -5, 0, staffId]);
+      }
     } catch (transactionError) {
       console.error("Error logging requeue transaction:", transactionError);
       // Don't fail the requeue if transaction logging fails
@@ -658,19 +707,18 @@ export const processReQueue = async (
     // Get current queue position
     const currentQueuePosition = await QueueTicket.getCurrentQueuePosition();
 
-    // Get next ticket number
-    const nextTicketQuery =
-      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-
-    const nextTicketResult = await pool.query(nextTicketQuery);
-    const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
+    // Get updated display numbers after requeue
+    const { currentServing, lastIssued, next } =
+      await QueueTicket.getDisplayNumbers();
 
     res.json({
       success: true,
       player: updatedPlayer,
       ticket,
       currentQueuePosition,
-      nextTicket,
+      lastTicketIssued: lastIssued,
+      currentServing,
+      nextTicket: next,
     });
   } catch (error) {
     console.error("Re-queue error:", error);
@@ -901,19 +949,19 @@ export const getQueueStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Use the same logic as getCurrentQueuePosition for consistency
-    const currentTicket = await QueueTicket.getCurrentQueuePosition();
-
-    // Get next ticket number
-    const nextTicketQuery =
-      "SELECT value as next_ticket FROM global_counters WHERE id = 'next_queue_number'";
-    const nextTicketResult = await pool.query(nextTicketQuery);
-    const nextTicket = nextTicketResult.rows[0]?.next_ticket || 1000;
-
+    const { currentServing, lastIssued, next } =
+      await QueueTicket.getDisplayNumbers();
+    if (process.env.DEBUG_TICKETS === "true") {
+      console.log(
+        `[TICKETS] /cashier/queue-status -> currentServing=${currentServing} lastIssued=${lastIssued} next=${next}`
+      );
+    }
     res.json({
       success: true,
-      currentNumber: currentTicket || null,
-      nextTicket: nextTicket,
+      currentNumber: currentServing,
+      lastTicketIssued: lastIssued,
+      currentServing,
+      nextTicket: next,
     });
   } catch (error) {
     console.error("Error getting queue status:", error);
@@ -954,12 +1002,103 @@ export const getTodaysTransactions = async (
 
     // Get transactions for this specific user (staff member) - using Belize timezone range converted to UTC
     // Fixed query to prevent duplicates from multiple queue tickets
-    const transactionsQuery =
-      "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN (SELECT player_id, ticket_number, competition_type, created_at FROM queue_tickets WHERE created_at >= ($1::date + interval '6 hours')::timestamp AND created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp) qt ON t.player_id = qt.player_id AND t.official_entry = true AND DATE(t.created_at - interval '6 hours') = DATE(qt.created_at - interval '6 hours') WHERE t.staff_id = $2 AND t.created_at >= ($1::date + interval '6 hours')::timestamp AND t.created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp ORDER BY t.created_at DESC LIMIT 200";
-
+    // Determine if we can safely reference queue_ticket_id
+    const hasQueueTicket = await ensureTransactionSchema();
+    let transactionsQuery: string;
+    if (hasQueueTicket) {
+      transactionsQuery =
+        "SELECT t.id, t.created_at as timestamp, p.name as player_name, CASE WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue' WHEN t.kicks > 0 AND t.official_entry = true AND qt2.competition_type = 'standard' THEN 'Sale + Competition' WHEN t.kicks > 0 AND t.official_entry = true AND qt2.competition_type = 'practice' THEN 'Sale + No Competition' WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale' ELSE 'Sale' END as transaction_type, t.kicks as kicks_count, t.amount, COALESCE(s.name, s.username, 'Staff') as staff_name, CASE WHEN t.official_entry = true THEN COALESCE(qt2.ticket_number, 0) ELSE NULL END as ticket_number FROM transactions t JOIN players p ON t.player_id = p.id LEFT JOIN staff s ON t.staff_id = s.id LEFT JOIN queue_tickets qt2 ON qt2.id = t.queue_ticket_id WHERE t.staff_id = $2 AND t.created_at >= ($1::date + interval '6 hours')::timestamp AND t.created_at < ($1::date + interval '1 day' + interval '6 hours')::timestamp ORDER BY t.created_at DESC LIMIT 200";
+    } else {
+      // Legacy path: emulate ticket linkage without queue_ticket_id column using date + player join to today's tickets
+      // Improved legacy approximation: choose the nearest ticket for that day (within day window) to the transaction time.
+      // Adds better correlation when multiple tickets exist; still approximate.
+      // Revert to legacy mapping v3: global rank pairing (off by one previously but stable & unique).
+      transactionsQuery = `WITH day_window AS (
+        SELECT ($1::date + interval '6 hours')::timestamp AS start_ts,
+               ($1::date + interval '1 day' + interval '6 hours')::timestamp AS end_ts
+      ), tx_official AS (
+        SELECT t.id, t.created_at, t.player_id, t.kicks, t.amount, t.staff_id,
+               ROW_NUMBER() OVER (ORDER BY t.created_at, t.id) AS global_rank
+        FROM transactions t, day_window dw
+        WHERE t.staff_id = $2
+          AND t.official_entry = true
+          AND t.created_at >= dw.start_ts
+          AND t.created_at < dw.end_ts
+      ), tickets AS (
+        SELECT qt.ticket_number, qt.competition_type,
+               ROW_NUMBER() OVER (ORDER BY qt.created_at, qt.ticket_number) AS global_rank
+        FROM queue_tickets qt, day_window dw
+        WHERE qt.created_at >= dw.start_ts
+          AND qt.created_at < dw.end_ts
+      ), match AS (
+        SELECT tx.id, tk.ticket_number, tk.competition_type
+        FROM tx_official tx
+        LEFT JOIN tickets tk USING (global_rank)
+      )
+      SELECT t.id,
+             t.created_at AS timestamp,
+             p.name AS player_name,
+             CASE
+               WHEN t.kicks < 0 AND t.official_entry = true THEN 'Requeue'
+               WHEN t.kicks > 0 AND t.official_entry = true AND m.competition_type = 'standard' THEN 'Sale + Competition'
+               WHEN t.kicks > 0 AND t.official_entry = true AND m.competition_type = 'practice' THEN 'Sale + No Competition'
+               WHEN t.kicks > 0 AND t.official_entry = false THEN 'Sale'
+               ELSE 'Sale'
+             END AS transaction_type,
+             t.kicks AS kicks_count,
+             t.amount,
+             COALESCE(s.name, s.username, 'Staff') AS staff_name,
+  CASE WHEN t.official_entry = true AND m.ticket_number IS NOT NULL THEN m.ticket_number::text
+         WHEN t.official_entry = true THEN NULL
+         ELSE NULL END AS ticket_number,
+       CASE WHEN t.official_entry = true THEN CASE WHEN m.ticket_number IS NOT NULL THEN 'global-rank+1' ELSE 'unmatched' END ELSE NULL END AS ticket_accuracy
+      FROM transactions t
+      JOIN players p ON t.player_id = p.id
+      LEFT JOIN staff s ON t.staff_id = s.id
+      LEFT JOIN match m ON t.id = m.id, day_window dw
+      WHERE t.staff_id = $2
+        AND t.created_at >= dw.start_ts
+        AND t.created_at < dw.end_ts
+      ORDER BY t.created_at DESC
+      LIMIT 200`;
+      console.warn(
+        "[TRANSACTIONS] Using legacy query (global-rank mapping; no queue_ticket_id column present)"
+      );
+    }
     const result = await pool.query(transactionsQuery, [today, userId]);
-    // Debug: Log a sample of the data we're sending back
-    if (result.rows.length > 0) {
+    // If legacy path, annotate rows (fallback if SQL concat unsupported on platform)
+    if (!hasQueueTicket) {
+      for (const row of result.rows) {
+        if (row.official_entry && !row.ticket_accuracy) {
+          (row as any).ticket_accuracy = "approx";
+        }
+      }
+      try {
+        const mapped = result.rows.filter((r: any) => r.ticket_number != null);
+        const accuracyCounts: Record<string, number> = {};
+        for (const r of mapped) {
+          const key = r.ticket_accuracy || "none";
+          accuracyCounts[key] = (accuracyCounts[key] || 0) + 1;
+        }
+        console.debug(
+          "[LEGACY-TX] total rows",
+          result.rows.length,
+          "mapped",
+          mapped.length,
+          "accuracy",
+          accuracyCounts
+        );
+        console.debug(
+          "[LEGACY-TX] sample first 5",
+          mapped.slice(0, 5).map((m) => ({
+            id: m.id,
+            ticket: m.ticket_number,
+            acc: m.ticket_accuracy,
+          }))
+        );
+      } catch (e) {
+        console.warn("[LEGACY-TX] debug logging failed", e);
+      }
     }
 
     // Debug: Let's also check all transactions for today regardless of staff_id (using Central timezone range converted to UTC)

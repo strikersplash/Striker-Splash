@@ -16,9 +16,58 @@ export const getTodaysActivity = async (
     res.json(result.rows);
   } catch (error) {
     console.error("API Error getting today's activity:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get today's activity",
+      activity: [],
+    });
+  }
+};
+
+// Alternative adjusted version that computes Belize date in application layer to avoid DST/time offset surprises
+export const getTodaysActivityAdjusted = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Derive current Belize date boundary (UTC-6) WITHOUT relying on DB timezone settings
+    const nowUtc = new Date();
+    const belizeMillis = nowUtc.getTime() - 6 * 60 * 60 * 1000; // manual offset
+    const belizeNow = new Date(belizeMillis);
+    const yyyy = belizeNow.getUTCFullYear();
+    const mm = String(belizeNow.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(belizeNow.getUTCDate()).padStart(2, "0");
+    const belizeDateString = `${yyyy}-${mm}-${dd}`; // date only
+
+    // Build explicit range in UTC by adding back 6h to start and +1 day for end
+    const startUtc = new Date(
+      Date.UTC(yyyy, belizeNow.getUTCMonth(), belizeNow.getUTCDate(), 6, 0, 0)
+    ); // 00:00 Belize = 06:00 UTC
+    const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
+
+    // Query using explicit UTC range (timestamp stored presumably in UTC)
+    const query = `
+      SELECT gs.id, gs.player_id, p.name as "playerName", gs.goals, gs.staff_id, s.name as "staffName", gs.location, gs.competition_type, gs.requeued, gs.timestamp
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN staff s ON gs.staff_id = s.id
+      WHERE gs.timestamp >= $1 AND gs.timestamp < $2
+      ORDER BY gs.timestamp DESC`;
+
+    const result = await pool.query(query, [
+      startUtc.toISOString(),
+      endUtc.toISOString(),
+    ]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("API Error getting today's adjusted activity:", error);
     res
       .status(500)
-      .json({ error: "An error occurred while getting today's activity" });
+      .json({
+        success: false,
+        message: "Failed to get adjusted today's activity",
+        activity: [],
+      });
   }
 };
 
@@ -61,7 +110,9 @@ export const getQueueList = async (
         qt.created_at,
         p.name as player_name,
         p.age_group,
-        p.phone
+    p.phone,
+    p.residence,
+    p.city_village
       FROM queue_tickets qt
       JOIN players p ON qt.player_id = p.id
       WHERE qt.status = 'in-queue'
@@ -69,6 +120,7 @@ export const getQueueList = async (
     `;
 
     const result = await pool.query(query);
+    (res.locals as any).skipSanitize = true;
     res.json({
       success: true,
       queue: result.rows,
