@@ -193,30 +193,33 @@ app.use((req, res, next) => {
       if (process.env.AUTH_DEBUG === "true") {
         console.log("[AUTH_DEBUG] Session timestamp adjust", {
           path: req.path,
-            user: (req.session as any).user,
-            stored,
-            current: SERVER_START_TIME,
-            missing,
-            mismatch,
-            forceInvalidate:
-              process.env.FORCE_SESSION_RESTART_INVALIDATION === "true",
-          });
-      }
-      if (process.env.FORCE_SESSION_RESTART_INVALIDATION === "true") {
-        console.log("[AUTH] Forced invalidation due to restart (flag set)");
-        req.session.destroy((err) => {
-          if (err) console.error("Error destroying session:", err);
+          user: (req.session as any).user,
+          stored,
+          current: SERVER_START_TIME,
+          missing,
+          mismatch,
+            allowReuse:
+              process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true",
         });
-        return res.redirect("/auth/login");
       }
-      // Default: bind / rebind and continue
-      (req.session as any).serverStartTime = SERVER_START_TIME;
-      return req.session.save((err) => {
-        if (err) {
-          console.error("[AUTH_DEBUG] Error saving adjusted session", err);
-        }
-        return next();
+      // If reuse explicitly allowed, rebind instead of logout
+      if (process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true") {
+        (req.session as any).serverStartTime = SERVER_START_TIME;
+        return req.session.save((err) => {
+          if (err) {
+            console.error("[AUTH_DEBUG] Error saving rebound session", err);
+          }
+          return next();
+        });
+      }
+      // Default behavior: invalidate session so user must log in again
+      console.log(
+        "Invalidating session due to server restart (serverStartTime mismatch or missing)"
+      );
+      req.session.destroy((err) => {
+        if (err) console.error("Error destroying session:", err);
       });
+      return res.redirect("/auth/login");
     }
   }
   next();
