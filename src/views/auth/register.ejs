@@ -298,62 +298,121 @@
   </div>
 </div>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+/>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
   .flatpickr-calendar {
-    font-size: 16px; /* Larger text for mobile */
+    font-size: 16px;
+    width: 100% !important;
+    max-width: 320px !important;
+    touch-action: manipulation;
   }
   .flatpickr-monthDropdown-months {
     font-size: 16px;
     height: auto !important;
+    padding: 5px !important;
+  }
+  .flatpickr-current-month input.cur-year {
+    font-size: 16px !important;
+    padding: 5px !important;
+    margin: 0 !important;
+    height: auto !important;
   }
   .numInputWrapper {
     font-size: 16px;
+    width: 70px !important;
   }
-  /* More mobile-friendly styling */
-  @media (max-width: 768px) {
-    .flatpickr-calendar {
-      width: 100%;
-      max-width: 320px;
-    }
-    .flatpickr-months {
-      display: flex;
-      padding: 10px 0;
-    }
-    .flatpickr-month {
-      height: auto;
-    }
-    .flatpickr-current-month {
-      padding: 0;
-      font-size: 18px;
-    }
-    .flatpickr-monthDropdown-months {
-      padding: 5px;
-    }
-    .numInputWrapper {
-      margin: 0 5px;
-    }
+  .flatpickr-months {
+    display: flex !important;
+    padding: 10px 0 !important;
+  }
+  .flatpickr-month {
+    height: auto !important;
+  }
+  .flatpickr-current-month {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    height: auto !important;
+    position: relative !important;
+    text-align: center !important;
+    gap: 5px !important;
+  }
+  .flatpickr-monthDropdown-month {
+    font-size: 16px !important;
+    padding: 5px !important;
+  }
+  .flatpickr-months .flatpickr-month:hover {
+    background: transparent !important;
+  }
+  .flatpickr-calendar.static {
+    position: absolute !important;
+    top: calc(100% + 5px) !important;
+  }
+  /* Custom mobile year selector */
+  .year-select-wrapper {
+    width: 100%;
+    text-align: center;
+    margin: 10px 0;
+  }
+  .year-select {
+    font-size: 16px;
+    padding: 5px;
+    width: 100px;
   }
 </style>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Initialize Flatpickr
+    // Initialize Flatpickr with mobile-optimized settings
     flatpickr("#dob", {
       dateFormat: "Y-m-d",
       maxDate: new Date(),
-      disableMobile: false,
+      disableMobile: true, // Force our custom UI on mobile
       static: true,
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
-      // Show year dropdown first on mobile
+      defaultDate: "2006-01-01", // Set a reasonable default date for player registration
+      // Create a more intuitive mobile interface
       onOpen: function(selectedDates, dateStr, instance) {
-        if (window.innerWidth <= 768) {
-          setTimeout(() => {
-            const yearInput = instance.yearElements[0];
-            if (yearInput) yearInput.select();
-          }, 50);
+        // Create year range for quick selection
+        const currentYear = new Date().getFullYear();
+        const startYear = currentYear - 100; // Allow registration for people up to 100 years old
+        const yearSelect = document.createElement("select");
+        yearSelect.className = "year-select";
+        
+        for (let year = currentYear; year >= startYear; year--) {
+          const option = document.createElement("option");
+          option.value = year;
+          option.text = year;
+          if (year === 2006) option.selected = true; // Set default selected year
+          yearSelect.appendChild(option);
+        }
+        
+        // Create wrapper for year selector
+        const wrapper = document.createElement("div");
+        wrapper.className = "year-select-wrapper";
+        wrapper.appendChild(yearSelect);
+        
+        // Add year selector at the top of the calendar
+        const calendar = instance.calendarContainer;
+        calendar.insertBefore(wrapper, calendar.firstChild);
+        
+        // Handle year changes
+        yearSelect.addEventListener("change", function() {
+          const date = instance.selectedDates[0] || new Date();
+          date.setFullYear(this.value);
+          instance.setDate(date);
+        });
+      },
+      onChange: function(selectedDates, dateStr, instance) {
+        // Update year selector when date changes
+        const yearSelect = instance.calendarContainer.querySelector(".year-select");
+        if (yearSelect && selectedDates[0]) {
+          yearSelect.value = selectedDates[0].getFullYear();
         }
       }
     });
