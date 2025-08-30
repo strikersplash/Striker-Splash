@@ -221,11 +221,13 @@
             <div class="mb-3">
               <label for="dob" class="form-label">Date of Birth</label>
               <input
-                type="date"
+                type="text"
                 class="form-control"
                 id="dob"
                 name="dob"
                 required
+                placeholder="Select date"
+                readonly
               />
             </div>
 
@@ -296,8 +298,65 @@
   </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
+  .flatpickr-calendar {
+    font-size: 16px; /* Larger text for mobile */
+  }
+  .flatpickr-monthDropdown-months {
+    font-size: 16px;
+    height: auto !important;
+  }
+  .numInputWrapper {
+    font-size: 16px;
+  }
+  /* More mobile-friendly styling */
+  @media (max-width: 768px) {
+    .flatpickr-calendar {
+      width: 100%;
+      max-width: 320px;
+    }
+    .flatpickr-months {
+      display: flex;
+      padding: 10px 0;
+    }
+    .flatpickr-month {
+      height: auto;
+    }
+    .flatpickr-current-month {
+      padding: 0;
+      font-size: 18px;
+    }
+    .flatpickr-monthDropdown-months {
+      padding: 5px;
+    }
+    .numInputWrapper {
+      margin: 0 5px;
+    }
+  }
+</style>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Flatpickr
+    flatpickr("#dob", {
+      dateFormat: "Y-m-d",
+      maxDate: new Date(),
+      disableMobile: false,
+      static: true,
+      monthSelectorType: "dropdown",
+      yearSelectorType: "dropdown",
+      // Show year dropdown first on mobile
+      onOpen: function(selectedDates, dateStr, instance) {
+        if (window.innerWidth <= 768) {
+          setTimeout(() => {
+            const yearInput = instance.yearElements[0];
+            if (yearInput) yearInput.select();
+          }, 50);
+        }
+      }
+    });
     // Photo preview functionality
     const photoInput = document.getElementById("photo");
     const photoPreview = document.getElementById("photo-preview");
