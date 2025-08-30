@@ -306,62 +306,86 @@
 <style>
   .flatpickr-calendar {
     font-size: 16px;
-    width: 100% !important;
-    max-width: 320px !important;
+    width: 325px !important;
+    max-width: 100% !important;
     touch-action: manipulation;
+    height: auto !important;
+    position: absolute !important;
+    background: #fff !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
   }
   .flatpickr-monthDropdown-months {
     font-size: 16px;
     height: auto !important;
-    padding: 5px !important;
+    padding: 8px !important;
   }
   .flatpickr-current-month input.cur-year {
     font-size: 16px !important;
-    padding: 5px !important;
+    padding: 8px !important;
     margin: 0 !important;
     height: auto !important;
   }
   .numInputWrapper {
     font-size: 16px;
-    width: 70px !important;
+    width: 80px !important;
   }
   .flatpickr-months {
     display: flex !important;
-    padding: 10px 0 !important;
+    padding: 12px 0 !important;
+    background: #f8f9fa !important;
+    border-radius: 8px 8px 0 0 !important;
   }
   .flatpickr-month {
     height: auto !important;
+    padding: 8px 0 !important;
   }
   .flatpickr-current-month {
-    display: flex !important;
-    flex-direction: column !important;
     padding: 0 !important;
     height: auto !important;
     position: relative !important;
     text-align: center !important;
-    gap: 5px !important;
   }
   .flatpickr-monthDropdown-month {
     font-size: 16px !important;
-    padding: 5px !important;
+    padding: 8px !important;
   }
-  .flatpickr-months .flatpickr-month:hover {
-    background: transparent !important;
+  .flatpickr-weekdays {
+    padding: 8px 0 !important;
+    background: #fff !important;
   }
-  .flatpickr-calendar.static {
-    position: absolute !important;
-    top: calc(100% + 5px) !important;
+  .flatpickr-days {
+    padding: 8px !important;
+    width: 100% !important;
+  }
+  .dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  .flatpickr-day {
+    font-size: 14px !important;
+    line-height: 40px !important;
+    height: 40px !important;
+    width: 40px !important;
+    margin: 2px !important;
+    border-radius: 50% !important;
   }
   /* Custom mobile year selector */
   .year-select-wrapper {
     width: 100%;
     text-align: center;
-    margin: 10px 0;
+    padding: 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
   }
   .year-select {
     font-size: 16px;
-    padding: 5px;
-    width: 100px;
+    padding: 8px;
+    width: 120px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: #fff;
   }
 </style>
 
@@ -375,46 +399,47 @@
       static: true,
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
-      defaultDate: "2006-01-01", // Set a reasonable default date for player registration
+      defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
       // Create a more intuitive mobile interface
-      onOpen: function(selectedDates, dateStr, instance) {
+      onOpen: function (selectedDates, dateStr, instance) {
         // Create year range for quick selection
         const currentYear = new Date().getFullYear();
         const startYear = currentYear - 100; // Allow registration for people up to 100 years old
         const yearSelect = document.createElement("select");
         yearSelect.className = "year-select";
-        
+
         for (let year = currentYear; year >= startYear; year--) {
           const option = document.createElement("option");
           option.value = year;
           option.text = year;
-          if (year === 2006) option.selected = true; // Set default selected year
+          if (year === currentYear) option.selected = true; // Set current year as default
           yearSelect.appendChild(option);
         }
-        
+
         // Create wrapper for year selector
         const wrapper = document.createElement("div");
         wrapper.className = "year-select-wrapper";
         wrapper.appendChild(yearSelect);
-        
+
         // Add year selector at the top of the calendar
         const calendar = instance.calendarContainer;
         calendar.insertBefore(wrapper, calendar.firstChild);
-        
+
         // Handle year changes
-        yearSelect.addEventListener("change", function() {
+        yearSelect.addEventListener("change", function () {
           const date = instance.selectedDates[0] || new Date();
           date.setFullYear(this.value);
           instance.setDate(date);
         });
       },
-      onChange: function(selectedDates, dateStr, instance) {
+      onChange: function (selectedDates, dateStr, instance) {
         // Update year selector when date changes
-        const yearSelect = instance.calendarContainer.querySelector(".year-select");
+        const yearSelect =
+          instance.calendarContainer.querySelector(".year-select");
         if (yearSelect && selectedDates[0]) {
           yearSelect.value = selectedDates[0].getFullYear();
         }
-      }
+      },
     });
     // Photo preview functionality
     const photoInput = document.getElementById("photo");
