@@ -16,7 +16,7 @@ async function testEventFunctionality() {
     const tablesResult = await pool.query(tablesQuery);
     console.log(
       "Available tables:",
-  tablesResult.rows.map((row: any) => row.table_name)
+      tablesResult.rows.map((row: any) => row.table_name)
     );
 
     // Get event locations

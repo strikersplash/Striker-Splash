@@ -198,7 +198,8 @@ app.use((req, res, next) => {
           current: SERVER_START_TIME,
           missing,
           mismatch,
-          allowReuse: process.env.DISABLE_SESSION_REUSE_AFTER_RESTART !== "true",
+          allowReuse:
+            process.env.DISABLE_SESSION_REUSE_AFTER_RESTART !== "true",
         });
       }
       // If reuse not explicitly disabled, rebind instead of logout (default to allowing reuse)
