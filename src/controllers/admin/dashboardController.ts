@@ -12,8 +12,11 @@ export const getDashboard = async (
     if (
       !(req.session as any).user ||
       (req.session as any).user.role !== "admin"
-    ) {
-      req.flash("error_msg", "Unauthorized access");
+       } catch (error) {
+      console.error("Add staff error:", error);
+      req.flash("error_msg", "An error occurred while adding staff");
+      return res.redirect("/admin/staff");
+  }    req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
     }
 
@@ -347,10 +350,8 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
 
     // Validate input
     if (!name || !username || !password || !role) {
-      res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
-      return;
+      req.flash("error_msg", "All fields are required");
+      return res.redirect("/admin/staff");
     }
 
     // Check if username already exists
@@ -358,10 +359,8 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
     const checkResult = await pool.query(checkQuery, [username]);
 
     if (checkResult.rows.length > 0) {
-      res
-        .status(400)
-        .json({ success: false, message: "Username already exists" });
-      return;
+      req.flash("error_msg", "Username already exists");
+      return res.redirect("/admin/staff");
     }
 
     // Hash the password before storing
@@ -384,13 +383,11 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
     const newStaff = insertResult.rows[0];
 
     req.flash("success_msg", "Staff member added successfully");
-    res.redirect("/admin/staff");
+    return res.redirect("/admin/staff");
   } catch (error) {
     console.error("Add staff error:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while adding staff",
-    });
+    req.flash("error_msg", "An error occurred while adding staff");
+    return res.redirect("/admin/staff");
   }
 };
 
