@@ -218,7 +218,7 @@
               </select>
             </div>
 
-            <div class="mb-3">
+            <div class="mb-3 position-relative">
               <label for="dob" class="form-label">Date of Birth</label>
               <input
                 type="text"
@@ -228,6 +228,7 @@
                 required
                 placeholder="Select date"
                 readonly
+                style="cursor: pointer"
               />
             </div>
 
@@ -340,11 +341,18 @@
 
   /* Mobile styles */
   @media (max-width: 767px) {
-    .flatpickr-calendar {
+    .flatpickr-wrapper {
+      display: flex !important;
+      justify-content: center !important;
       width: 100% !important;
+    }
+    .flatpickr-calendar {
+      position: fixed !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 95% !important;
       min-width: 280px !important;
-      max-width: 95vw !important;
-      margin: 0 auto !important;
+      max-width: 400px !important;
     }
     .flatpickr-days {
       padding: 0 !important;
@@ -376,7 +384,9 @@
     border-radius: 8px !important;
     border: 1px solid #dee2e6 !important;
     appearance: none !important;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") right .75rem center/16px 12px no-repeat !important;
+    background: #fff
+      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")
+      right 0.75rem center/16px 12px no-repeat !important;
   }
   .flatpickr-current-month input.cur-year {
     font-size: 16px !important;
@@ -469,7 +479,9 @@
     border-radius: 8px;
     background: #fff;
     appearance: none;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") right .75rem center/16px 12px no-repeat;
+    background: #fff
+      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")
+      right 0.75rem center/16px 12px no-repeat;
   }
 </style>
 
