@@ -77,8 +77,8 @@ export const postLogin = async (req: Request, res: Response): Promise<void> => {
           sessionID: req.sessionID,
         });
         if (process.env.AUTH_DEBUG === "true") {
-          console.log("[AUTH_DEBUG] Redirecting player after login", {
-            path: "/player/dashboard",
+          console.log("[AUTH_DEBUG] Redirecting staff after login", {
+            path: (req.session as any).returnTo || "/staff/interface",
             user: (req.session as any).user,
             serverStartTime: (req.session as any).serverStartTime,
             currentServerStartTime: SERVER_START_TIME,

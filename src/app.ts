@@ -198,12 +198,11 @@ app.use((req, res, next) => {
           current: SERVER_START_TIME,
           missing,
           mismatch,
-            allowReuse:
-              process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true",
+          allowReuse: process.env.DISABLE_SESSION_REUSE_AFTER_RESTART !== "true",
         });
       }
-      // If reuse explicitly allowed, rebind instead of logout
-      if (process.env.ALLOW_SESSION_REUSE_AFTER_RESTART === "true") {
+      // If reuse not explicitly disabled, rebind instead of logout (default to allowing reuse)
+      if (process.env.DISABLE_SESSION_REUSE_AFTER_RESTART !== "true") {
         (req.session as any).serverStartTime = SERVER_START_TIME;
         return req.session.save((err) => {
           if (err) {
