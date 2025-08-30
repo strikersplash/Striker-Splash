@@ -49,10 +49,18 @@ export const getLeaderboard = async (
     } else {
     }
 
-    // Get age brackets for filter dropdown using dynamic calculation
-    const ageBracketsResult = await pool.query(
-      "SELECT DISTINCT CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 'Up to 10 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 'Teens 11-17 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 'Young Adults 18-30 years' WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 'Adults 31-50 years' ELSE 'Seniors 51+ years' END as name, CASE WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 10 THEN 1 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 17 THEN 2 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 30 THEN 3 WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.dob)) <= 50 THEN 4 ELSE 5 END as sort_order FROM players p WHERE p.dob IS NOT NULL ORDER BY sort_order"
-    );
+    // Get all age brackets for filter dropdown
+    const ageBracketsResult = await pool.query(`
+      SELECT name, sort_order FROM (
+        VALUES 
+          ('Up to 10 years', 1),
+          ('Teens 11-17 years', 2),
+          ('Young Adults 18-30 years', 3),
+          ('Adults 31-50 years', 4),
+          ('Seniors 51+ years', 5)
+      ) as brackets(name, sort_order)
+      ORDER BY sort_order
+    `);
 
     res.render("leaderboard/index", {
       title: "Leaderboard",
