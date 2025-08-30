@@ -13,7 +13,17 @@
           >
             <div class="mb-3">
               <label for="name" class="form-label">Full Name</label>
-              <input
+         flatpickr("#dob", {
+      dateFormat: "Y-m-d",
+      maxDate: new Date(),
+      disableMobile: true, // Force our custom UI on mobile
+      static: true,
+      monthSelectorType: "dropdown",
+      yearSelectorType: "dropdown",
+      defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
+      appendTo: document.querySelector('.position-relative'), // Ensure proper positioning
+      showMonths: 1,
+      animate: true,<input
                 type="text"
                 class="form-control"
                 id="name"
@@ -318,16 +328,37 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
     z-index: 999999 !important;
     margin-top: 8px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
   }
-  
+
+  .flatpickr-input {
+    cursor: pointer !important;
+  }
+
+  .flatpickr-days {
+    width: 100% !important;
+  }
+
+  .dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 2px !important;
+    justify-content: center !important;
+  }
+
   /* Make sure the calendar container doesn't mess with layout */
   .flatpickr-wrapper {
-    position: static !important;
+    width: 100% !important;
   }
-  
+
   /* Ensure the date input's parent has proper positioning */
   .position-relative {
     position: relative !important;
+    width: 100% !important;
   }
 
   /* Desktop styles */
@@ -335,13 +366,21 @@
     .flatpickr-calendar {
       width: 400px !important;
       max-width: none !important;
+      position: absolute !important;
+      top: 100% !important;
+    }
+    .dayContainer {
+      padding: 8px 16px !important;
+      gap: 4px !important;
     }
     .flatpickr-day {
       font-size: 16px !important;
       line-height: 45px !important;
       height: 45px !important;
-      width: 45px !important;
-      margin: 3px !important;
+      margin: 2px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
     .flatpickr-current-month input.cur-year {
       font-size: 18px !important;
@@ -353,32 +392,23 @@
 
   /* Mobile styles */
   @media (max-width: 767px) {
-    .flatpickr-input {
-      cursor: pointer !important;
-    }
     .flatpickr-calendar {
       width: 95% !important;
       min-width: 280px !important;
       max-width: 400px !important;
-      margin: 0 auto !important;
-      inset: auto auto auto 50% !important;
-      transform: translateX(-50%) !important;
+      top: 100% !important;
     }
     .flatpickr-days {
       padding: 0 !important;
     }
     .dayContainer {
       padding: 8px !important;
-      display: grid !important;
-      grid-template-columns: repeat(7, 1fr) !important;
-      gap: 2px !important;
+      gap: 1px !important;
     }
     .flatpickr-day {
       font-size: 16px !important;
       line-height: 38px !important;
       height: 38px !important;
-      width: 100% !important;
-      max-width: none !important;
       margin: 0 !important;
       display: flex !important;
       align-items: center !important;
@@ -506,7 +536,7 @@
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
       defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
-      appendTo: document.querySelector('.position-relative'), // Ensure proper positioning
+      appendTo: document.querySelector(".position-relative"), // Ensure proper positioning
       // Create a more intuitive mobile interface
       onOpen: function (selectedDates, dateStr, instance) {
         // Create year range for quick selection
