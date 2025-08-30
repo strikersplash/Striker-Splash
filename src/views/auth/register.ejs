@@ -304,7 +304,6 @@
   href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
 />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<style>
   /* Base calendar styles */
   .flatpickr-calendar {
     font-size: 16px;
@@ -316,6 +315,19 @@
     background: #fff !important;
     border-radius: 12px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    z-index: 999999 !important;
+    margin-top: 8px !important;
+  }
+  
+  /* Make sure the calendar container doesn't mess with layout */
+  .flatpickr-wrapper {
+    position: static !important;
+  }
+  
+  /* Ensure the date input's parent has proper positioning */
+  .position-relative {
+    position: relative !important;
+  } box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
   }
 
   /* Desktop styles */
@@ -341,18 +353,14 @@
 
   /* Mobile styles */
   @media (max-width: 767px) {
-    .flatpickr-wrapper {
-      display: flex !important;
-      justify-content: center !important;
-      width: 100% !important;
-    }
     .flatpickr-calendar {
-      position: fixed !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
       width: 95% !important;
       min-width: 280px !important;
       max-width: 400px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      position: absolute !important;
+      top: calc(100% + 8px) !important;
     }
     .flatpickr-days {
       padding: 0 !important;
@@ -492,10 +500,11 @@
       dateFormat: "Y-m-d",
       maxDate: new Date(),
       disableMobile: true, // Force our custom UI on mobile
-      static: true,
+      static: false,
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
       defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
+      appendTo: document.querySelector('.position-relative'), // Ensure proper positioning
       // Create a more intuitive mobile interface
       onOpen: function (selectedDates, dateStr, instance) {
         // Create year range for quick selection
