@@ -233,8 +233,7 @@
                 name="dob"
                 required
                 placeholder="Select date"
-                readonly
-                style="cursor: pointer"
+                inputmode="none"
               />
             </div>
 
@@ -311,43 +310,38 @@
 />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
-  /* Base calendar styles */
-  .flatpickr-calendar {
-    font-size: 16px;
-    touch-action: manipulation;
-    height: auto !important;
-    position: absolute !important;
-    background: #fff !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-    z-index: 999999 !important;
-    margin-top: 8px !important;
-  }
-
-  .flatpickr-input {
-    cursor: pointer !important;
-  }
-
-  /* Make the controls easier to use */
-  .flatpickr-months {
-    display: flex !important;
-    align-items: center !important;
-    padding: 12px !important;
-    background: #f8f9fa !important;
-    border-radius: 12px 12px 0 0 !important;
-  }
-
-  .flatpickr-month {
-    overflow: visible !important;
-  }
-
-  /* Position calendar properly */
-  .position-relative {
-    position: relative !important;
-  }
-
-  /* Desktop styles - Natural calendar look */
+  /* Desktop only calendar styles */
   @media (min-width: 768px) {
+    .flatpickr-input {
+      cursor: pointer !important;
+    }
+    
+    .flatpickr-calendar {
+      font-size: 16px !important;
+      height: auto !important;
+      position: absolute !important;
+      background: #fff !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+      z-index: 999999 !important;
+      margin-top: 8px !important;
+    }
+
+    .flatpickr-months {
+      display: flex !important;
+      align-items: center !important;
+      padding: 12px !important;
+      background: #f8f9fa !important;
+      border-radius: 12px 12px 0 0 !important;
+    }
+
+    .flatpickr-month {
+      overflow: visible !important;
+    }
+
+    .position-relative {
+      position: relative !important;
+    }
     .flatpickr-calendar {
       width: 325px !important;
       left: 0 !important;
@@ -414,7 +408,7 @@
     height: auto !important;
     width: 100% !important;
   }
-  
+
   /* Month dropdown */
   .flatpickr-monthDropdown-months {
     -webkit-appearance: none !important;
@@ -423,7 +417,9 @@
     font-size: 16px !important;
     border: 1px solid #dee2e6 !important;
     border-radius: 6px !important;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") right 8px center/12px no-repeat !important;
+    background: #fff
+      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")
+      right 8px center/12px no-repeat !important;
     cursor: pointer !important;
     min-width: 120px !important;
   }
@@ -457,7 +453,7 @@
     border-color: #0d6efd !important;
     color: #0d6efd !important;
   }
-  
+
   @media (max-width: 767px) {
     .flatpickr-monthDropdown-months,
     .flatpickr-current-month input.cur-year {
@@ -531,13 +527,11 @@
     flatpickr("#dob", {
       dateFormat: "Y-m-d",
       maxDate: new Date(),
-      disableMobile: true, // Force our custom UI on mobile
+      disableMobile: false, // Use native mobile UI
       static: true,
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
       defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
-      clickOpens: true,
-      closeOnSelect: true,
       // Create a more intuitive mobile interface
       onOpen: function (selectedDates, dateStr, instance) {
         // Create year range for quick selection
