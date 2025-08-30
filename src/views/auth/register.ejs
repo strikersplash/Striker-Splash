@@ -304,6 +304,7 @@
   href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
 />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
   /* Base calendar styles */
   .flatpickr-calendar {
     font-size: 16px;
@@ -327,7 +328,6 @@
   /* Ensure the date input's parent has proper positioning */
   .position-relative {
     position: relative !important;
-  } box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
   }
 
   /* Desktop styles */
@@ -353,14 +353,16 @@
 
   /* Mobile styles */
   @media (max-width: 767px) {
+    .flatpickr-input {
+      cursor: pointer !important;
+    }
     .flatpickr-calendar {
       width: 95% !important;
       min-width: 280px !important;
       max-width: 400px !important;
-      left: 50% !important;
+      margin: 0 auto !important;
+      inset: auto auto auto 50% !important;
       transform: translateX(-50%) !important;
-      position: absolute !important;
-      top: calc(100% + 8px) !important;
     }
     .flatpickr-days {
       padding: 0 !important;
