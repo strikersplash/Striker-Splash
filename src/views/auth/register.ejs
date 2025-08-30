@@ -13,13 +13,7 @@
           >
             <div class="mb-3">
               <label for="name" class="form-label">Full Name</label>
-              flatpickr("#dob", { dateFormat: "Y-m-d", maxDate: new Date(),
-              disableMobile: true, // Force our custom UI on mobile static:
-              true, monthSelectorType: "dropdown", yearSelectorType: "dropdown",
-              defaultDate: new Date().toISOString().split("T")[0], // Set
-              current date as default appendTo:
-              document.querySelector('.position-relative'), // Ensure proper
-              positioning showMonths: 1, animate: true,<input
+              <input
                 type="text"
                 class="form-control"
                 id="name"
@@ -315,7 +309,7 @@
     .flatpickr-input {
       cursor: pointer !important;
     }
-    
+
     .flatpickr-calendar {
       font-size: 16px !important;
       height: auto !important;
@@ -573,6 +567,7 @@
         }
       },
     });
+
     // Photo preview functionality
     const photoInput = document.getElementById("photo");
     const photoPreview = document.getElementById("photo-preview");
