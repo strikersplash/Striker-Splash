@@ -9,14 +9,8 @@ export const getDashboard = async (
 ): Promise<void> => {
   try {
     // Only allow admin to access this page
-    if (
-      !(req.session as any).user ||
-      (req.session as any).user.role !== "admin"
-       } catch (error) {
-      console.error("Add staff error:", error);
-      req.flash("error_msg", "An error occurred while adding staff");
-      return res.redirect("/admin/staff");
-  }    req.flash("error_msg", "Unauthorized access");
+    if (!(req.session as any).user || (req.session as any).user.role !== "admin") {
+      req.flash("error_msg", "Unauthorized access");
       return res.redirect("/auth/login");
     }
 
