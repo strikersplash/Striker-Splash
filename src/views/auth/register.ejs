@@ -304,10 +304,11 @@
 />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
+  /* Base calendar styles */
   .flatpickr-calendar {
     font-size: 16px;
-    width: 325px !important;
-    max-width: 100% !important;
+    width: 100% !important;
+    max-width: 400px !important;
     touch-action: manipulation;
     height: auto !important;
     position: absolute !important;
@@ -315,6 +316,44 @@
     border-radius: 8px !important;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
   }
+
+  /* Desktop styles */
+  @media (min-width: 768px) {
+    .flatpickr-calendar {
+      width: 400px !important;
+      max-width: none !important;
+    }
+    .flatpickr-day {
+      font-size: 16px !important;
+      line-height: 45px !important;
+      height: 45px !important;
+      width: 45px !important;
+      margin: 3px !important;
+    }
+    .flatpickr-current-month input.cur-year {
+      font-size: 18px !important;
+    }
+    .flatpickr-monthDropdown-months {
+      font-size: 18px !important;
+    }
+  }
+
+  /* Mobile styles */
+  @media (max-width: 767px) {
+    .flatpickr-calendar {
+      width: 325px !important;
+      max-width: 100% !important;
+    }
+    .flatpickr-day {
+      font-size: 14px !important;
+      line-height: 40px !important;
+      height: 40px !important;
+      width: 40px !important;
+      margin: 2px !important;
+    }
+  }
+
+  /* Common styles */
   .flatpickr-monthDropdown-months {
     font-size: 16px;
     height: auto !important;
@@ -364,14 +403,10 @@
     max-width: 100% !important;
   }
   .flatpickr-day {
-    font-size: 14px !important;
-    line-height: 40px !important;
-    height: 40px !important;
-    width: 40px !important;
-    margin: 2px !important;
     border-radius: 50% !important;
   }
-  /* Custom mobile year selector */
+
+  /* Custom year selector */
   .year-select-wrapper {
     width: 100%;
     text-align: center;
