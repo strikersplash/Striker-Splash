@@ -13,17 +13,13 @@
           >
             <div class="mb-3">
               <label for="name" class="form-label">Full Name</label>
-         flatpickr("#dob", {
-      dateFormat: "Y-m-d",
-      maxDate: new Date(),
-      disableMobile: true, // Force our custom UI on mobile
-      static: true,
-      monthSelectorType: "dropdown",
-      yearSelectorType: "dropdown",
-      defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
-      appendTo: document.querySelector('.position-relative'), // Ensure proper positioning
-      showMonths: 1,
-      animate: true,<input
+              flatpickr("#dob", { dateFormat: "Y-m-d", maxDate: new Date(),
+              disableMobile: true, // Force our custom UI on mobile static:
+              true, monthSelectorType: "dropdown", yearSelectorType: "dropdown",
+              defaultDate: new Date().toISOString().split("T")[0], // Set
+              current date as default appendTo:
+              document.querySelector('.position-relative'), // Ensure proper
+              positioning showMonths: 1, animate: true,<input
                 type="text"
                 class="form-control"
                 id="name"
@@ -318,8 +314,6 @@
   /* Base calendar styles */
   .flatpickr-calendar {
     font-size: 16px;
-    width: 100% !important;
-    max-width: 400px !important;
     touch-action: manipulation;
     height: auto !important;
     position: absolute !important;
@@ -328,142 +322,148 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
     z-index: 999999 !important;
     margin-top: 8px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
   }
 
   .flatpickr-input {
     cursor: pointer !important;
   }
 
-  .flatpickr-days {
-    width: 100% !important;
-  }
-
-  .dayContainer {
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    gap: 2px !important;
-    justify-content: center !important;
-  }
-
-  /* Make sure the calendar container doesn't mess with layout */
-  .flatpickr-wrapper {
-    width: 100% !important;
-  }
-
-  /* Ensure the date input's parent has proper positioning */
-  .position-relative {
-    position: relative !important;
-    width: 100% !important;
-  }
-
-  /* Desktop styles */
-  @media (min-width: 768px) {
-    .flatpickr-calendar {
-      width: 400px !important;
-      max-width: none !important;
-      position: absolute !important;
-      top: 100% !important;
-    }
-    .dayContainer {
-      padding: 8px 16px !important;
-      gap: 4px !important;
-    }
-    .flatpickr-day {
-      font-size: 16px !important;
-      line-height: 45px !important;
-      height: 45px !important;
-      margin: 2px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-    }
-    .flatpickr-current-month input.cur-year {
-      font-size: 18px !important;
-    }
-    .flatpickr-monthDropdown-months {
-      font-size: 18px !important;
-    }
-  }
-
-  /* Mobile styles */
-  @media (max-width: 767px) {
-    .flatpickr-calendar {
-      width: 95% !important;
-      min-width: 280px !important;
-      max-width: 400px !important;
-      top: 100% !important;
-    }
-    .flatpickr-days {
-      padding: 0 !important;
-    }
-    .dayContainer {
-      padding: 8px !important;
-      gap: 1px !important;
-    }
-    .flatpickr-day {
-      font-size: 16px !important;
-      line-height: 38px !important;
-      height: 38px !important;
-      margin: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-    }
-  }
-
-  /* Common styles */
-  .flatpickr-monthDropdown-months {
-    font-size: 16px;
-    height: auto !important;
-    padding: 12px !important;
-    border-radius: 8px !important;
-    border: 1px solid #dee2e6 !important;
-    appearance: none !important;
-    background: #fff
-      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")
-      right 0.75rem center/16px 12px no-repeat !important;
-  }
-  .flatpickr-current-month input.cur-year {
-    font-size: 16px !important;
-    padding: 11px !important;
-    margin: 0 !important;
-    height: auto !important;
-    border: 1px solid #dee2e6 !important;
-    border-radius: 8px !important;
-    width: 90px !important;
-  }
-  .numInputWrapper {
-    font-size: 16px;
-    width: 90px !important;
-  }
+  /* Make the controls easier to use */
   .flatpickr-months {
     display: flex !important;
-    padding: 12px 8px !important;
+    align-items: center !important;
+    padding: 12px !important;
     background: #f8f9fa !important;
     border-radius: 12px 12px 0 0 !important;
-    gap: 8px !important;
   }
+
   .flatpickr-month {
-    height: auto !important;
-    padding: 0 !important;
+    overflow: visible !important;
   }
+
+  /* Position calendar properly */
+  .position-relative {
+    position: relative !important;
+  }
+
+  /* Desktop styles - Natural calendar look */
+  @media (min-width: 768px) {
+    .flatpickr-calendar {
+      width: 325px !important;
+      left: 0 !important;
+      top: calc(100% + 8px) !important;
+    }
+    .dayContainer {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: space-between !important;
+      padding: 8px !important;
+    }
+    .flatpickr-day {
+      width: 40px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      margin: 2px !important;
+      flex: 0 0 auto !important;
+      border-radius: 50% !important;
+    }
+    .flatpickr-weekday {
+      width: 40px !important;
+      margin: 2px !important;
+    }
+  }
+
+  /* Mobile styles - Optimized touch layout */
+  @media (max-width: 767px) {
+    .flatpickr-calendar {
+      width: calc(100% - 32px) !important;
+      left: 16px !important;
+      right: 16px !important;
+      top: calc(100% + 8px) !important;
+    }
+    .dayContainer {
+      display: grid !important;
+      grid-template-columns: repeat(7, 1fr) !important;
+      gap: 4px !important;
+      padding: 12px !important;
+    }
+    .flatpickr-day {
+      width: 100% !important;
+      aspect-ratio: 1 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 16px !important;
+      border-radius: 8px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .flatpickr-weekday {
+      font-size: 14px !important;
+      color: #666 !important;
+    }
+  }
+
+  /* Selectors styling */
   .flatpickr-current-month {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 10px !important;
     padding: 0 !important;
     height: auto !important;
-    position: relative !important;
+    width: 100% !important;
   }
-  .flatpickr-monthDropdown-month {
+  
+  /* Month dropdown */
+  .flatpickr-monthDropdown-months {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    padding: 8px 32px 8px 12px !important;
     font-size: 16px !important;
-    padding: 12px !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") right 8px center/12px no-repeat !important;
+    cursor: pointer !important;
+    min-width: 120px !important;
+  }
+
+  /* Year input */
+  .flatpickr-current-month input.cur-year {
+    padding: 8px !important;
+    width: 80px !important;
+    font-size: 16px !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+  }
+
+  .numInputWrapper {
+    width: 80px !important;
+  }
+
+  /* Selected and hover states */
+  .flatpickr-day.selected {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+  }
+
+  .flatpickr-day:hover {
+    background: #e9ecef !important;
+  }
+
+  .flatpickr-day.today {
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+  }
+  
+  @media (max-width: 767px) {
+    .flatpickr-monthDropdown-months,
+    .flatpickr-current-month input.cur-year {
+      padding: 10px !important;
+      font-size: 16px !important;
+    }
   }
   .flatpickr-weekdays {
     padding: 12px 8px 8px !important;
@@ -532,11 +532,12 @@
       dateFormat: "Y-m-d",
       maxDate: new Date(),
       disableMobile: true, // Force our custom UI on mobile
-      static: false,
+      static: true,
       monthSelectorType: "dropdown",
       yearSelectorType: "dropdown",
       defaultDate: new Date().toISOString().split("T")[0], // Set current date as default
-      appendTo: document.querySelector(".position-relative"), // Ensure proper positioning
+      clickOpens: true,
+      closeOnSelect: true,
       // Create a more intuitive mobile interface
       onOpen: function (selectedDates, dateStr, instance) {
         // Create year range for quick selection
